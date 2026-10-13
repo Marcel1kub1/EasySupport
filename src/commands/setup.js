@@ -1,4 +1,4 @@
-import { ChannelType, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+import { ChannelType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import { saveGuildSettings } from '../db.js';
 
 export default {
@@ -26,7 +26,11 @@ export default {
         .setMaxValue(10)
     ),
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    // The interaction may already be acknowledged (e.g. dispatched twice after a
+    // gateway resume) — deferring again throws 40060, so only defer when needed.
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    }
 
     const staffRole = interaction.options.getRole('staff_role');
     const logChannel = interaction.options.getChannel('log_channel');

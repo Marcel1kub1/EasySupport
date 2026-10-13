@@ -4,6 +4,7 @@ import {
   ButtonStyle,
   ChannelType,
   EmbedBuilder,
+  MessageFlags,
   ModalBuilder,
   PermissionFlagsBits,
   TextInputBuilder,
@@ -30,9 +31,42 @@ const COLORS = { blurple: 0x5865f2, green: 0x57f287, red: 0xed4245, yellow: 0xfe
 const PANEL_COOLDOWN_MS = 5_000;
 const panelCooldowns = new Map();
 
+/*
+ * Discord can re-dispatch an interaction (gateway resume, a second client
+ * sharing the token). Handling it twice acknowledges it twice — the second
+ * defer/reply throws 40060 — so every interaction is processed at most once.
+ * The set is cleared wholesale every 5 minutes; ids are snowflakes and unique.
+ */
+const HANDLED_TTL_MS = 5 * 60_000;
+const handledInteractions = new Set();
+let handledSweep = 0;
+
+function firstHandling(interaction) {
+  const now = Date.now();
+  if (now - handledSweep > HANDLED_TTL_MS) {
+    handledInteractions.clear();
+    handledSweep = now;
+  }
+  if (handledInteractions.has(interaction.id)) return false;
+  handledInteractions.add(interaction.id);
+  return true;
+}
+
+/** Acknowledges only if nobody has acknowledged this interaction yet. */
+async function acknowledge(interaction) {
+  if (interaction.replied || interaction.deferred) return;
+  try {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  } catch (error) {
+    if (error?.code !== 40060) throw error;
+    console.warn(`[interaction] ${interaction.id} was already acknowledged — continuing.`);
+  }
+}
+
 export default {
   name: 'interactionCreate',
   async execute(interaction, client) {
+    if (!firstHandling(interaction)) return;
     try {
       if (interaction.isButton()) return handleButton(interaction, client);
       if (interaction.isModalSubmit()) return handleModalSubmit(interaction, client);
@@ -42,7 +76,7 @@ export default {
       }
     } catch (error) {
       console.error('[interaction] Failed to handle interaction:', error);
-      const payload = { content: 'Something went wrong. Please try again.', ephemeral: true };
+      const payload = { content: 'Something went wrong. Please try again.', flags: MessageFlags.Ephemeral };
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp(payload).catch(() => {});
       } else {
@@ -77,7 +111,7 @@ async function handleModalSubmit(interaction, client) {
   if (interaction.customId.startsWith('ticket:intake:')) {
     const key = interaction.customId.slice('ticket:intake:'.length);
     const category = CATEGORIES[key];
-    if (!category) return interaction.reply({ content: 'Unknown category.', ephemeral: true });
+    if (!category) return interaction.reply({ content: 'Unknown category.', flags: MessageFlags.Ephemeral });
 
   const questions = category.questions.slice(0, 5);
   const answers = questions.map((q, i) => ({
@@ -100,7 +134,7 @@ async function onPanelClick(interaction, client) {
   const key = interaction.customId.slice('ticket:open:'.length);
   const category = CATEGORIES[key];
   if (!category) {
-    return interaction.reply({ content: 'Unknown ticket category.', ephemeral: true });
+    return interaction.reply({ content: 'Unknown ticket category.', flags: MessageFlags.Ephemeral });
   }
 
   // Lightweight anti-spam: one panel click per user every few seconds.
@@ -108,7 +142,7 @@ async function onPanelClick(interaction, client) {
   if (now - (panelCooldowns.get(interaction.user.id) ?? 0) < PANEL_COOLDOWN_MS) {
     return interaction.reply({
       content: 'Please wait a few seconds before opening another ticket.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
   panelCooldowns.set(interaction.user.id, now);
@@ -117,12 +151,12 @@ async function onPanelClick(interaction, client) {
   if (!settings?.staff_role_id || !settings.log_channel_id || !settings.ticket_category_id) {
     return interaction.reply({
       content: 'Ticketing is not configured yet. An admin must run `/setup` first.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
   if (isBlacklisted(interaction.guildId, interaction.user.id)) {
-    return interaction.reply({ content: 'You are not allowed to open tickets.', ephemeral: true });
+    return interaction.reply({ content: 'You are not allowed to open tickets.', flags: MessageFlags.Ephemeral });
   }
 
   // Counts every non-terminal status (open, pending, claimed, escalated, ...).
@@ -130,7 +164,7 @@ async function onPanelClick(interaction, client) {
   if (open >= settings.max_open_tickets) {
     return interaction.reply({
       content: `You already have ${open} open ticket(s) — the limit is ${settings.max_open_tickets}.`,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
@@ -179,7 +213,7 @@ async function openTicket(interaction, client, key, answers) {
     );
   }
 
-  await interaction.deferReply({ ephemeral: true });
+  await acknowledge(interaction);
 
   // The channel is invisible to everyone except the opener, the staff roles
   // and the bot itself.
@@ -352,21 +386,21 @@ function isStaff(interaction) {
 
 async function onStatusButton(interaction, key) {
   const meta = getStatusMeta(key);
-  if (!meta) return interaction.reply({ content: 'Unknown status.', ephemeral: true });
+  if (!meta) return interaction.reply({ content: 'Unknown status.', flags: MessageFlags.Ephemeral });
 
   if (meta.staffOnly !== false && !isStaff(interaction)) {
-    return interaction.reply({ content: 'Only staff can change the ticket status.', ephemeral: true });
+    return interaction.reply({ content: 'Only staff can change the ticket status.', flags: MessageFlags.Ephemeral });
   }
 
   const ticket = getTicketByChannel(interaction.channelId);
-  if (!ticket) return interaction.reply({ content: 'This channel is not a ticket.', ephemeral: true });
+  if (!ticket) return interaction.reply({ content: 'This channel is not a ticket.', flags: MessageFlags.Ephemeral });
 
   const current = getStatusMeta(ticket.status);
   if (current?.terminal) {
-    return interaction.reply({ content: `This ticket is already ${current.label}.`, ephemeral: true });
+    return interaction.reply({ content: `This ticket is already ${current.label}.`, flags: MessageFlags.Ephemeral });
   }
   if (ticket.status === key) {
-    return interaction.reply({ content: `This ticket is already "${meta.label}".`, ephemeral: true });
+    return interaction.reply({ content: `This ticket is already "${meta.label}".`, flags: MessageFlags.Ephemeral });
   }
 
   if (meta.terminal) return showCloseConfirmation(interaction, key, meta);
@@ -376,7 +410,7 @@ async function onStatusButton(interaction, key) {
 async function applyStatus(interaction, ticket, key, meta) {
   const ok = updateTicketStatus(interaction.channelId, key, meta.claimable ? interaction.user.id : null);
   if (!ok) {
-    return interaction.reply({ content: 'Could not update the ticket status.', ephemeral: true });
+    return interaction.reply({ content: 'Could not update the ticket status.', flags: MessageFlags.Ephemeral });
   }
 
   if (ticket.panel_message_id) {
@@ -447,17 +481,17 @@ async function showCloseConfirmation(interaction, key, meta) {
 
   await interaction.reply({
     content: `${meta.label} this ticket? The user will receive the transcript and a rating prompt.`,
-    ephemeral: true,
+    flags: MessageFlags.Ephemeral,
     components: [row],
   });
 }
 
 async function onStatusConfirm(interaction, key) {
   const meta = getStatusMeta(key);
-  if (!meta) return interaction.reply({ content: 'Unknown status.', ephemeral: true });
+  if (!meta) return interaction.reply({ content: 'Unknown status.', flags: MessageFlags.Ephemeral });
 
   if (meta.staffOnly !== false && !isStaff(interaction)) {
-    return interaction.reply({ content: 'Only staff can change the ticket status.', ephemeral: true });
+    return interaction.reply({ content: 'Only staff can change the ticket status.', flags: MessageFlags.Ephemeral });
   }
 
   const modal = new ModalBuilder().setCustomId(`ticket:status:reason:${key}`).setTitle(meta.label);
@@ -477,9 +511,9 @@ async function onStatusConfirm(interaction, key) {
 async function finalizeClose(interaction, key, reason) {
   const meta = getStatusMeta(key);
   if (!meta) {
-    return interaction.reply({ content: 'Unknown status.', ephemeral: true });
+    return interaction.reply({ content: 'Unknown status.', flags: MessageFlags.Ephemeral });
   }
-  await interaction.deferReply({ ephemeral: true });
+  await acknowledge(interaction);
 
   const ticket = getTicketByChannel(interaction.channelId);
   const current = ticket ? getStatusMeta(ticket.status) : null;
@@ -555,14 +589,14 @@ async function onRatingClick(interaction) {
   const [, , ticketIdPart, ratingPart] = interaction.customId.split(':');
   const ticket = getTicketById(Number(ticketIdPart));
 
-  if (!ticket) return interaction.reply({ content: 'Unknown ticket.', ephemeral: true });
+  if (!ticket) return interaction.reply({ content: 'Unknown ticket.', flags: MessageFlags.Ephemeral });
   if (ticket.user_id !== interaction.user.id) {
-    return interaction.reply({ content: 'You can only rate your own ticket.', ephemeral: true });
+    return interaction.reply({ content: 'You can only rate your own ticket.', flags: MessageFlags.Ephemeral });
   }
 
   const rating = Number(ratingPart);
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    return interaction.reply({ content: 'Invalid rating.', ephemeral: true });
+    return interaction.reply({ content: 'Invalid rating.', flags: MessageFlags.Ephemeral });
   }
 
   rateTicket(ticket.id, ticket.user_id, rating);

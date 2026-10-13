@@ -1,4 +1,12 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder,
+  MessageFlags,
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+} from 'discord.js';
 import { getGuild } from '../db.js';
 import { CATEGORIES, resolveStaffRole } from '../categories.js';
 
@@ -15,12 +23,12 @@ export default {
   async execute(interaction) {
     const settings = getGuild(interaction.guildId);
     if (!settings?.staff_role_id) {
-      return interaction.reply({ content: 'Run `/setup` before posting a panel.', ephemeral: true });
+      return interaction.reply({ content: 'Run `/setup` before posting a panel.', flags: MessageFlags.Ephemeral });
     }
 
     const target = interaction.options.getChannel('channel') ?? interaction.channel;
     if (!target.isTextBased()) {
-      return interaction.reply({ content: 'Pick a text channel.', ephemeral: true });
+      return interaction.reply({ content: 'Pick a text channel.', flags: MessageFlags.Ephemeral });
     }
 
     const entries = Object.entries(CATEGORIES);
@@ -63,6 +71,6 @@ export default {
       .setFooter({ text: 'Please open one ticket per issue.' });
 
     await target.send({ embeds: [embed], components: rows });
-    await interaction.reply({ content: `Panel posted in <#${target.id}>.`, ephemeral: true });
+    await interaction.reply({ content: `Panel posted in <#${target.id}>.`, flags: MessageFlags.Ephemeral });
   },
 };
