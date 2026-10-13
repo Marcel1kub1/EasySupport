@@ -1,20 +1,87 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { REST, Routes } from 'discord.js';
 import { config } from './src/config.js';
-import setup from './src/commands/setup.js';
-import panel from './src/commands/panel.js';
 
-const body = [setup.data.toJSON(), panel.data.toJSON()];
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/*
+ * Load every command from src/commands/ — the deploy set is always exactly what
+ * the running system has, nothing hardcoded to drift out of sync.
+ */
+const body = [];
+const commandsDir = path.join(__dirname, 'src', 'commands');
+for (const file of fs.readdirSync(commandsDir)) {
+  if (!file.endsWith('.js')) continue;
+  const mod = await import(pathToFileURL(path.join(commandsDir, file)).href);
+  if (mod.default?.data?.name && typeof mod.default.execute === 'function') {
+    body.push(mod.default.data.toJSON());
+  }
+}
+
+const currentNames = new Set(body.map((command) => command.name));
 const rest = new REST({ version: '10' }).setToken(config.token);
 
-try {
-  if (config.guildId) {
-    await rest.put(Routes.applicationGuildCommands(config.clientId, config.guildId), { body });
-    console.log(`[deploy] Registered ${body.length} guild command(s) for guild ${config.guildId}.`);
-  } else {
-    await rest.put(Routes.applicationCommands(config.clientId), { body });
-    console.log(`[deploy] Registered ${body.length} global command(s) (may take up to 1 hour to appear).`);
+if (config.guildId) {
+  var target = {
+    label: `guild ${config.guildId}`,
+    list: Routes.applicationGuildCommands(config.clientId, config.guildId),
+    deleteFor: (id) => Routes.applicationGuildCommand(config.clientId, config.guildId, id),
+    register: () => rest.put(Routes.applicationGuildCommands(config.clientId, config.guildId), { body }),
+  };
+  var staleScope = {
+    label: 'global',
+    list: Routes.applicationCommands(config.clientId),
+    deleteFor: (id) => Routes.applicationCommand(config.clientId, id),
+  };
+} else {
+  var target = {
+    label: 'global',
+    list: Routes.applicationCommands(config.clientId),
+    deleteFor: (id) => Routes.applicationCommand(config.clientId, id),
+    register: () => rest.put(Routes.applicationCommands(config.clientId), { body }),
+  };
+  var staleScope = null;
+}
+
+/*
+ * Commands that exist on Discord but not in src/commands/ are deleted, so the
+ * client never shows leftovers from older builds. The scope we register to is
+ * bulk-overwritten by the PUT below (which also drops stale commands in it);
+ * the opposite scope is cleaned explicitly because a PUT never touches it.
+ */
+async function pruneStale(scope) {
+  let removed = 0;
+  try {
+    const existing = await rest.get(scope.list);
+    for (const command of existing) {
+      if (currentNames.has(command.name)) continue;
+      await rest.delete(scope.deleteFor(command.id));
+      console.log(`[deploy] Deleted stale ${scope.label} command /${command.name}.`);
+      removed += 1;
+    }
+  } catch (error) {
+    console.warn(`[deploy] Could not prune stale ${scope.label} commands:`, error.message ?? error);
   }
+  return removed;
+}
+
+try {
+  if (body.length === 0) {
+    throw new Error('No commands found in src/commands/ — nothing to deploy.');
+  }
+
+  const removedElsewhere = staleScope ? await pruneStale(staleScope) : 0;
+  const removedHere = await pruneStale(target);
+  await target.register();
+
+  console.log(`[deploy] Registered ${body.length} command(s) (${target.label}): ${[...currentNames].join(', ')}`);
+  if (removedHere + removedElsewhere > 0) {
+    console.log(`[deploy] Removed ${removedHere + removedElsewhere} stale command(s) not in the current system.`);
+  }
+  console.log('[deploy] Discord now shows only the current commands — restart the client if the list looks cached.');
 } catch (error) {
-  console.error('[deploy] Failed to register commands:', error);
+  console.error('[deploy] Failed to deploy commands:', error);
   process.exit(1);
 }

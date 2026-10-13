@@ -81,6 +81,11 @@ npm run deploy        # registers /setup and /panel
 npm start             # boots the bot
 ```
 
+`npm run deploy` loads whatever is in `src/commands/` and **deletes any command
+on Discord that is no longer in the system** (in both the guild and global
+scope), so the command list always matches the current build. Restart the
+Discord client if the list looks cached.
+
 ### 4. Configure in Discord
 
 ```
