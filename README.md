@@ -4,7 +4,8 @@
 <img src="assets/banner.png" alt="EasySupport — self-hosted Discord ticketing" width="720">
 
 
-<a href="https://wispbyte.com"><img src="assets/wispbyte-hero.png" alt="Hosted by Wispbyte — free 24/7 hosting" width="680"></a>
+
+
 
 **Private support tickets, staff workflows, transcripts and ratings — driven by one config file.**
 
