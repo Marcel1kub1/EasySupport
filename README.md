@@ -2,7 +2,6 @@
 
 <a href="https://wispbyte.com"><img src="assets/wispbyte-hero.png" alt="Hosted by Wispbyte — free 24/7 hosting" width="680"></a>
 
-*☁️ This bot is hosted by [wispbyte.com](https://wispbyte.com) — click the banner.*
 
 <img src="assets/banner.png" alt="EasySupport — self-hosted Discord ticketing" width="720">
 
