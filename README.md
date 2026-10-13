@@ -1,13 +1,47 @@
-# Easy — Discord Ticketing Bot (discord.js template)
+<div align="center">
 
-Self-hosted ticketing: members open private support channels from a button-based
-panel, staff move tickets through configurable statuses, all interactions are
-logged, and users receive a transcript with a rating prompt when a ticket
-reaches its terminal status.
+<img src="assets/banner.png" alt="EasySupport — self-hosted Discord ticketing" width="720">
 
-Full design rationale, name shortlist and architecture: **[DESIGN.md](./DESIGN.md)**.
+**Private support tickets, staff workflows, transcripts and ratings — driven by one config file.**
 
-## Requirements
+<p>
+  <img src="https://img.shields.io/badge/node-%3E%3D22.5-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js &gt;= 22.5">
+  <img src="https://img.shields.io/badge/discord.js-v14-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="discord.js v14">
+  <img src="https://img.shields.io/badge/storage-SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite storage">
+  <img src="https://img.shields.io/badge/native%20modules-0-brightgreen?style=for-the-badge" alt="zero native modules">
+  <img src="https://img.shields.io/badge/maintained-yes-green?style=for-the-badge" alt="maintained">
+  <a href="https://github.com/Marcel1kub1/EasySupport/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge" alt="PRs welcome"></a>
+  <img src="https://img.shields.io/github/stars/Marcel1kub1/EasySupport?style=for-the-badge&logo=github&logoColor=white" alt="GitHub stars">
+  <img src="https://img.shields.io/github/last-commit/Marcel1kub1/EasySupport?style=for-the-badge&logo=github&logoColor=white" alt="last commit">
+</p>
+
+</div>
+
+---
+
+## ✨ Features
+
+- 🎫 **One-click tickets** — `/panel` posts a button per category; members get a private channel instantly
+- 📋 **Intake questions** — ask up to 5 questions in a popup before the channel is created
+- 🧭 **Config-driven statuses** — every status in `src/categories.js` becomes a control-panel button (claim, pending, escalate, close)
+- 🔒 **Private channels** — only the opener and the handling role can see the ticket
+- 📄 **Transcripts** — a TXT + HTML transcript is generated when a ticket closes
+- ⭐ **Rating prompt** — members rate the support 1–5 by DM after close
+- 📝 **Audit log** — every action is logged to your log channel
+- 🗄️ **SQLite, zero native deps** — `node:sqlite` ships with Node, so `npm install` downloads nothing to compile
+- ⚙️ **One-file config** — roles by name (`'Moderation Team'`) or by ID, everything else is optional
+
+## 🖼️ Preview
+
+**The ticket panel** (`/panel` — one button per category, handled-by pills per field):
+
+<img src="assets/panel.png" alt="Discord message showing the EasySupport ticket panel with four category buttons" width="100%">
+
+**Inside a ticket** (status buttons, staff ping, intake answers):
+
+<img src="assets/ticket.png" alt="Discord ticket channel showing the control panel, status buttons and conversation" width="100%">
+
+## 📋 Requirements
 
 - **Node.js 22.5+** (hosted on your server — nothing needs to run locally)
   SQLite ships built into Node (`node:sqlite`), so there are **no native modules
@@ -15,7 +49,7 @@ Full design rationale, name shortlist and architecture: **[DESIGN.md](./DESIGN.m
 - A Discord application + bot token ([Developer Portal](https://discord.com/developers/applications))
 - On the server: permissions **Manage Channels** and **Manage Roles**
 
-## Setup
+## 🚀 Setup
 
 ### 1. Create the application
 
@@ -58,7 +92,7 @@ That's it — a member clicking a panel button gets their own private channel
 with a status button for every status defined in `src/categories.js`
 (Claim, Pending, Escalate, Close, …) for staff to use.
 
-## Project layout
+## 🗂️ Project layout
 
 ```
 src/
@@ -74,7 +108,7 @@ src/
     └── messageCreate.js     automated interaction logging
 ```
 
-## Hosting on a server
+## 🖥️ Hosting on a server
 
 The template writes its database to `data/tickets.db` and transcripts to
 `transcripts/`. For production:
@@ -95,7 +129,7 @@ The template writes its database to `data/tickets.db` and transcripts to
   the schema is already relational (see DESIGN.md §2.3).
 - Keep `.env` out of git (it's in `.gitignore`) and never commit the token.
 
-## Extending
+## 🧩 Extending
 
 Everything about categories and statuses lives in **`src/categories.js`** — the
 only file you edit. Every field is optional and defaults are filled in
@@ -149,3 +183,9 @@ automatically. Roles are given by **name** (`'Billing Team'`) or by **ID**
 - **Auto-close inactive tickets** — add a `node-cron` job that closes tickets
   whose last message in `ticket_messages` is older than N days.
 - **Staff stats** — query `tickets` for claim time and ratings per staff member.
+
+---
+
+<div align="center">
+<sub>Full design rationale, name shortlist and architecture: <a href="./DESIGN.md">DESIGN.md</a></sub>
+</div>
