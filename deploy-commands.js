@@ -1,23 +1,22 @@
-import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { REST, Routes } from 'discord.js';
 import { config } from './src/config.js';
+import { loadModules } from './src/loader.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /*
- * Load every command from src/commands/ — the deploy set is always exactly what
- * the running system has, nothing hardcoded to drift out of sync.
+ * Load every command from src/commands/** and src/economy/commands/** — the
+ * deploy set is always exactly what the running system has.
  */
 const body = [];
-const commandsDir = path.join(__dirname, 'src', 'commands');
-for (const file of fs.readdirSync(commandsDir)) {
-  if (!file.endsWith('.js')) continue;
-  const mod = await import(pathToFileURL(path.join(commandsDir, file)).href);
-  if (mod.default?.data?.name && typeof mod.default.execute === 'function') {
-    body.push(mod.default.data.toJSON());
-  }
+for (const dir of ['commands', path.join('economy', 'commands')]) {
+  await loadModules(path.join(__dirname, 'src', dir), (command) => {
+    if (command?.data?.name && typeof command.execute === 'function') {
+      body.push(command.data.toJSON());
+    }
+  });
 }
 
 const currentNames = new Set(body.map((command) => command.name));

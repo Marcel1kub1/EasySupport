@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Client, Events, GatewayIntentBits, Partials } from 'discord.js';
 import { config } from './config.js';
+import { loadModules } from './loader.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -19,24 +20,17 @@ export const client = new Client({
 
 client.commands = new Map();
 
-async function loadModules(dir, onModule) {
-  const full = path.join(__dirname, dir);
-  for (const file of fs.readdirSync(full)) {
-    if (!file.endsWith('.js')) continue;
-    const mod = await import(pathToFileURL(path.join(full, file)).href);
-    onModule(mod.default, file);
-  }
+// Slash commands: src/commands/** and the economy tree src/economy/commands/**
+for (const dir of ['commands', path.join('economy', 'commands')]) {
+  await loadModules(path.join(__dirname, dir), (command) => {
+    if (command?.data?.name && typeof command.execute === 'function') {
+      client.commands.set(command.data.name, command);
+    }
+  });
 }
 
-// Slash commands
-await loadModules('commands', (command) => {
-  if (command?.data?.name && typeof command.execute === 'function') {
-    client.commands.set(command.data.name, command);
-  }
-});
-
-// Gateway events
-await loadModules('events', (event) => {
+// Gateway events: src/events/**
+await loadModules(path.join(__dirname, 'events'), (event) => {
   if (event?.name && typeof event.execute === 'function') {
     client.on(event.name, (...args) => event.execute(...args, client));
   }

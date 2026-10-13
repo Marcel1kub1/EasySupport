@@ -1,13 +1,14 @@
 {
   "name": "discord-ticket-bot",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "type": "module",
   "description": "Self-hosted Discord ticketing bot template (discord.js v14)",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "deploy": "node deploy-commands.js"
+    "deploy": "node deploy-commands.js",
+    "test": "DISCORD_TOKEN=test CLIENT_ID=test node --experimental-sqlite --test src/economy/*.test.js src/loader.test.js"
   },
   "engines": {
     "node": ">=22.5"

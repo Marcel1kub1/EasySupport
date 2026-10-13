@@ -26,6 +26,7 @@
 - 🧩 **Everything in one panel** — art, status, intake answers and all status buttons live in a single message
 - 🎨 **Generated category art** — every ticket channel and the public panel get a banner rendered with `@resvg/resvg-js`, showing the **category name and emoji** on a palette unique to that category (deterministic, cached in `data/art/`)
 - 🧭 **Config-driven statuses** — every status in `src/categories.js` becomes a control-panel button (claim, pending, escalate, close)
+- 🎮 **Taco Empire mini-game** — a full tycoon loop (`/work`, `/tips`, `/daily`, `/menu`, `/hire`, …) with levels, upgrades, cleanliness and prestige
 - 🔒 **Private channels** — only the opener and the handling role can see the ticket
 - 📄 **Transcripts** — a TXT + HTML transcript is generated when a ticket closes
 - ⭐ **Rating prompt** — members rate the support 1–5 by DM after close
@@ -42,6 +43,43 @@
 **Inside a ticket** (status buttons, staff ping, intake answers):
 
 <img src="assets/ticket.png" alt="Discord ticket channel showing the control panel, status buttons and conversation" width="100%">
+
+## 🌮 Taco Empire — the built-in tycoon game
+
+A chill, no-PvP business sim that lives in the same bot: start with a free taco
+stand, reinvest everything, grow into restaurants and hotels. No robbing, no
+gambling — just numbers going up.
+
+<img src="assets/economy-banner.png" alt="Taco Empire location ladder: Taco Stand, Restaurant, Taco Hotel" width="100%">
+
+**Core loop:** `/work` for cash → `/buy` upgrades → `/menu` high-value items →
+`/hire` staff for passive income → keep the shack `/clean` so customers stay.
+
+| Command | What it does |
+|---|---|
+| `/found <name>` | Name your shack (first run also grants the free stand) |
+| `/work` | Cook tacos for cash — main earner, 1h cooldown, random Happy Hour doubles |
+| `/tips` | Collect the tip jar (8 min) — pays less when the shack is dirty |
+| `/daily` | Streak bonus, up to 7× |
+| `/clean` | Scrub the shack — dirt cuts income and tips |
+| `/mine` | Gather ingredients for restaurants, hotels and recipes |
+| `/shack` | Stats: balance, income, cleanliness, menu, staff, net worth |
+| `/cooldowns` | Which actions are ready |
+| `/upgrades` | Browse the upgrade ladder (+% income each) |
+| `/buy <upgrade\|boost>` | Buy equipment or a temporary boost |
+| `/shop` | Browse boosts (Lucky Sombrero, Golden Ticket) |
+| `/menu view\|set` | Fill menu slots — empty slots silently cap your income |
+| `/hire <type> <name>` | Hire chefs, line cooks and janitors for passive income |
+| `/employees list\|train` | View staff; train after your first prestige |
+
+**Systems:** per-location 10-level ladders with exponential upgrade costs ·
+quadratic income growth · cleanliness decay with janitors that slow it · menu
+slots that unlock per level · employee wages vs. bonuses · boosts that stack ·
+deterministic generated art per location.
+
+**Coming next** (roadmap): prestige at level 10 · restaurants & hotels with
+synergy bonuses · Biktok advertising · tasks & achievements · franchises ·
+the Sauce Market and Kitchen.
 
 ## 📋 Requirements
 
@@ -119,7 +157,17 @@ src/
 
 assets/
 ├── fonts/                   Inter (OFL) bundled for banner text rendering
-└── emoji/                   Twemoji SVGs for the emojis used in categories.js
+├── emoji/                   Twemoji SVGs for the emojis used in categories.js
+└── economy-banner.png       Taco Empire preview image
+
+src/economy/
+├── config.js                ALL game balance: locations, ladders, employees, market
+├── engine.js                PURE math: income, payouts, decay, prestige, synergy
+├── db.js                    schema + repository (dependency-injected for tests)
+├── instance.js              the repository bound to the shared bot database
+├── util.js                  cooldowns and formatting helpers
+└── commands/                found work tips clean daily shack cooldowns upgrades
+                             buy shop menu employees hire mine
 ```
 
 ## 🖥️ Hosting on a server
@@ -143,6 +191,16 @@ The template writes its database to `data/tickets.db`, generated panel art to
 - When you outgrow SQLite, swap the statements in `src/db.js` for PostgreSQL —
   the schema is already relational (see DESIGN.md §2.3).
 - Keep `.env` out of git (it's in `.gitignore`) and never commit the token.
+
+## 🧪 Tests
+
+```bash
+npm test        # 60 tests: engine math, db integration, command smoke tests, loader
+```
+
+The economy engine is a **pure module** — every payout, decay and multiplier is
+unit-tested against the config, and every command is executed end-to-end against
+a throwaway database in `src/economy/commands.smoke.test.js`.
 
 ## 🧩 Extending
 

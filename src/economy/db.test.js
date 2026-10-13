@@ -1,0 +1,185 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { DatabaseSync } from 'node:sqlite';
+import { createEconomyDb } from './db.js';
+import { ECONOMY } from './config.js';
+import { decayCleanliness } from './engine.js';
+
+function freshDb() {
+  return createEconomyDb(new DatabaseSync(':memory:'));
+}
+
+test('ensureUser grants a free level-1 taco stand exactly once', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  const shacks = db.listShacks('g1', 'u1');
+  assert.equal(shacks.length, 1);
+  assert.equal(shacks[0].location_key, 'taco_stand');
+  assert.equal(shacks[0].level, 1);
+  db.ensureUser('g1', 'u1');
+  assert.equal(db.listShacks('g1', 'u1').length, 1);
+});
+
+test('balances are guild-scoped', () => {
+  const db = freshDb();
+  db.addCash('g1', 'u1', 1000);
+  db.addCash('g2', 'u1', 50);
+  assert.equal(db.getUser('g1', 'u1').cash, 1000);
+  assert.equal(db.getUser('g2', 'u1').cash, 50);
+});
+
+test('cash can go negative to model spending', () => {
+  const db = freshDb();
+  db.addCash('g1', 'u1', 500);
+  db.addCash('g1', 'u1', -800);
+  assert.equal(db.getUser('g1', 'u1').cash, -300);
+});
+
+test('buy -> upgrade -> prestige round-trip', () => {
+  const db = freshDb();
+  db.buyLocation('g1', 'u1', 'restaurant', 'Taco Palace');
+  const bought = db.getShack('g1', 'u1', 'restaurant');
+  assert.equal(bought.name, 'Taco Palace');
+
+  db.setLevel('g1', 'u1', 'restaurant', 10);
+  assert.equal(db.getShack('g1', 'u1', 'restaurant').level, 10);
+
+  db.setPrestige('g1', 'u1', 'restaurant', 1, 1);
+  const prestige = db.getShack('g1', 'u1', 'restaurant');
+  assert.equal(prestige.prestige, 1);
+  assert.equal(prestige.level, 1);
+});
+
+test('duplicate location purchases are ignored', () => {
+  const db = freshDb();
+  db.buyLocation('g1', 'u1', 'restaurant');
+  db.buyLocation('g1', 'u1', 'restaurant');
+  assert.equal(db.listShacks('g1', 'u1').filter((s) => s.location_key === 'restaurant').length, 1);
+});
+
+test('cooldown columns are whitelisted', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  db.setCooldown('g1', 'u1', 'last_work_at', '2026-10-13T00:00:00Z');
+  assert.equal(db.getUser('g1', 'u1').last_work_at, '2026-10-13T00:00:00Z');
+  assert.throws(() => db.setCooldown('g1', 'u1', 'cash', '5'), /Unknown cooldown column/);
+});
+
+test('ingredients accumulate', () => {
+  const db = freshDb();
+  db.addIngredients('g1', 'u1', 4);
+  db.addIngredients('g1', 'u1', 3);
+  assert.equal(db.getUser('g1', 'u1').ingredients, 7);
+});
+
+test('buildState returns the engine shape', () => {
+  const db = freshDb();
+  const state = db.buildState('g1', 'u1');
+  assert.equal(state.locations.length, 1);
+  assert.equal(state.locations[0].key, 'taco_stand');
+  assert.deepEqual(state.locations[0].menu, []);
+  assert.deepEqual(state.locations[0].employees, []);
+  assert.equal(state.user.cash, 0);
+});
+
+test('every configured location is a known location key', () => {
+  for (const key of Object.keys(ECONOMY.locations)) {
+    assert.ok(ECONOMY.locations[key].label, `${key} needs a label`);
+  }
+});
+
+/* ------------------------------- phase 1: upgrades -------------------------- */
+
+test('upgrades are unique per location and buyable once', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  assert.equal(db.buyUpgrade('g1', 'u1', 'taco_stand', 'better_stove'), true);
+  assert.equal(db.buyUpgrade('g1', 'u1', 'taco_stand', 'better_stove'), false);
+  assert.deepEqual(db.listUpgrades('g1', 'u1', 'taco_stand'), ['better_stove']);
+  assert.equal(db.hasUpgrade('g1', 'u1', 'taco_stand', 'neon_sign'), false);
+});
+
+/* --------------------------------- phase 1: menu ---------------------------- */
+
+test('menu slots store by index and overwrite on re-set', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  db.setMenuItem('g1', 'u1', 'taco_stand', 0, 'taco');
+  db.setMenuItem('g1', 'u1', 'taco_stand', 1, 'burrito');
+  assert.deepEqual(db.listMenu('g1', 'u1', 'taco_stand'), ['taco', 'burrito']);
+  db.setMenuItem('g1', 'u1', 'taco_stand', 0, 'churros');
+  assert.deepEqual(db.listMenu('g1', 'u1', 'taco_stand'), ['churros', 'burrito']);
+});
+
+test('menu rows are sparse-indexed when slot 0 is empty', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  db.setMenuItem('g1', 'u1', 'taco_stand', 2, 'nachos');
+  const menu = db.listMenu('g1', 'u1', 'taco_stand');
+  assert.deepEqual(menu, [null, null, 'nachos']);
+});
+
+/* ------------------------------- phase 1: employees ------------------------- */
+
+test('hiring respects the per-location cap and rejects duplicate names', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  for (let i = 0; i < ECONOMY.maxEmployeesPerLocation; i++) {
+    assert.ok(db.hireEmployee('g1', 'u1', 'taco_stand', 'chef', `chef-${i}`), `hire ${i} should succeed`);
+  }
+  assert.equal(db.countEmployees('g1', 'u1', 'taco_stand'), ECONOMY.maxEmployeesPerLocation);
+  assert.equal(db.hireEmployee('g1', 'u1', 'taco_stand', 'chef', 'chef-0'), null); // duplicate name
+});
+
+test('training increments an employee level', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  db.hireEmployee('g1', 'u1', 'taco_stand', 'chef', 'Ana');
+  assert.equal(db.trainEmployee('g1', 'u1', 'taco_stand', 'Ana').training, 1);
+  assert.equal(db.trainEmployee('g1', 'u1', 'taco_stand', 'nobody'), null);
+});
+
+/* -------------------------------- phase 1: boosts --------------------------- */
+
+test('boosts list only unexpired entries', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  const now = Date.now();
+  db.addBoost('g1', 'u1', 'boost:golden_ticket', 1.5, now + 3_600_000, now);
+  db.addBoost('g1', 'u1', 'boost:expired', 2, now - 1000, now);
+  const active = db.listBoosts('g1', 'u1', now);
+  assert.equal(active.length, 1);
+  assert.equal(active[0].kind, 'boost:golden_ticket');
+});
+
+/* ---------------------------- phase 1: cleanliness -------------------------- */
+
+test('cleanliness decays lazily on read and persists', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  const threeHoursAgo = Date.now() - 3 * 3_600_000;
+  db.setCleanliness('g1', 'u1', 'taco_stand', 100);
+  // rewind the decay clock so the next read sees 3 elapsed hours
+  db.touchCleanliness('g1', 'u1', 'taco_stand', threeHoursAgo);
+
+  const expected = decayCleanliness(100, 3, 0);
+  const state = db.buildState('g1', 'u1', Date.now());
+  assert.equal(state.locations[0].cleanliness, expected);
+  // the decayed value is persisted, not recomputed from the original each time
+  const again = db.buildState('g1', 'u1', Date.now());
+  assert.equal(again.locations[0].cleanliness, expected);
+});
+
+test('janitors slow the decay', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  db.hireEmployee('g1', 'u1', 'taco_stand', 'janitor', 'Moppsy');
+  const hours = 5;
+  const withoutJanitor = decayCleanliness(100, hours, 0);
+  const withJanitor = decayCleanliness(100, hours, 1);
+  assert.ok(withJanitor > withoutJanitor);
+
+  const state = db.buildState('g1', 'u1', Date.now());
+  assert.equal(state.locations[0].employees.length, 1);
+  assert.equal(state.locations[0].employees[0].key, 'janitor');
+});
