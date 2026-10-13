@@ -59,9 +59,13 @@ gambling — just numbers going up.
 
 <img src="assets/economy-shack.png" alt="Discord message showing the /shack stats embed with balance, income and per-business fields" width="100%">
 
+**`/shop` — the boost store, and buying a boost:**
+
+<img src="assets/economy-shop.png" alt="Discord message showing the /shop embed with the Lucky Sombrero and Golden Ticket boosts" width="100%">
+
 **`/upgrades` — the reinvestment ladder, and `/tips` payouts:**
 
-<img src="assets/economy-shop.png" alt="Discord message showing the /upgrades embed with the equipment ladder" width="100%">
+<img src="assets/economy-upgrades.png" alt="Discord message showing the /upgrades embed with the equipment ladder" width="100%">
 
 **`/location list` — the three business lines, and a `/work` shift:**
 
