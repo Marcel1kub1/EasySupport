@@ -44,8 +44,12 @@ await loadModules('events', (event) => {
 
 client.once(Events.ClientReady, (ready) => {
   console.log(`[bot] Logged in as ${ready.user.tag}`);
-  console.log(`[bot] Serving ${ready.guilds.cache.size} guild(s)`);
+  console.log(`[bot] Serving ${client.guilds.cache.size} guild(s)`);
 });
+
+// discord.js surfaces failures inside event handlers as Client 'error' events;
+// without this listener such an error takes the whole process down.
+client.on(Events.Error, (error) => console.error('[bot] Client error:', error));
 
 process.on('unhandledRejection', (err) => console.error('[bot] Unhandled promise rejection:', err));
 

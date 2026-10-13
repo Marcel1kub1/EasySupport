@@ -18,6 +18,7 @@ yarn-error.log*
 
 # Agent / tooling state (local only, not part of the project)
 .vibe/
+.kilo/plans/
 
 # OS / editor cruft
 .DS_Store
@@ -26,3 +27,6 @@ desktop.ini
 .idea/
 .vscode/
 *.swp
+
+# Mockup intermediates (regenerated with the README previews)
+assets/*.svg

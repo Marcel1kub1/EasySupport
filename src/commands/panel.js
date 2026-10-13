@@ -72,8 +72,8 @@ export default {
       .setImage('attachment://panel-art.png')
       .setFooter({ text: 'Please open one ticket per issue.' });
 
-    // Generated banner: one art segment per category, deterministic and cached.
-    const art = panelArt(entries.map(([key]) => ({ key, label: key })));
+    // Generated banner: one labeled card per category, deterministic and cached.
+    const art = await panelArt(entries.map(([key, cat]) => ({ key, label: cat.label, emoji: cat.emoji })));
 
     await target.send({
       embeds: [embed],

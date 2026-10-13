@@ -315,7 +315,7 @@ async function openTicket(interaction, client, key, answers) {
     allowedMentions: categoryRoleId ? { roles: [categoryRoleId] } : { users: [interaction.user.id] },
     embeds: [control],
     components: statusButtonRows(DEFAULT_STATUS),
-    files: [{ attachment: categoryArt(key, category.label), name: 'ticket-art.png' }],
+    files: [{ attachment: await categoryArt(key, category.label, category.emoji), name: 'ticket-art.png' }],
   });
   setPanelMessageId(ticketId, panelMessage.id);
 

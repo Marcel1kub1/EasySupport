@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/node-%3E%3D22.5-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js &gt;= 22.5">
   <img src="https://img.shields.io/badge/discord.js-v14-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="discord.js v14">
   <img src="https://img.shields.io/badge/storage-SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite storage">
-  <img src="https://img.shields.io/badge/native%20modules-0-brightgreen?style=for-the-badge" alt="zero native modules">
+  <img src="https://img.shields.io/badge/no%20compile%20step-prebuilt%20binaries-blue?style=for-the-badge" alt="no compile step">
   <img src="https://img.shields.io/badge/maintained-yes-green?style=for-the-badge" alt="maintained">
   <a href="https://github.com/Marcel1kub1/EasySupport/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge" alt="PRs welcome"></a>
   <img src="https://img.shields.io/github/stars/Marcel1kub1/EasySupport?style=for-the-badge&logo=github&logoColor=white" alt="GitHub stars">
@@ -24,7 +24,7 @@
 - 🎫 **One-click tickets** — `/panel` posts a button per category; members get a private channel instantly
 - 📋 **Intake questions** — ask up to 5 questions in a popup before the channel is created
 - 🧩 **Everything in one panel** — art, status, intake answers and all status buttons live in a single message
-- 🎨 **Generated category art** — every ticket channel and the public panel get a deterministic banner generated per category (pure Node PNG encoder, cached in `data/art/`)
+- 🎨 **Generated category art** — every ticket channel and the public panel get a banner rendered with `@resvg/resvg-js`, showing the **category name and emoji** on a palette unique to that category (deterministic, cached in `data/art/`)
 - 🧭 **Config-driven statuses** — every status in `src/categories.js` becomes a control-panel button (claim, pending, escalate, close)
 - 🔒 **Private channels** — only the opener and the handling role can see the ticket
 - 📄 **Transcripts** — a TXT + HTML transcript is generated when a ticket closes
@@ -45,9 +45,11 @@
 
 ## 📋 Requirements
 
-- **Node.js 22.5+** (hosted on your server — nothing needs to run locally)
-  SQLite ships built into Node (`node:sqlite`), so there are **no native modules
-  to compile** — `npm install` only downloads `discord.js` and `dotenv`.
+- **Node.js 22.5+** (hosted on your server — nothing needs to run locally).
+  SQLite ships built into Node (`node:sqlite`). Panel art is rasterized with
+  `@resvg/resvg-js`, which downloads a **prebuilt binary** on `npm install`
+  (no compiler toolchain needed); if it is ever unavailable the bot falls back
+  to a built-in procedural renderer, so tickets still get an image.
 - A Discord application + bot token ([Developer Portal](https://discord.com/developers/applications))
 - On the server: permissions **Manage Channels** and **Manage Roles**
 
@@ -105,7 +107,7 @@ with a status button for every status defined in `src/categories.js`
 src/
 ├── index.js                 client bootstrap, auto-loads commands + events
 ├── config.js                validated env config
-├── art.js                   procedural PNG art generator (category + panel banners)
+├── art.js                   SVG art generator: category + panel banners with names
 ├── categories.js            CENTRAL CONFIG: categories, questions, statuses
 ├── db.js                    SQLite schema + repository functions
 ├── transcripts.js           TXT + HTML transcript generation
@@ -114,12 +116,17 @@ src/
 └── events/
     ├── interactionCreate.js panel buttons, intake modals, status flows, rating
     └── messageCreate.js     automated interaction logging
+
+assets/
+├── fonts/                   Inter (OFL) bundled for banner text rendering
+└── emoji/                   Twemoji SVGs for the emojis used in categories.js
 ```
 
 ## 🖥️ Hosting on a server
 
 The template writes its database to `data/tickets.db`, generated panel art to
-`data/art/` and transcripts to `transcripts/`. For production:
+`data/art/`, downloaded emoji SVGs to `data/emoji/` and transcripts to
+`transcripts/`. For production:
 
 - Run under **systemd** or **PM2** so it restarts on reboot:
 
@@ -189,8 +196,8 @@ automatically. Roles are given by **name** (`'Billing Team'`) or by **ID**
 - **Reopen a closed ticket** — the closed ticket row is kept, so a
   `ticket:reopen` status can create a new channel linked to the same record.
 - **Regenerate category art** — banners are derived deterministically from the
-  category key and cached in `data/art/`; delete a cached PNG (or rename the
-  category) to get a fresh one.
+  category key and label, cache the category name and emoji, and are cached in
+  `data/art/`; rename a category (or delete a cached PNG) to get a fresh one.
 - **Auto-close inactive tickets** — add a `node-cron` job that closes tickets
   whose last message in `ticket_messages` is older than N days.
 - **Staff stats** — query `tickets` for claim time and ratings per staff member.

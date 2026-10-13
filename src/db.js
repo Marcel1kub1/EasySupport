@@ -144,7 +144,9 @@ const setStatusStmt = db.prepare(`
 `);
 
 export function updateTicketStatus(channelId, statusKey, claimedBy = null) {
-  const claim = claimedBy !== null;
+  // node:sqlite binds only number/bigint/string/Buffer/null — a boolean here
+  // would throw "cannot be bound to SQLite parameter 2" and crash the process.
+  const claim = claimedBy !== null ? 1 : 0;
   return setStatusStmt.run(statusKey, claim, claimedBy, claim, channelId, statusKey).changes > 0;
 }
 
