@@ -1,12 +1,12 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { economy } from '../instance.js';
 import { ECONOMY } from '../config.js';
-import { cooldownRemaining, formatDuration, nowIso, primaryLocation } from '../util.js';
+import { cooldownRemaining, formatDuration, nowIso, pickLocation, withLocationOption } from '../util.js';
 
 export default {
-  data: new SlashCommandBuilder()
-    .setName('clean')
-    .setDescription('Scrub the shack — a dirty shack loses customers'),
+  data: withLocationOption(
+    new SlashCommandBuilder().setName('clean').setDescription('Scrub the shack — a dirty shack loses customers')
+  ),
   async execute(interaction) {
     const { guildId } = interaction;
     const user = interaction.user;
@@ -18,7 +18,7 @@ export default {
     }
 
     const state = economy.buildState(guildId, user.id);
-    const location = primaryLocation(state);
+    const location = pickLocation(state, interaction.options.getString('location'));
     if (!location) {
       return interaction.reply({ content: 'You have no shack yet — run `/found` first.' });
     }

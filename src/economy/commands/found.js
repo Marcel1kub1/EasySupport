@@ -15,7 +15,7 @@ export default {
 
     const isNew = !economy.getUser(guildId, user.id);
     economy.ensureUser(guildId, user.id);
-    const name = interaction.options.getString('name').trim();
+    const name = (interaction.options.getString('name') ?? '').trim();
     if (!name) {
       return interaction.reply({ content: 'Give your shack a name.', flags: MessageFlags.Ephemeral });
     }

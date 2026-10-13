@@ -1,28 +1,28 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { economy } from '../instance.js';
 import { ECONOMY } from '../config.js';
-import { employeeConfig } from '../engine.js';
-import { hasTrainingUnlocked } from '../engine.js';
-import { formatMoney, primaryLocation } from '../util.js';
+import { employeeConfig, hasTrainingUnlocked } from '../engine.js';
+import { formatMoney, locationOption, pickLocation } from '../util.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('employees')
-    .setDescription('List your staff, or train them')
-    .addSubcommand((sub) => sub.setName('list').setDescription('Show your employees'))
+    .setDescription("List a business's staff, or train them")
+    .addSubcommand((sub) => sub.setName('list').setDescription('Show your employees').addStringOption(locationOption))
     .addSubcommand((sub) =>
       sub
         .setName('train')
         .setDescription('Train an employee (+2% output per level)')
         .addStringOption((o) => o.setName('name').setDescription('Employee name').setRequired(true))
+        .addStringOption(locationOption)
     ),
   async execute(interaction) {
     const { guildId } = interaction;
     const user = interaction.user;
     const state = economy.buildState(guildId, user.id);
-    const location = primaryLocation(state);
+    const location = pickLocation(state, interaction.options.getString('location'));
     if (!location) {
-      return interaction.reply({ content: 'You have no shack yet — run `/found` first.', flags: MessageFlags.Ephemeral });
+      return interaction.reply({ content: "You don't own that business yet — check `/location list`.", flags: MessageFlags.Ephemeral });
     }
 
     if (interaction.options.getSubcommand() === 'train') {

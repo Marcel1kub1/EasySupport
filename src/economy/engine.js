@@ -53,6 +53,19 @@ export function menuBonusPerHour(location, config = ECONOMY) {
   return items.reduce((sum, key) => sum + (menuItemConfig(key, config)?.income ?? 0), 0) * 0.25;
 }
 
+/** Decorations multiply the location by a small stacked bonus. */
+export function decorationsMultiplier(location, config = ECONOMY) {
+  const bonus = (location.decorations ?? []).reduce(
+    (sum, key) => sum + (config.decorations.find((d) => d.key === key)?.bonus ?? 0), 0);
+  return 1 + bonus;
+}
+
+/** How many upgrades this location may own (expansion buys more slots). */
+export function maxUpgradesOwned(location, config = ECONOMY) {
+  const slots = config.upgradeSlots.base + (location.expanded ?? 0) * config.upgradeSlots.perExpansion;
+  return Math.min(config.upgrades.length, slots);
+}
+
 /** Employee bonuses scale with training: bonus × (1 + training × 0.02). */
 export function employeesMultiplier(location, config = ECONOMY) {
   const bonus = (location.employees ?? []).reduce((sum, emp) => {
@@ -104,7 +117,8 @@ export function locationIncome(location, config = ECONOMY) {
     prestigeMultiplier(location, config) *
     upgradesMultiplier(location, config) *
     employeesMultiplier(location, config) *
-    cleanlinessMultiplier(location, config) +
+    cleanlinessMultiplier(location, config) *
+    decorationsMultiplier(location, config) +
     menuBonusPerHour(location, config);
   const wages = employeeWages(location, config) * (location.level ?? 1) * 0.1;
   return Math.max(0, gross - wages);
@@ -186,6 +200,18 @@ export function upgradeIngredients(location, config = ECONOMY) {
   const cfg = locationConfig(location.key, config);
   if (!cfg || !cfg.ingredients) return 0;
   return cfg.ingredients * (location.level ?? 1) * 0.1;
+}
+
+/** Cost of the next expansion level (adds upgrade slots). */
+export function expandCost(location, config = ECONOMY) {
+  const e = config.expand;
+  if ((location.expanded ?? 0) >= e.maxLevel) return Infinity;
+  return Math.round(e.baseCost * e.growth ** (location.expanded ?? 0));
+}
+
+/** Ingredient cost of buying a location outright (0 for the free stand). */
+export function locationIngredients(key, config = ECONOMY) {
+  return locationConfig(key, config)?.ingredients ?? 0;
 }
 
 /** Rough asset value used by /shack and /leaderboard net worth. */

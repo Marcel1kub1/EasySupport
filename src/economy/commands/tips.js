@@ -2,12 +2,12 @@ import { SlashCommandBuilder } from 'discord.js';
 import { economy } from '../instance.js';
 import { ECONOMY } from '../config.js';
 import { tipsPayout } from '../engine.js';
-import { cooldownRemaining, formatDuration, formatMoney, nowIso, primaryLocation } from '../util.js';
+import { cooldownRemaining, formatDuration, formatMoney, nowIso, pickLocation, withLocationOption } from '../util.js';
 
 export default {
-  data: new SlashCommandBuilder()
-    .setName('tips')
-    .setDescription('Collect tips from the jar'),
+  data: withLocationOption(
+    new SlashCommandBuilder().setName('tips').setDescription('Collect tips from the jar')
+  ),
   async execute(interaction) {
     const { guildId } = interaction;
     const user = interaction.user;
@@ -19,7 +19,7 @@ export default {
     }
 
     const state = economy.buildState(guildId, user.id);
-    const location = primaryLocation(state);
+    const location = pickLocation(state, interaction.options.getString('location'));
     if (!location) {
       return interaction.reply({ content: 'You have no shack yet — run `/found` first.' });
     }

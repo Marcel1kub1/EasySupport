@@ -2,12 +2,12 @@ import { SlashCommandBuilder } from 'discord.js';
 import { economy } from '../instance.js';
 import { ECONOMY } from '../config.js';
 import { hourlyRate, workPayout } from '../engine.js';
-import { cooldownRemaining, formatDuration, formatMoney, formatRate, nowIso, primaryLocation } from '../util.js';
+import { cooldownRemaining, formatDuration, formatMoney, formatRate, nowIso, pickLocation, withLocationOption } from '../util.js';
 
 export default {
-  data: new SlashCommandBuilder()
-    .setName('work')
-    .setDescription('Cook tacos for cash — the main earner'),
+  data: withLocationOption(
+    new SlashCommandBuilder().setName('work').setDescription('Cook tacos for cash — the main earner')
+  ),
   async execute(interaction) {
     const { guildId } = interaction;
     const user = interaction.user;
@@ -21,9 +21,9 @@ export default {
     }
 
     const state = economy.buildState(guildId, user.id);
-    const location = primaryLocation(state);
+    const location = pickLocation(state, interaction.options.getString('location'));
     if (!location) {
-      return interaction.reply({ content: 'You have no shack yet — run `/found` first.' });
+      return interaction.reply({ content: "You don't own that business — check `/location list`." });
     }
 
     const happyHour = Math.random() < ECONOMY.events.happyHour.chancePerWork;
@@ -36,8 +36,8 @@ export default {
       `Balance: **${formatMoney(state.user.cash + payout)}** · Income: **${formatRate(hourlyRate(state))}**`,
     ];
     if (happyHour) lines.push('\n🎉 **Happy Hour!** Your shift paid double!');
-    if (state.locations[0].menu.some((slot) => !slot)) lines.push(`\n💡 ${ECONOMY.flavor.menuTrap}`);
-    if (state.locations[0].cleanliness < ECONOMY.cleanliness.cleanThreshold) lines.push(`\n⚠️ ${ECONOMY.flavor.dirtyWarning}`);
+    if (location.menu.some((slot) => !slot)) lines.push(`\n💡 ${ECONOMY.flavor.menuTrap}`);
+    if (location.cleanliness < ECONOMY.cleanliness.cleanThreshold) lines.push(`\n⚠️ ${ECONOMY.flavor.dirtyWarning}`);
 
     return interaction.reply({ content: lines.join('\n') });
   },

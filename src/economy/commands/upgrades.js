@@ -1,19 +1,19 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { ECONOMY } from '../config.js';
 import { economy } from '../instance.js';
-import { formatMoney } from '../util.js';
+import { formatMoney, pickLocation, withLocationOption } from '../util.js';
 
 export default {
-  data: new SlashCommandBuilder()
-    .setName('upgrades')
-    .setDescription('Browse shack upgrades'),
+  data: withLocationOption(
+    new SlashCommandBuilder().setName('upgrades').setDescription('Browse business upgrades')
+  ),
   async execute(interaction) {
     const { guildId } = interaction;
     const user = interaction.user;
     const state = economy.buildState(guildId, user.id);
-    const location = state.locations[0];
+    const location = pickLocation(state, interaction.options.getString('location'));
     if (!location) {
-      return interaction.reply({ content: 'You have no shack yet — run `/found` first.' });
+      return interaction.reply({ content: "You don't own that business yet — check `/location list`.", flags: MessageFlags.Ephemeral });
     }
 
     const owned = location.upgrades;
@@ -28,7 +28,7 @@ export default {
       .setColor(0x5865f2)
       .setTitle(`🔧 Upgrades — ${location.name}`)
       .setDescription(lines.join('\n'))
-      .setFooter({ text: 'Buy with /buy <upgrade>' });
+      .setFooter({ text: 'Buy with /buy — expansion adds more upgrade slots' });
 
     return interaction.reply({ embeds: [embed] });
   },

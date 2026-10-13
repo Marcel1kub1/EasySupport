@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { createEconomyDb } from './db.js';
 import { ECONOMY } from './config.js';
 import { decayCleanliness } from './engine.js';
+import { cooldownRemaining } from './util.js';
 
 function freshDb() {
   return createEconomyDb(new DatabaseSync(':memory:'));
@@ -152,6 +153,52 @@ test('boosts list only unexpired entries', () => {
   assert.equal(active[0].kind, 'boost:golden_ticket');
 });
 
+/* ------------------------------ phase 2: decorations ----------------------- */
+
+test('decorations are unique per location', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  assert.equal(db.buyDecoration('g1', 'u1', 'taco_stand', 'neon_tacos'), true);
+  assert.equal(db.buyDecoration('g1', 'u1', 'taco_stand', 'neon_tacos'), false);
+  assert.deepEqual(db.listDecorations('g1', 'u1', 'taco_stand'), ['neon_tacos']);
+  assert.equal(db.hasDecoration('g1', 'u1', 'taco_stand', 'pinata'), false);
+});
+
+/* ----------------------------- phase 2: headquarters ----------------------- */
+
+test('HQ upgrades are global to the user', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  db.buyLocation('g1', 'u1', 'restaurant');
+  assert.equal(db.buyHq('g1', 'u1', 'hq_branding'), true);
+  assert.equal(db.buyHq('g1', 'u1', 'hq_branding'), false);
+  assert.deepEqual(db.listHq('g1', 'u1'), ['hq_branding']);
+  assert.equal(db.hasHq('g1', 'u1', 'hq_branding'), true);
+  // the HQ applies across every location in the state
+  const state = db.buildState('g1', 'u1');
+  assert.deepEqual(state.hq, ['hq_branding']);
+  assert.equal(state.locations.length, 2);
+});
+
+test('advertising cooldown column exists', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  db.setCooldown('g1', 'u1', 'last_ad_at', new Date(Date.now() - 30_000).toISOString());
+  assert.equal(db.getUser('g1', 'u1').last_ad_at, new Date(Date.now() - 30_000).toISOString());
+  // and the cooldown helper understands it (30s ago on a 60s cooldown => 30s left)
+  assert.ok(cooldownRemaining(db.getUser('g1', 'u1'), 'last_ad_at', 60) > 0);
+});
+
+test('buildState hydrates decorations and hq', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  db.buyDecoration('g1', 'u1', 'taco_stand', 'salsa_fountain');
+  db.buyHq('g1', 'u1', 'hq_logistics');
+  const state = db.buildState('g1', 'u1');
+  assert.deepEqual(state.locations[0].decorations, ['salsa_fountain']);
+  assert.deepEqual(state.hq, ['hq_logistics']);
+});
+
 /* ---------------------------- phase 1: cleanliness -------------------------- */
 
 test('cleanliness decays lazily on read and persists', () => {
@@ -182,4 +229,17 @@ test('janitors slow the decay', () => {
   const state = db.buildState('g1', 'u1', Date.now());
   assert.equal(state.locations[0].employees.length, 1);
   assert.equal(state.locations[0].employees[0].key, 'janitor');
+});
+
+test('multiple locations coexist per user', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  db.buyLocation('g1', 'u1', 'restaurant', 'Taco Palace');
+  db.buyLocation('g1', 'u1', 'hotel', 'Taco Grand');
+  const state = db.buildState('g1', 'u1');
+  assert.deepEqual(state.locations.map((l) => l.key), ['taco_stand', 'restaurant', 'hotel']);
+  // each location keeps its own ladder
+  db.setLevel('g1', 'u1', 'restaurant', 7);
+  assert.equal(db.buildState('g1', 'u1').locations.find((l) => l.key === 'restaurant').level, 7);
+  assert.equal(db.buildState('g1', 'u1').locations.find((l) => l.key === 'taco_stand').level, 1);
 });

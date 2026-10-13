@@ -175,6 +175,21 @@ export const ECONOMY = {
     { key: 'hq_franchise', label: 'Franchise HQ', bonus: 0.20, price: 25_000_000 },
   ],
 
+  /* ------------------------------- decorations ------------------------------*
+   * Per-location cosmetics with a small income bonus. Bought with /decorations.
+   */
+  decorations: [
+    { key: 'neon_tacos',    label: 'Neon Taco Sign',    bonus: 0.03, price: 60_000 },
+    { key: 'salsa_fountain', label: 'Salsa Fountain',   bonus: 0.05, price: 250_000 },
+    { key: 'pinata',        label: 'Piñata Corner',     bonus: 0.07, price: 1_000_000 },
+    { key: 'golden_sombrero', label: 'Golden Sombrero', bonus: 0.10, price: 4_000_000 },
+  ],
+
+  /* -------------------------------- expansion -------------------------------*
+   * Each level grants more upgrade slots for that location.
+   */
+  upgradeSlots: { base: 2, perExpansion: 2 },
+
   /* ---------------------------------- events --------------------------------*
    * Happy Hour: random 2x /work payout. Rush Hour: scheduled 2x passive.
    * Lunch Rush: weekend double tips.

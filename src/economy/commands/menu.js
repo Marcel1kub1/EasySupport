@@ -2,7 +2,7 @@ import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { economy } from '../instance.js';
 import { ECONOMY } from '../config.js';
 import { menuSlots } from '../engine.js';
-import { formatMoney, primaryLocation } from '../util.js';
+import { formatMoney, locationOption, pickLocation } from '../util.js';
 
 const ITEM_CHOICES = ECONOMY.menuItems.map((m) => ({
   name: `${m.label} — ${m.income} income/h (${formatMoney(m.price)})`,
@@ -12,8 +12,10 @@ const ITEM_CHOICES = ECONOMY.menuItems.map((m) => ({
 export default {
   data: new SlashCommandBuilder()
     .setName('menu')
-    .setDescription('View or edit your menu')
-    .addSubcommand((sub) => sub.setName('view').setDescription('Show your current menu'))
+    .setDescription('View or edit a menu')
+    .addSubcommand((sub) =>
+      sub.setName('view').setDescription('Show your current menu').addStringOption(locationOption)
+    )
     .addSubcommand((sub) =>
       sub
         .setName('set')
@@ -24,14 +26,15 @@ export default {
         .addStringOption((o) =>
           o.setName('item').setDescription('Item to place').setRequired(true).addChoices(...ITEM_CHOICES)
         )
+        .addStringOption(locationOption)
     ),
   async execute(interaction) {
     const { guildId } = interaction;
     const user = interaction.user;
     const state = economy.buildState(guildId, user.id);
-    const location = primaryLocation(state);
+    const location = pickLocation(state, interaction.options.getString('location'));
     if (!location) {
-      return interaction.reply({ content: 'You have no shack yet — run `/found` first.', flags: MessageFlags.Ephemeral });
+      return interaction.reply({ content: "You don't own that business yet — check `/location list`.", flags: MessageFlags.Ephemeral });
     }
 
     if (interaction.options.getSubcommand() === 'view') {

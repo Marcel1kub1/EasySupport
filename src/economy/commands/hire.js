@@ -2,19 +2,21 @@ import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { economy } from '../instance.js';
 import { ECONOMY } from '../config.js';
 import { hourlyRate } from '../engine.js';
-import { formatMoney, formatRate, primaryLocation } from '../util.js';
+import { formatMoney, formatRate, locationOption, pickLocation } from '../util.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('hire')
-    .setDescription('Hire an employee for passive income')
+    .setDescription('Hire an employee for a business')
+    // Discord requires required options before optional ones, so `location` goes last.
     .addStringOption((o) =>
       o.setName('type').setDescription('Who to hire').setRequired(true)
         .addChoices(...ECONOMY.employees.map((e) => ({ name: `${e.label} — ${formatMoney(e.price)}`, value: e.key })))
     )
     .addStringOption((o) =>
       o.setName('name').setDescription('Name them (max 20 chars)').setRequired(true).setMaxLength(20)
-    ),
+    )
+    .addStringOption(locationOption),
   async execute(interaction) {
     const { guildId } = interaction;
     const user = interaction.user;
@@ -30,9 +32,9 @@ export default {
     }
 
     const state = economy.buildState(guildId, user.id);
-    const location = primaryLocation(state);
+    const location = pickLocation(state, interaction.options.getString('location'));
     if (!location) {
-      return interaction.reply({ content: 'You have no shack yet — run `/found` first.', flags: MessageFlags.Ephemeral });
+      return interaction.reply({ content: "You don't own that business yet — check `/location list`.", flags: MessageFlags.Ephemeral });
     }
     if (economy.countEmployees(guildId, user.id, location.key) >= ECONOMY.maxEmployeesPerLocation) {
       return interaction.reply({
@@ -59,7 +61,7 @@ export default {
 
     const afterHire = economy.buildState(guildId, user.id);
     return interaction.reply({
-      content: `🧑‍🍳 **${name}** joined as ${type.label} (+${Math.round(type.bonus * 100)}% income, wage ${formatMoney(type.wage)}/h).\nIncome is now **${formatRate(hourlyRate(afterHire))}**.`,
+      content: `🧑‍🍳 **${name}** joined **${location.name}** as ${type.label} (+${Math.round(type.bonus * 100)}% income, wage ${formatMoney(type.wage)}/h).\nIncome is now **${formatRate(hourlyRate(afterHire))}**.`,
     });
   },
 };

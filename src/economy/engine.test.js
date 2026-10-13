@@ -6,6 +6,7 @@ import {
   decayCleanliness, upgradeCost, isMaxLevel, canPrestige, prestigeMultiplier,
   synergyMultiplier, headquartersMultiplier, activeBoostMultiplier,
   unlockBlockReason, menuSlots, locationAssetValue, netWorth, menuBonusPerHour,
+  decorationsMultiplier, maxUpgradesOwned, expandCost, locationIngredients,
 } from './engine.js';
 
 const NOW = 1_700_000_000_000;
@@ -172,4 +173,40 @@ test('net worth sums cash, bank and asset value', () => {
   const s = state([shack({ level: 10 })], { user: { cash: 500, bank: 1000, ingredients: 0 } });
   const expected = 500 + 1000 + locationAssetValue(shack({ level: 10 }));
   assert.equal(netWorth(s), expected);
+});
+
+/* ------------------------------ phase 2: expansion ------------------------- */
+
+test('decorations multiply the location income', () => {
+  const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} != ${b}`);
+  const plain = locationIncome(shack());
+  const decorated = locationIncome(shack({ decorations: ['neon_tacos', 'salsa_fountain'] }));
+  close(decorated, plain * (1 + 0.03 + 0.05));
+  assert.equal(decorationsMultiplier(shack({ decorations: ['neon_tacos'] })), 1.03);
+});
+
+test('upgrade slots grow with expansion but never exceed the catalogue', () => {
+  assert.equal(maxUpgradesOwned(shack({ expanded: 0 })), ECONOMY.upgradeSlots.base);
+  assert.equal(maxUpgradesOwned(shack({ expanded: 1 })), ECONOMY.upgradeSlots.base + ECONOMY.upgradeSlots.perExpansion);
+  assert.equal(maxUpgradesOwned(shack({ expanded: 99 })), ECONOMY.upgrades.length);
+});
+
+test('expansion costs grow exponentially and cap out', () => {
+  assert.ok(expandCost(shack({ expanded: 1 })) > expandCost(shack({ expanded: 0 })));
+  assert.equal(expandCost(shack({ expanded: ECONOMY.expand.maxLevel })), Infinity);
+});
+
+test('restaurant needs ingredients, the free stand does not', () => {
+  assert.equal(locationIngredients('restaurant'), ECONOMY.locations.restaurant.ingredients);
+  assert.equal(locationIngredients('taco_stand'), 0);
+});
+
+test('hotel unlocks only after a restaurant prestige', () => {
+  const withTacoPrestige = state([shack({ level: 10, prestige: 1 })]);
+  assert.equal(unlockBlockReason('hotel', withTacoPrestige), "Unlocks after you own the Restaurant.");
+  const withBoth = state([
+    shack({ level: 10, prestige: 1 }),
+    shack({ key: 'restaurant', level: 10, prestige: 1 }),
+  ]);
+  assert.equal(unlockBlockReason('hotel', withBoth), null);
 });

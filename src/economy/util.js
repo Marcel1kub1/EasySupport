@@ -1,8 +1,14 @@
 /** Shared helpers for economy commands. */
 import { ECONOMY } from './config.js';
+import { maxUpgradesOwned } from './engine.js';
 import { formatMoney, formatRate, formatIngredients } from './format.js';
 
 export { formatMoney, formatRate, formatIngredients };
+
+/** How many upgrades a location may own right now (expansion adds slots). */
+export function maxUpgradesOwnedHint(location) {
+  return maxUpgradesOwned(location);
+}
 
 /** Parses the UTC "YYYY-MM-DD HH:MM:SS" form node:sqlite writes. */
 export function parseDbTime(value) {
@@ -38,6 +44,26 @@ export function formatDuration(ms) {
 export function primaryLocation(state) {
   return state.locations?.[0] ?? null;
 }
+
+/** Resolves an optional `location` option against the player's owned locations. */
+export function pickLocation(state, key) {
+  if (!key) return primaryLocation(state);
+  return state.locations?.find((l) => l.key === key) ?? null;
+}
+
+/** Adds the shared optional `location` choice option to a command builder. */
+export function withLocationOption(builder) {
+  return builder.addStringOption(locationOption);
+}
+
+/**
+ * The `location` option for use on SUBCOMMANDS — Discord forbids mixing
+ * subcommands with top-level options, so subcommand-based commands add this to
+ * each subcommand instead of the command itself.
+ */
+export const locationOption = (o) =>
+  o.setName('location').setDescription('Which business (default: your first)').setRequired(false)
+    .addChoices(...Object.entries(ECONOMY.locations).map(([key, cfg]) => ({ name: cfg.label, value: key })));
 
 export function priceLabel(amount) {
   return `${formatMoney(amount)} ${ECONOMY.currency}`;

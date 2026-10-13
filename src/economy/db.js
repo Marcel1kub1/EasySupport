@@ -20,8 +20,9 @@ export function createEconomyDb(db) {
       last_daily_at   TEXT,
       last_work_at    TEXT,
       last_tips_at    TEXT,
-      last_clean_at   TEXT,
-      last_mine_at    TEXT,
+      last_clean_at    TEXT,
+      last_mine_at     TEXT,
+      last_ad_at       TEXT,
       ingredients     INTEGER NOT NULL DEFAULT 0,
       created_at      TEXT NOT NULL DEFAULT (datetime('now')),
       PRIMARY KEY (guild_id, user_id)
@@ -79,7 +80,37 @@ export function createEconomyDb(db) {
       expires_at      TEXT NOT NULL,
       created_at      TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS economy_decorations (
+      guild_id        TEXT NOT NULL,
+      user_id         TEXT NOT NULL,
+      location_key    TEXT NOT NULL,
+      decoration_key  TEXT NOT NULL,
+      bought_at       TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (guild_id, user_id, location_key, decoration_key)
+    );
+
+    CREATE TABLE IF NOT EXISTS economy_hq (
+      guild_id        TEXT NOT NULL,
+      user_id         TEXT NOT NULL,
+      hq_key          TEXT NOT NULL,
+      bought_at       TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (guild_id, user_id, hq_key)
+    );
   `);
+
+  /*
+   * Idempotent column additions for databases created by earlier versions.
+   * CREATE TABLE IF NOT EXISTS never alters an existing table, so new columns
+   * (cooldowns, flags) are applied here — a duplicate-column error is ignored.
+   */
+  for (const migration of ['ALTER TABLE economy_users ADD COLUMN last_ad_at TEXT']) {
+    try {
+      db.exec(migration);
+    } catch {
+      /* column already exists */
+    }
+  }
 
   /* --------------------------------- users --------------------------------- */
 
@@ -137,9 +168,8 @@ export function createEconomyDb(db) {
 
   // Column names cannot be bound as parameters, so each whitelisted cooldown
   // column gets its own prepared statement built at schema time.
-  // (last_ad_at joins this list in the advertising phase.)
   const COOLDOWN_COLUMNS = new Set([
-    'last_daily_at', 'last_work_at', 'last_tips_at', 'last_clean_at', 'last_mine_at',
+    'last_daily_at', 'last_work_at', 'last_tips_at', 'last_clean_at', 'last_mine_at', 'last_ad_at',
   ]);
   const cooldownStmts = new Map(
     [...COOLDOWN_COLUMNS].map((column) => [
@@ -159,7 +189,7 @@ export function createEconomyDb(db) {
   const getShackStmt = db.prepare(
     'SELECT * FROM economy_shacks WHERE guild_id = ? AND user_id = ? AND location_key = ?');
   const listShacksStmt = db.prepare(
-    'SELECT * FROM economy_shacks WHERE guild_id = ? AND user_id = ? ORDER BY purchased_at');
+    'SELECT * FROM economy_shacks WHERE guild_id = ? AND user_id = ? ORDER BY rowid');
 
   function getShack(guildId, userId, locationKey) {
     return getShackStmt.get(guildId, userId, locationKey) ?? null;
@@ -321,6 +351,45 @@ export function createEconomyDb(db) {
     return getEmployeeStmt.get(guildId, userId, locationKey, name);
   }
 
+  /* -------------------------------- decorations ----------------------------- */
+
+  const listDecorationsStmt = db.prepare(
+    'SELECT decoration_key FROM economy_decorations WHERE guild_id = ? AND user_id = ? AND location_key = ?');
+  const buyDecorationStmt = db.prepare(`INSERT INTO economy_decorations (guild_id, user_id, location_key, decoration_key)
+    VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING`);
+  const hasDecorationStmt = db.prepare(
+    'SELECT 1 FROM economy_decorations WHERE guild_id = ? AND user_id = ? AND location_key = ? AND decoration_key = ?');
+
+  function listDecorations(guildId, userId, locationKey) {
+    return listDecorationsStmt.all(guildId, userId, locationKey).map((r) => r.decoration_key);
+  }
+
+  function hasDecoration(guildId, userId, locationKey, decorationKey) {
+    return !!hasDecorationStmt.get(guildId, userId, locationKey, decorationKey);
+  }
+
+  function buyDecoration(guildId, userId, locationKey, decorationKey) {
+    return buyDecorationStmt.run(guildId, userId, locationKey, decorationKey).changes > 0;
+  }
+
+  /* ------------------------------- headquarters ----------------------------- */
+
+  const listHqStmt = db.prepare('SELECT hq_key FROM economy_hq WHERE guild_id = ? AND user_id = ?');
+  const buyHqStmt = db.prepare(`INSERT INTO economy_hq (guild_id, user_id, hq_key)
+    VALUES (?, ?, ?) ON CONFLICT DO NOTHING`);
+
+  function listHq(guildId, userId) {
+    return listHqStmt.all(guildId, userId).map((r) => r.hq_key);
+  }
+
+  function hasHq(guildId, userId, hqKey) {
+    return listHq(guildId, userId).includes(hqKey);
+  }
+
+  function buyHq(guildId, userId, hqKey) {
+    return buyHqStmt.run(guildId, userId, hqKey).changes > 0;
+  }
+
   /* ---------------------------------- boosts -------------------------------- */
 
   const addBoostStmt = db.prepare(
@@ -355,17 +424,18 @@ export function createEconomyDb(db) {
         expanded: fresh.expanded,
         upgrades: listUpgrades(guildId, userId, fresh.location_key),
         menu: listMenu(guildId, userId, fresh.location_key),
-        employees: listEmployees(guildId, userId, fresh.location_key).map((row) => ({
-          key: row.employee_key,
-          name: row.name,
-          training: row.training,
+        employees: listEmployees(guildId, userId, fresh.location_key).map((emp) => ({
+          key: emp.employee_key,
+          name: emp.name,
+          training: emp.training,
         })),
+        decorations: listDecorations(guildId, userId, fresh.location_key),
       };
     });
     return {
       user: user ?? { cash: 0, bank: 0, daily_streak: 0, ingredients: 0 },
       locations,
-      hq: [],
+      hq: listHq(guildId, userId),
       boosts: listBoosts(guildId, userId, now),
     };
   }
@@ -398,6 +468,12 @@ export function createEconomyDb(db) {
     trainEmployee,
     addBoost,
     listBoosts,
+    listDecorations,
+    hasDecoration,
+    buyDecoration,
+    listHq,
+    hasHq,
+    buyHq,
     buildState,
   };
 }

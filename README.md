@@ -55,6 +55,18 @@ gambling — just numbers going up.
 **Core loop:** `/work` for cash → `/buy` upgrades → `/menu` high-value items →
 `/hire` staff for passive income → keep the shack `/clean` so customers stay.
 
+**`/shack` — your empire at a glance:**
+
+<img src="assets/economy-shack.png" alt="Discord message showing the /shack stats embed with balance, income and per-business fields" width="100%">
+
+**`/upgrades` — the reinvestment ladder, and `/tips` payouts:**
+
+<img src="assets/economy-shop.png" alt="Discord message showing the /upgrades embed with the equipment ladder" width="100%">
+
+**`/location list` — the three business lines, and a `/work` shift:**
+
+<img src="assets/economy-location.png" alt="Discord message showing the /location list embed with the business progression" width="100%">
+
 | Command | What it does |
 |---|---|
 | `/found <name>` | Name your shack (first run also grants the free stand) |
@@ -70,16 +82,27 @@ gambling — just numbers going up.
 | `/shop` | Browse boosts (Lucky Sombrero, Golden Ticket) |
 | `/menu view\|set` | Fill menu slots — empty slots silently cap your income |
 | `/hire <type> <name>` | Hire chefs, line cooks and janitors for passive income |
-| `/employees list\|train` | View staff; train after your first prestige |
+| `/employees list\|train` | View staff; train them after your first prestige |
+| `/location list\|buy` | Browse and buy businesses (restaurant, hotel, taco truck) |
+| `/prestige` | Reset a maxed business to level 1 for a stacking multiplier |
+| `/advertise` | Biktok campaign: ×1.75 income for 3h (unlocks with prestige) |
+| `/expand` | More upgrade slots for a business |
+| `/hq` | Headquarters: global income upgrades for every business |
+| `/decorations` | Browse cosmetics with small income bonuses |
 
-**Systems:** per-location 10-level ladders with exponential upgrade costs ·
-quadratic income growth · cleanliness decay with janitors that slow it · menu
-slots that unlock per level · employee wages vs. bonuses · boosts that stack ·
-deterministic generated art per location.
+**Systems:** per-business 10-level ladders with exponential upgrade costs ·
+quadratic income growth · menu slots that unlock per level · employees with
+wages vs. bonuses · cleanliness decay with janitors that slow it · **prestige**
+for stacking multipliers · **ownership synergy** (+10% on all income per extra
+business line) · expandable upgrade slots · HQ multipliers · decorations ·
+boosts that stack · Happy Hour and Lunch Rush events.
 
-**Coming next** (roadmap): prestige at level 10 · restaurants & hotels with
-synergy bonuses · Biktok advertising · tasks & achievements · franchises ·
-the Sauce Market and Kitchen.
+**Progression:** free taco stand → **Restaurant** (500k + 50 ingredients, after
+your first taco prestige) → **Taco Hotel** (5M + 250 ingredients, after a
+restaurant prestige), plus the **Taco Truck** side business at level 3.
+
+**Coming next** (roadmap): daily tasks & achievements · Rush Hour events ·
+franchises and leaderboards · the Sauce Market, Kitchen recipes and gambling.
 
 ## 📋 Requirements
 
@@ -165,9 +188,11 @@ src/economy/
 ├── engine.js                PURE math: income, payouts, decay, prestige, synergy
 ├── db.js                    schema + repository (dependency-injected for tests)
 ├── instance.js              the repository bound to the shared bot database
-├── util.js                  cooldowns and formatting helpers
+├── util.js                  cooldowns, location picker and formatting helpers
+├── format.js                money/rate formatting
 └── commands/                found work tips clean daily shack cooldowns upgrades
-                             buy shop menu employees hire mine
+                             buy shop menu employees hire mine location prestige
+                             advertise expand hq decorations
 ```
 
 ## 🖥️ Hosting on a server
@@ -195,7 +220,7 @@ The template writes its database to `data/tickets.db`, generated panel art to
 ## 🧪 Tests
 
 ```bash
-npm test        # 60 tests: engine math, db integration, command smoke tests, loader
+npm test        # 86 tests: engine math, db integration, command smoke tests, loader
 ```
 
 The economy engine is a **pure module** — every payout, decay and multiplier is
