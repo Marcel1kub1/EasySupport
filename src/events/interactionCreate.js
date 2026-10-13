@@ -25,6 +25,7 @@ import {
   updateTicketStatus,
 } from '../db.js';
 import { CATEGORIES, DEFAULT_STATUS, TICKET_STATUSES, getStatusMeta, resolveStaffRole } from '../categories.js';
+import { categoryArt } from '../art.js';
 import { saveTranscripts } from '../transcripts.js';
 
 const COLORS = { blurple: 0x5865f2, green: 0x57f287, red: 0xed4245, yellow: 0xfee75c };
@@ -280,43 +281,43 @@ async function openTicket(interaction, client, key, answers) {
   });
 
   const initialStatus = getStatusMeta(DEFAULT_STATUS);
+  const fields = [
+    { name: 'Opened by', value: `<@${interaction.user.id}>`, inline: true },
+    { name: 'Status', value: statusText(initialStatus, interaction.user), inline: true },
+  ];
+  for (const answer of answers ?? []) {
+    fields.push({
+      name: answer.question.slice(0, 256),
+      value: answer.answer.slice(0, 1024) || '(empty)',
+    });
+  }
+
   const control = new EmbedBuilder()
     .setColor(COLORS.blurple)
     .setTitle(`Ticket #${ticketId} — ${category.label}`)
-    .setDescription(category.description ?? 'Our team will reply shortly.')
-    .addFields(
-      { name: 'Opened by', value: `<@${interaction.user.id}>`, inline: true },
-      { name: 'Status', value: statusText(initialStatus, interaction.user), inline: true }
+    .setDescription(
+      `${category.description ?? 'Our team will reply shortly.'}\n\nPlease describe what was happening when the problem occurred and include any screenshots — it helps us reply faster.`
     )
+    .addFields(fields)
+    .setImage('attachment://ticket-art.png')
     .setTimestamp();
 
+  /*
+   * The whole ticket lives in this one message: generated category art, the
+   * status overview, the intake answers and the status buttons. The staff ping
+   * rides in the message content because a mention inside the embed would not
+   * notify anybody.
+   */
   const panelMessage = await channel.send({
+    content: categoryRoleId
+      ? `<@&${categoryRoleId}> — a new **${category.label}** ticket was opened by <@${interaction.user.id}>.`
+      : `<@${interaction.user.id}> thanks for getting in touch.`,
+    allowedMentions: categoryRoleId ? { roles: [categoryRoleId] } : { users: [interaction.user.id] },
     embeds: [control],
     components: statusButtonRows(DEFAULT_STATUS),
+    files: [{ attachment: categoryArt(key, category.label), name: 'ticket-art.png' }],
   });
   setPanelMessageId(ticketId, panelMessage.id);
-
-  if (answers) {
-    const intakeEmbed = new EmbedBuilder()
-      .setColor(COLORS.yellow)
-      .setTitle('Intake answers')
-      .addFields(
-        answers.map((a) => ({ name: a.question.slice(0, 256), value: a.answer.slice(0, 1024) || '(empty)' }))
-      );
-    await channel.send({ embeds: [intakeEmbed] });
-  }
-
-  await channel.send(
-    `<@${interaction.user.id}> thanks for getting in touch. Please describe what was happening when the problem occurred and include any screenshots — it helps us reply faster.`
-  );
-
-  // Category staff ping: one notification, restricted to the handling role.
-  if (categoryRoleId) {
-    await channel.send({
-      content: `<@&${categoryRoleId}> — a new **${category.label}** ticket was opened by <@${interaction.user.id}>.`,
-      allowedMentions: { roles: [categoryRoleId] },
-    });
-  }
 
   await sendLog(
     interaction.guildId,

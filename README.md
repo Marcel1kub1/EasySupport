@@ -23,6 +23,8 @@
 
 - 🎫 **One-click tickets** — `/panel` posts a button per category; members get a private channel instantly
 - 📋 **Intake questions** — ask up to 5 questions in a popup before the channel is created
+- 🧩 **Everything in one panel** — art, status, intake answers and all status buttons live in a single message
+- 🎨 **Generated category art** — every ticket channel and the public panel get a deterministic banner generated per category (pure Node PNG encoder, cached in `data/art/`)
 - 🧭 **Config-driven statuses** — every status in `src/categories.js` becomes a control-panel button (claim, pending, escalate, close)
 - 🔒 **Private channels** — only the opener and the handling role can see the ticket
 - 📄 **Transcripts** — a TXT + HTML transcript is generated when a ticket closes
@@ -103,6 +105,7 @@ with a status button for every status defined in `src/categories.js`
 src/
 ├── index.js                 client bootstrap, auto-loads commands + events
 ├── config.js                validated env config
+├── art.js                   procedural PNG art generator (category + panel banners)
 ├── categories.js            CENTRAL CONFIG: categories, questions, statuses
 ├── db.js                    SQLite schema + repository functions
 ├── transcripts.js           TXT + HTML transcript generation
@@ -115,8 +118,8 @@ src/
 
 ## 🖥️ Hosting on a server
 
-The template writes its database to `data/tickets.db` and transcripts to
-`transcripts/`. For production:
+The template writes its database to `data/tickets.db`, generated panel art to
+`data/art/` and transcripts to `transcripts/`. For production:
 
 - Run under **systemd** or **PM2** so it restarts on reboot:
 
@@ -185,6 +188,9 @@ automatically. Roles are given by **name** (`'Billing Team'`) or by **ID**
 
 - **Reopen a closed ticket** — the closed ticket row is kept, so a
   `ticket:reopen` status can create a new channel linked to the same record.
+- **Regenerate category art** — banners are derived deterministically from the
+  category key and cached in `data/art/`; delete a cached PNG (or rename the
+  category) to get a fresh one.
 - **Auto-close inactive tickets** — add a `node-cron` job that closes tickets
   whose last message in `ticket_messages` is older than N days.
 - **Staff stats** — query `tickets` for claim time and ratings per staff member.

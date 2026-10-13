@@ -9,6 +9,7 @@ import {
 } from 'discord.js';
 import { getGuild } from '../db.js';
 import { CATEGORIES, resolveStaffRole } from '../categories.js';
+import { panelArt } from '../art.js';
 
 const MAX_BUTTONS_PER_ROW = 5;
 
@@ -68,9 +69,17 @@ export default {
       .setTitle('Open a ticket')
       .setDescription('Pick a topic below — a private channel with our team will be created for you.')
       .addFields(fields)
+      .setImage('attachment://panel-art.png')
       .setFooter({ text: 'Please open one ticket per issue.' });
 
-    await target.send({ embeds: [embed], components: rows });
+    // Generated banner: one art segment per category, deterministic and cached.
+    const art = panelArt(entries.map(([key]) => ({ key, label: key })));
+
+    await target.send({
+      embeds: [embed],
+      components: rows,
+      files: [{ attachment: art, name: 'panel-art.png' }],
+    });
     await interaction.reply({ content: `Panel posted in <#${target.id}>.`, flags: MessageFlags.Ephemeral });
   },
 };
