@@ -200,6 +200,46 @@ export const ECONOMY = {
     lunchRush: { weekendOnly: true, tipsMultiplier: 2 },
   },
 
+  /* ---------------------------------- tasks ---------------------------------*
+   * Three rotate in daily (seeded by user+date, so the set is stable for the
+   * whole day). `track` names the action that bumps progress.
+   */
+  tasks: {
+    dailySlots: 3,
+    pool: [
+      { key: 'work_shifts', label: 'Work 3 shifts', track: 'work', goal: 3, reward: 5_000 },
+      { key: 'tip_jars', label: 'Collect 5 tip jars', track: 'tips', goal: 5, reward: 3_000 },
+      { key: 'mine_batches', label: 'Mine 2 ingredient batches', track: 'mine', goal: 2, reward: 4_000 },
+      { key: 'clean_shop', label: 'Clean a business', track: 'clean', goal: 1, reward: 2_000 },
+      { key: 'buy_upgrades', label: 'Buy 2 upgrades', track: 'buy', goal: 2, reward: 6_000 },
+      { key: 'hire_staff', label: 'Hire 1 employee', track: 'hire', goal: 1, reward: 4_000 },
+    ],
+  },
+
+  /* ------------------------------- achievements -----------------------------*
+   * Long-term goals. `test(state)` is evaluated lazily whenever the player's
+   * empire is read, and the badge unlocks on the first true.
+   */
+  achievements: [
+    { key: 'grand_opening', label: 'Grand Opening', badge: '🏪', test: (s) => (s.locations ?? []).length >= 1 },
+    { key: 'restaurateur', label: 'Restaurateur', badge: '🍽️', test: (s) => (s.locations ?? []).some((l) => l.key === 'restaurant') },
+    { key: 'hotelier', label: 'Hotelier', badge: '🏨', test: (s) => (s.locations ?? []).some((l) => l.key === 'hotel') },
+    { key: 'prestigious', label: 'Prestigious', badge: '⭐', test: (s) => (s.locations ?? []).some((l) => (l.prestige ?? 0) >= 1) },
+    { key: 'the_boss', label: 'The Boss', badge: '🧑‍🍳', test: (s) => (s.locations ?? []).reduce((n, l) => n + (l.employees ?? []).length, 0) >= 5 },
+    { key: 'millionaire', label: 'Millionaire', badge: '💰', test: (s) => ((s.user?.cash ?? 0) + (s.user?.bank ?? 0)) >= 1_000_000 },
+    { key: 'menu_master', label: 'Menu Master', badge: '🌮', test: (s) => (s.locations ?? []).some((l) => (l.menu ?? []).filter(Boolean).length >= 3) },
+    { key: 'viral', label: 'Going Viral', badge: '📱', test: (s) => (s.boosts ?? []).some((b) => b.kind === 'advertise') },
+  ],
+
+  /* --------------------------------- coupons --------------------------------*
+   * Redeemable gift codes, one claim per player. Edit the list to run promos.
+   */
+  coupons: [
+    { code: 'WISPBYTE', reward: 100_000, note: 'Hosting partner gift' },
+    { code: 'TACOTUESDAY', reward: 25_000, note: 'Tuesday special' },
+    { code: 'GRANDOPENING', reward: 250_000, note: 'First-location bonus' },
+  ],
+
   /* --------------------- idle accrual, tasks, economy safety -----------------*/
   accrual: { maxHours: 24 },      // offline income is capped at 24h
   gifting: { feePercent: 0.05 },  // anti-alt-farming fee on /gift

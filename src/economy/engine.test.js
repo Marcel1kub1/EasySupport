@@ -2,11 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ECONOMY } from './config.js';
 import {
-  locationIncome, hourlyRate, workPayout, tipsPayout, accruedIncome,
+  locationIncome, hourlyRate, workPayout, tipsPayout, accruedIncome, passiveIncome,
   decayCleanliness, upgradeCost, isMaxLevel, canPrestige, prestigeMultiplier,
   synergyMultiplier, headquartersMultiplier, activeBoostMultiplier,
   unlockBlockReason, menuSlots, locationAssetValue, netWorth, menuBonusPerHour,
   decorationsMultiplier, maxUpgradesOwned, expandCost, locationIngredients,
+  isRushHour, rushHourMultiplier, isLunchRush,
 } from './engine.js';
 
 const NOW = 1_700_000_000_000;
@@ -209,4 +210,46 @@ test('hotel unlocks only after a restaurant prestige', () => {
     shack({ key: 'restaurant', level: 10, prestige: 1 }),
   ]);
   assert.equal(unlockBlockReason('hotel', withBoth), null);
+});
+
+/* ----------------------------- phase 3: events ------------------------------ */
+
+test('rush hour only doubles inside its UTC window', () => {
+  const { startHour, endHour, multiplier } = ECONOMY.events.rushHour;
+  const inside = Date.UTC(2026, 0, 13, startHour + 1, 30);
+  const before = Date.UTC(2026, 0, 13, startHour - 1, 30);
+  const after = Date.UTC(2026, 0, 13, endHour + 1, 30);
+  assert.equal(isRushHour(inside), true);
+  assert.equal(isRushHour(before), false);
+  assert.equal(isRushHour(after), false);
+  assert.equal(rushHourMultiplier(inside), multiplier);
+  assert.equal(rushHourMultiplier(before), 1);
+});
+
+test('passive income doubles during rush hour', () => {
+  const s = state([shack({ level: 10 })]);
+  const monday = Date.UTC(2026, 0, 12, 10);       // Monday 10:00 — normal
+  const fridayEvening = Date.UTC(2026, 0, 16, 19); // Friday 19:00 — rush hour
+  const normal = passiveIncome(s, 60, monday);
+  const rushed = passiveIncome(s, 60, fridayEvening);
+  assert.equal(rushed, normal * ECONOMY.events.rushHour.multiplier);
+});
+
+test('lunch rush runs on weekends only', () => {
+  assert.equal(isLunchRush(Date.UTC(2026, 0, 17)), true);  // Saturday
+  assert.equal(isLunchRush(Date.UTC(2026, 0, 18)), true);  // Sunday
+  assert.equal(isLunchRush(Date.UTC(2026, 0, 16)), false); // Friday
+});
+
+/* --------------------------- phase 3: achievements -------------------------- */
+
+test('achievement predicates evaluate empire state', () => {
+  const byKey = Object.fromEntries(ECONOMY.achievements.map((a) => [a.key, a.test]));
+  const stand = state([shack()]);
+  const rich = state([shack()], { user: { cash: 2_000_000, bank: 0, ingredients: 0 } });
+  assert.equal(byKey.grand_opening(stand), true);
+  assert.equal(byKey.restaurateur(stand), false);
+  assert.equal(byKey.restaurateur(state([shack(), shack({ key: 'restaurant' })])), true);
+  assert.equal(byKey.millionaire(rich), true);
+  assert.equal(byKey.prestigious(stand), false);
 });

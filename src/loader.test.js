@@ -18,6 +18,7 @@ test('economy commands are discovered through the nested directory', async () =>
     'buy', 'clean', 'cooldowns', 'daily', 'employees', 'found', 'hire', 'menu',
     'mine', 'shack', 'shop', 'tips', 'upgrades', 'work',
     'location', 'prestige', 'advertise', 'expand', 'hq', 'decorations',
+    'tasks', 'achievements', 'badge', 'coupons', 'redeem', 'rewards', 'remind', 'rushhour', 'event',
   ];
   assert.deepEqual([...names].sort(), expected.sort());
   assert.equal(new Set(names).size, names.length, 'duplicate command names found');

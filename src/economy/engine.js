@@ -138,7 +138,30 @@ export function hourlyRate(state, config = ECONOMY) {
 /** Payout for a duration of passive income, honouring boost multipliers. */
 export function passiveIncome(state, minutes, now = Date.now(), config = ECONOMY) {
   const hours = minutes / 60;
-  return hourlyRate(state, config) * hours * activeBoostMultiplier(state, now, config);
+  return (
+    hourlyRate(state, config) *
+    hours *
+    activeBoostMultiplier(state, now, config) *
+    rushHourMultiplier(now, config)
+  );
+}
+
+/** True during the scheduled Rush Hour window (guild-local hours). */
+export function isRushHour(now = Date.now(), config = ECONOMY) {
+  const hour = new Date(now).getUTCHours();
+  const { startHour, endHour } = config.events.rushHour;
+  return startHour <= endHour ? hour >= startHour && hour < endHour : hour >= startHour || hour < endHour;
+}
+
+export function rushHourMultiplier(now = Date.now(), config = ECONOMY) {
+  return isRushHour(now, config) ? config.events.rushHour.multiplier : 1;
+}
+
+/** Weekend Lunch Rush: double tips on Saturday/Sunday. */
+export function isLunchRush(now = Date.now(), config = ECONOMY) {
+  if (!config.events.lunchRush.weekendOnly) return false;
+  const day = new Date(now).getUTCDay();
+  return day === 0 || day === 6;
 }
 
 /* ------------------------------ active payouts ------------------------------*/

@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { economy } from '../instance.js';
+import { economy, bumpTasks } from '../instance.js';
 import { ECONOMY } from '../config.js';
 import { tipsPayout } from '../engine.js';
 import { cooldownRemaining, formatDuration, formatMoney, nowIso, pickLocation, withLocationOption } from '../util.js';
@@ -34,6 +34,7 @@ export default {
 
     economy.addCash(guildId, user.id, payout);
     economy.setCooldown(guildId, user.id, 'last_tips_at', nowIso());
+    bumpTasks(guildId, user.id, 'tips');
 
     const suffix = lunchRush ? ' 🌮 **Lunch Rush** — weekend tips are doubled!' : '';
     return interaction.reply({

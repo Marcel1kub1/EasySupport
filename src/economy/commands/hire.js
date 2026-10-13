@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
-import { economy } from '../instance.js';
+import { economy, bumpTasks } from '../instance.js';
 import { ECONOMY } from '../config.js';
 import { hourlyRate } from '../engine.js';
 import { formatMoney, formatRate, locationOption, pickLocation } from '../util.js';
@@ -59,6 +59,7 @@ export default {
       });
     }
 
+    bumpTasks(guildId, user.id, 'hire');
     const afterHire = economy.buildState(guildId, user.id);
     return interaction.reply({
       content: `🧑‍🍳 **${name}** joined **${location.name}** as ${type.label} (+${Math.round(type.bonus * 100)}% income, wage ${formatMoney(type.wage)}/h).\nIncome is now **${formatRate(hourlyRate(afterHire))}**.`,

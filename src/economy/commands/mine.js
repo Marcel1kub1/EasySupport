@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { economy } from '../instance.js';
+import { economy, bumpTasks } from '../instance.js';
 import { ECONOMY } from '../config.js';
 import { cooldownRemaining, formatDuration, formatIngredients, nowIso } from '../util.js';
 
@@ -21,6 +21,7 @@ export default {
     const found = min + Math.floor(Math.random() * (max - min + 1));
     const total = economy.addIngredients(guildId, user.id, found);
     economy.setCooldown(guildId, user.id, 'last_mine_at', nowIso());
+    bumpTasks(guildId, user.id, 'mine');
 
     return interaction.reply({
       content: `⛏️ You mined **${found}** ingredient${found === 1 ? '' : 's'}. Banked: **${formatIngredients(total)}**.\nIngredients are needed for restaurants, hotels and recipes.`,

@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { economy } from '../instance.js';
+import { economy, bumpTasks } from '../instance.js';
 import { ECONOMY } from '../config.js';
 import { hourlyRate, workPayout } from '../engine.js';
 import { cooldownRemaining, formatDuration, formatMoney, formatRate, nowIso, pickLocation, withLocationOption } from '../util.js';
@@ -30,6 +30,7 @@ export default {
     const payout = workPayout(state, happyHour ? ECONOMY.events.happyHour.multiplier : 1);
     economy.addCash(guildId, user.id, payout);
     economy.setCooldown(guildId, user.id, 'last_work_at', nowIso());
+    bumpTasks(guildId, user.id, 'work');
 
     const lines = [
       `🌮 You worked a shift at **${location.name}** and earned **${formatMoney(payout)} ${ECONOMY.currency}**.`,

@@ -4,6 +4,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Client, Events, GatewayIntentBits, Partials } from 'discord.js';
 import { config } from './config.js';
 import { loadModules } from './loader.js';
+import { economy } from './economy/instance.js';
+import { startReminderScheduler } from './economy/scheduler.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -47,4 +49,4 @@ client.on(Events.Error, (error) => console.error('[bot] Client error:', error));
 
 process.on('unhandledRejection', (err) => console.error('[bot] Unhandled promise rejection:', err));
 
-client.login(config.token);
+client.login(config.token).then(() => startReminderScheduler(client, economy));

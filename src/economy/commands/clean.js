@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { economy } from '../instance.js';
+import { economy, bumpTasks } from '../instance.js';
 import { ECONOMY } from '../config.js';
 import { cooldownRemaining, formatDuration, nowIso, pickLocation, withLocationOption } from '../util.js';
 
@@ -26,6 +26,7 @@ export default {
     economy.setCleanliness(guildId, user.id, location.key, ECONOMY.cleanliness.cleanRestore);
     economy.touchCleanliness(guildId, user.id, location.key);
     economy.setCooldown(guildId, user.id, 'last_clean_at', nowIso());
+    bumpTasks(guildId, user.id, 'clean');
 
     return interaction.reply({ content: `🧽 **${location.name}** is spotless. Customers are happy again!` });
   },

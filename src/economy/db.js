@@ -97,6 +97,42 @@ export function createEconomyDb(db) {
       bought_at       TEXT NOT NULL DEFAULT (datetime('now')),
       PRIMARY KEY (guild_id, user_id, hq_key)
     );
+
+    CREATE TABLE IF NOT EXISTS economy_tasks (
+      guild_id        TEXT NOT NULL,
+      user_id         TEXT NOT NULL,
+      period          TEXT NOT NULL,
+      task_key        TEXT NOT NULL,
+      progress        INTEGER NOT NULL DEFAULT 0,
+      claimed         INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (guild_id, user_id, period, task_key)
+    );
+
+    CREATE TABLE IF NOT EXISTS economy_achievements (
+      guild_id        TEXT NOT NULL,
+      user_id         TEXT NOT NULL,
+      achievement_key TEXT NOT NULL,
+      unlocked_at     TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (guild_id, user_id, achievement_key)
+    );
+
+    CREATE TABLE IF NOT EXISTS economy_coupon_redemptions (
+      guild_id     TEXT NOT NULL,
+      user_id      TEXT NOT NULL,
+      code         TEXT NOT NULL,
+      redeemed_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (guild_id, user_id, code)
+    );
+
+    CREATE TABLE IF NOT EXISTS economy_reminders (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id    TEXT NOT NULL,
+      channel_id  TEXT NOT NULL,
+      user_id     TEXT NOT NULL,
+      action      TEXT NOT NULL,
+      due_at      TEXT NOT NULL,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   /*
@@ -351,6 +387,135 @@ export function createEconomyDb(db) {
     return getEmployeeStmt.get(guildId, userId, locationKey, name);
   }
 
+/* ------------------------- deterministic daily task pick --------------------
+ * Same guild+user+date always yields the same task set, so the list is stable
+ * for the whole day and differs between days.
+ */
+function pickIndices(seedText, count, max) {
+  let h = 0;
+  for (const ch of String(seedText)) h = (Math.imul(h, 31) + ch.charCodeAt(0)) | 0;
+  const rnd = () => {
+    h = (Math.imul(h, 1103515245) + 12345) | 0;
+    return ((h >>> 8) & 0xffffff) / 0x1000000;
+  };
+  const indices = [];
+  const used = new Set();
+  while (indices.length < Math.min(count, max)) {
+    const i = Math.floor(rnd() * max);
+    if (used.has(i)) continue;
+    used.add(i);
+    indices.push(i);
+  }
+  return indices.sort((a, b) => a - b);
+}
+
+function dailyTaskPick(pool, slots, seedText) {
+  return pickIndices(seedText, slots, pool.length).map((i) => pool[i]);
+}
+
+function pickedOrder(pool, slots, seedText) {
+  return dailyTaskPick(pool, slots, seedText);
+}
+
+/* ---------------------------------- tasks --------------------------------- */
+
+  const listTasksStmt = db.prepare(
+    'SELECT task_key, progress, claimed FROM economy_tasks WHERE guild_id = ? AND user_id = ? AND period = ?');
+  const upsertTaskStmt = db.prepare(`INSERT INTO economy_tasks (guild_id, user_id, period, task_key, progress)
+    VALUES (?, ?, ?, ?, 0)
+    ON CONFLICT(guild_id, user_id, period, task_key) DO NOTHING`);
+  const bumpTaskStmt = db.prepare(
+    'UPDATE economy_tasks SET progress = MIN(progress + ?, 99) WHERE guild_id = ? AND user_id = ? AND period = ? AND task_key = ?');
+  const claimTaskStmt = db.prepare(
+    'UPDATE economy_tasks SET claimed = 1 WHERE guild_id = ? AND user_id = ? AND period = ? AND task_key = ?');
+
+  /** Today's task rows (assigns the day's set from the config pool first). */
+  function listTasks(guildId, userId, period, pool, slots) {
+    const assigned = db.prepare(
+      'SELECT task_key FROM economy_tasks WHERE guild_id = ? AND user_id = ? AND period = ?').all(guildId, userId, period);
+    if (assigned.length === 0) {
+      const picked = dailyTaskPick(pool, slots, `${guildId}:${userId}:${period}`);
+      for (const task of picked) upsertTaskStmt.run(guildId, userId, period, task.key);
+    }
+    const rows = listTasksStmt.all(guildId, userId, period);
+    const byKey = new Map(rows.map((r) => [r.task_key, r]));
+    return pickedOrder(pool, slots, `${guildId}:${userId}:${period}`)
+      .map((task) => {
+        const row = byKey.get(task.key);
+        return { ...task, progress: row?.progress ?? 0, claimed: !!row?.claimed };
+      })
+      .filter((task) => byKey.has(task.key));
+  }
+
+  function bumpTask(guildId, userId, period, taskKey, amount = 1) {
+    return bumpTaskStmt.run(amount, guildId, userId, period, taskKey).changes > 0;
+  }
+
+  function claimTask(guildId, userId, period, taskKey) {
+    // SQLite counts matched rows even when the value is unchanged, so check first
+    const row = db.prepare(
+      'SELECT claimed FROM economy_tasks WHERE guild_id = ? AND user_id = ? AND period = ? AND task_key = ?'
+    ).get(guildId, userId, period, taskKey);
+    if (!row || row.claimed) return false;
+    claimTaskStmt.run(guildId, userId, period, taskKey);
+    return true;
+  }
+
+  /* ------------------------------- achievements ----------------------------- */
+
+  const listAchievementsStmt = db.prepare(
+    'SELECT achievement_key FROM economy_achievements WHERE guild_id = ? AND user_id = ?');
+  const unlockAchievementStmt = db.prepare(`INSERT INTO economy_achievements (guild_id, user_id, achievement_key)
+    VALUES (?, ?, ?) ON CONFLICT DO NOTHING`);
+
+  function listAchievements(guildId, userId) {
+    return listAchievementsStmt.all(guildId, userId).map((r) => r.achievement_key);
+  }
+
+  function unlockAchievement(guildId, userId, key) {
+    return unlockAchievementStmt.run(guildId, userId, key).changes > 0;
+  }
+
+  /* -------------------------------- reminders ------------------------------- */
+
+  const addReminderStmt = db.prepare(`INSERT INTO economy_reminders (guild_id, channel_id, user_id, action, due_at)
+    VALUES (?, ?, ?, ?, ?)`);
+  const dueRemindersStmt = db.prepare(
+    'SELECT id, guild_id, channel_id, user_id, action FROM economy_reminders WHERE due_at <= ? ORDER BY due_at LIMIT 25');
+  const deleteReminderStmt = db.prepare('DELETE FROM economy_reminders WHERE id = ?');
+  const countRemindersStmt = db.prepare('SELECT COUNT(*) AS n FROM economy_reminders WHERE guild_id = ? AND user_id = ?');
+
+  function addReminder(guildId, channelId, userId, action, dueAt) {
+    addReminderStmt.run(guildId, channelId, userId, action, nowIso(dueAt));
+  }
+
+  function listDueReminders(now = Date.now()) {
+    return dueRemindersStmt.all(nowIso(now));
+  }
+
+  function deleteReminder(id) {
+    deleteReminderStmt.run(id);
+  }
+
+  function countReminders(guildId, userId) {
+    return countRemindersStmt.get(guildId, userId).n;
+  }
+
+  /* --------------------------------- coupons -------------------------------- */
+
+  const redeemCouponStmt = db.prepare(`INSERT INTO economy_coupon_redemptions (guild_id, user_id, code)
+    VALUES (?, ?, ?) ON CONFLICT DO NOTHING`);
+  const redeemedCodesStmt = db.prepare(
+    'SELECT code FROM economy_coupon_redemptions WHERE guild_id = ? AND user_id = ?');
+
+  function redeemCoupon(guildId, userId, code) {
+    return redeemCouponStmt.run(guildId, userId, code.toUpperCase()).changes > 0;
+  }
+
+  function listRedeemedCodes(guildId, userId) {
+    return redeemedCodesStmt.all(guildId, userId).map((r) => r.code);
+  }
+
   /* -------------------------------- decorations ----------------------------- */
 
   const listDecorationsStmt = db.prepare(
@@ -432,12 +597,22 @@ export function createEconomyDb(db) {
         decorations: listDecorations(guildId, userId, fresh.location_key),
       };
     });
-    return {
+    const state = {
       user: user ?? { cash: 0, bank: 0, daily_streak: 0, ingredients: 0 },
       locations,
       hq: listHq(guildId, userId),
       boosts: listBoosts(guildId, userId, now),
     };
+    // achievements are evaluated lazily, like cleanliness decay
+    for (const achievement of ECONOMY.achievements) {
+      if (listAchievements(guildId, userId).includes(achievement.key)) continue;
+      try {
+        if (achievement.test(state)) unlockAchievement(guildId, userId, achievement.key);
+      } catch {
+        /* a broken achievement check must never break the read */
+      }
+    }
+    return state;
   }
 
   return {
@@ -474,6 +649,22 @@ export function createEconomyDb(db) {
     listHq,
     hasHq,
     buyHq,
+    listTasks,
+    bumpTask,
+    claimTask,
+    listAchievements,
+    unlockAchievement,
+    addReminder,
+    listDueReminders,
+    deleteReminder,
+    countReminders,
+    redeemCoupon,
+    listRedeemedCodes,
     buildState,
   };
+}
+
+/** Today's period key (UTC date) used to rotate daily tasks. */
+export function todayPeriod(now = Date.now()) {
+  return new Date(now).toISOString().slice(0, 10);
 }

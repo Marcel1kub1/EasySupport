@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
-import { economy } from '../instance.js';
+import { economy, bumpTasks } from '../instance.js';
 import { ECONOMY } from '../config.js';
 import { formatMoney, pickLocation, withLocationOption, maxUpgradesOwnedHint } from '../util.js';
 import { hourlyRate } from '../engine.js';
@@ -58,6 +58,7 @@ export default {
       }
       economy.addCash(guildId, user.id, -upgrade.price);
       economy.buyUpgrade(guildId, user.id, location.key, key);
+      bumpTasks(guildId, user.id, 'buy');
       const after = hourlyRate(economy.buildState(guildId, user.id));
       return interaction.reply({
         content: `🔧 Bought the **${upgrade.label}** for **${location.name}** (+${Math.round(upgrade.bonus * 100)}% income).\nIncome is now **${formatMoney(after)}/h** — keep reinvesting!`,

@@ -1,5 +1,9 @@
 <div align="center">
 
+<a href="https://wispbyte.com"><img src="assets/wispbyte-hero.png" alt="Hosted by Wispbyte — free 24/7 hosting" width="680"></a>
+
+*☁️ This bot is hosted by [wispbyte.com](https://wispbyte.com) — click the banner.*
+
 <img src="assets/banner.png" alt="EasySupport — self-hosted Discord ticketing" width="720">
 
 **Private support tickets, staff workflows, transcripts and ratings — driven by one config file.**
@@ -93,6 +97,13 @@ gambling — just numbers going up.
 | `/expand` | More upgrade slots for a business |
 | `/hq` | Headquarters: global income upgrades for every business |
 | `/decorations` | Browse cosmetics with small income bonuses |
+| `/tasks view\|claim` | Three daily tasks (work shifts, tips, mining…) with cash rewards |
+| `/achievements` | Long-term goals — badges unlock automatically as you play |
+| `/badge view` | Your badge collection |
+| `/coupons` · `/redeem <code>` | Active coupon codes and redemption |
+| `/rewards` | Your streak, claimed tasks and redeemed coupons |
+| `/remind <action>` | Get pinged when an action is ready again |
+| `/rushhour info` · `/event info` | When the 2× income windows run |
 
 **Systems:** per-business 10-level ladders with exponential upgrade costs ·
 quadratic income growth · menu slots that unlock per level · employees with
@@ -105,8 +116,7 @@ boosts that stack · Happy Hour and Lunch Rush events.
 your first taco prestige) → **Taco Hotel** (5M + 250 ingredients, after a
 restaurant prestige), plus the **Taco Truck** side business at level 3.
 
-**Coming next** (roadmap): daily tasks & achievements · Rush Hour events ·
-franchises and leaderboards · the Sauce Market, Kitchen recipes and gambling.
+**Coming next** (roadmap): franchises & leaderboards · the Sauce Market, Kitchen recipes and gambling.
 
 ## 📋 Requirements
 
@@ -224,7 +234,7 @@ The template writes its database to `data/tickets.db`, generated panel art to
 ## 🧪 Tests
 
 ```bash
-npm test        # 86 tests: engine math, db integration, command smoke tests, loader
+npm test        # 105 tests: engine math, db integration, command smoke tests, loader
 ```
 
 The economy engine is a **pure module** — every payout, decay and multiplier is

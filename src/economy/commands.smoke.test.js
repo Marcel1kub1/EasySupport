@@ -10,6 +10,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ECONOMY } from './config.js';
 import { locationIncome, headquartersMultiplier } from './engine.js';
+import { todayPeriod } from './db.js';
 
 const TMP_DB = path.join(os.tmpdir(), `econ-smoke-${process.pid}.db`);
 
@@ -18,6 +19,7 @@ function mockInteraction({ options = {}, subcommand = null, guildId = 'guild-1',
   const replies = [];
   return {
     guildId,
+    channelId: 'channel-1',
     user: { id: userId, username: 'tester' },
     options: {
       getString: (name) => options[name] ?? null,
@@ -54,6 +56,7 @@ test('every economy command module exposes data + execute', () => {
   const expected = [
     'buy', 'clean', 'cooldowns', 'daily', 'employees', 'found', 'hire', 'menu', 'mine', 'shack', 'shop', 'tips', 'upgrades', 'work',
     'location', 'prestige', 'advertise', 'expand', 'hq', 'decorations',
+    'tasks', 'achievements', 'badge', 'coupons', 'redeem', 'rewards', 'remind', 'rushhour', 'event',
   ];
   assert.deepEqual(Object.keys(commands).sort(), expected.sort());
   for (const [name, command] of Object.entries(commands)) {
@@ -389,4 +392,132 @@ test('employee training unlocks after prestige', async () => {
   assert.match(interaction.replyText(), /trained to level 1/);
   const staff = economy.listEmployees('guild-1', 'user-1', 'taco_stand');
   assert.equal(staff.find((e) => e.name === 'Ana').training, 1);
+});
+
+/* ---------------------------- phase 3: tasks -------------------------------- */
+
+test('/tasks view assigns the daily set and /work bumps progress', async () => {
+  const view = mockInteraction({ subcommand: 'view', options: {} });
+  await commands.tasks.execute(view);
+  assert.match(view.replyText(), /Today's tasks/);
+  assert.ok(view.replyText().includes('/tasks claim') || view.replyText().includes('claimed') || /\d\/\d/.test(view.replyText()));
+
+  const period = todayPeriod();
+  const before = economy.listTasks('guild-1', 'user-1', period, ECONOMY.tasks.pool, ECONOMY.tasks.dailySlots);
+  economy.setCooldown('guild-1', 'user-1', 'last_work_at', null); // clear the earlier shift's cooldown
+  const shift = mockInteraction({ options: {} });
+  await commands.work.execute(shift);
+  const after = economy.listTasks('guild-1', 'user-1', period, ECONOMY.tasks.pool, ECONOMY.tasks.dailySlots);
+  const workTask = after.find((t) => t.track === 'work');
+  if (workTask) {
+    const beforeProgress = before.find((t) => t.key === workTask.key)?.progress ?? 0;
+    assert.equal(workTask.progress, beforeProgress + 1);
+  }
+});
+
+test('/tasks claim pays once and rejects incomplete tasks', async () => {
+  const period = todayPeriod();
+  const pool = ECONOMY.tasks.pool;
+  const tasks = economy.listTasks('guild-1', 'user-1', period, pool, ECONOMY.tasks.dailySlots);
+  const target = tasks[0];
+  const incomplete = mockInteraction({ subcommand: 'claim', options: { task: target.key } });
+  await commands.tasks.execute(incomplete);
+  if (target.progress < target.goal) {
+    assert.match(incomplete.replyText(), /Keep going/);
+  }
+
+  // force the goal, then claim
+  for (let i = target.progress; i < target.goal; i++) economy.bumpTask('guild-1', 'user-1', period, target.key, 1);
+  give(1_000_000);
+  const cashBefore = economy.getUser('guild-1', 'user-1').cash;
+  const claim = mockInteraction({ subcommand: 'claim', options: { task: target.key } });
+  await commands.tasks.execute(claim);
+  assert.match(claim.replyText(), /Claimed/);
+  assert.equal(economy.getUser('guild-1', 'user-1').cash, cashBefore + target.reward);
+
+  const again = mockInteraction({ subcommand: 'claim', options: { task: target.key } });
+  await commands.tasks.execute(again);
+  assert.match(again.replyText(), /already claimed/);
+});
+
+test('daily task sets are stable within a day', async () => {
+  const period = todayPeriod();
+  const a = economy.listTasks('guild-1', 'user-1', period, ECONOMY.tasks.pool, ECONOMY.tasks.dailySlots).map((t) => t.key);
+  const b = economy.listTasks('guild-1', 'user-1', period, ECONOMY.tasks.pool, ECONOMY.tasks.dailySlots).map((t) => t.key);
+  assert.deepEqual(a, b);
+});
+
+/* ------------------------- phase 3: achievements/badges --------------------- */
+
+test('the free stand unlocks the first achievement lazily', async () => {
+  const fresh = mockInteraction({ guildId: 'guild-9', userId: 'user-9', options: { name: 'Badge Test' } });
+  await commands.found.execute(fresh);
+  const list = mockInteraction({ guildId: 'guild-9', userId: 'user-9' });
+  await commands.achievements.execute(list);
+  assert.match(list.replyText(), /Grand Opening/);
+  const badge = mockInteraction({ guildId: 'guild-9', userId: 'user-9', subcommand: 'view', options: {} });
+  await commands.badge.execute(badge);
+  assert.match(badge.replyText(), /Grand Opening/);
+});
+
+/* ---------------------------- phase 3: coupons ------------------------------ */
+
+test('/coupons lists codes and /redeem pays once', async () => {
+  const list = mockInteraction({});
+  await commands.coupons.execute(list);
+  assert.match(list.lastReply().embeds[0].data.description, /WISPBYTE/);
+
+  const code = ECONOMY.coupons[0].code;
+  const cashBefore = economy.getUser('guild-1', 'user-1').cash;
+  const redeem = mockInteraction({ options: { code: code.toLowerCase() } });
+  await commands.redeem.execute(redeem);
+  assert.match(redeem.replyText(), /redeemed/);
+  assert.equal(economy.getUser('guild-1', 'user-1').cash, cashBefore + ECONOMY.coupons[0].reward);
+
+  const again = mockInteraction({ options: { code } });
+  await commands.redeem.execute(again);
+  assert.match(again.replyText(), /already redeemed/);
+
+  const bogus = mockInteraction({ options: { code: 'NOTAREALCODE' } });
+  await commands.redeem.execute(bogus);
+  assert.match(bogus.replyText(), /does not exist/);
+});
+
+/* ---------------------------- phase 3: reminders ---------------------------- */
+
+test('/remind queues a reminder and honours the cap', async () => {
+  const a = mockInteraction({ options: { action: 'work' } });
+  await commands.remind.execute(a);
+  assert.match(a.replyText(), /I'll ping you when/);
+  assert.equal(economy.countReminders('guild-1', 'user-1'), 1);
+
+  for (let i = 0; i < 6; i++) {
+    const more = mockInteraction({ options: { action: 'tips' } });
+    await commands.remind.execute(more);
+  }
+  assert.ok(economy.countReminders('guild-1', 'user-1') <= 5);
+  const capped = mockInteraction({ options: { action: 'tips' } });
+  await commands.remind.execute(capped);
+  assert.match(capped.replyText(), /already have 5 reminders/);
+});
+
+/* --------------------------- phase 3: rush/events --------------------------- */
+
+test('/rushhour and /event info report the windows', async () => {
+  const rush = mockInteraction({ options: {} });
+  await commands.rushhour.execute(rush);
+  assert.match(rush.replyText(), /Rush Hour/);
+  assert.match(rush.replyText(), /UTC/);
+
+  const event = mockInteraction({ subcommand: 'info', options: {} });
+  await commands.event.execute(event);
+  assert.match(event.replyText(), /Happy Hour/);
+  assert.match(event.replyText(), /Lunch Rush/);
+});
+
+test('/rewards summarises streak, tasks and coupons', async () => {
+  const interaction = mockInteraction({ options: {} });
+  await commands.rewards.execute(interaction);
+  assert.match(interaction.replyText(), /Daily streak/);
+  assert.match(interaction.replyText(), /Coupons redeemed/);
 });

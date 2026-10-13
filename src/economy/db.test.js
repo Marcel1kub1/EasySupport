@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { createEconomyDb } from './db.js';
+import { createEconomyDb, todayPeriod } from './db.js';
 import { ECONOMY } from './config.js';
 import { decayCleanliness } from './engine.js';
 import { cooldownRemaining } from './util.js';
@@ -242,4 +242,99 @@ test('multiple locations coexist per user', () => {
   db.setLevel('g1', 'u1', 'restaurant', 7);
   assert.equal(db.buildState('g1', 'u1').locations.find((l) => l.key === 'restaurant').level, 7);
   assert.equal(db.buildState('g1', 'u1').locations.find((l) => l.key === 'taco_stand').level, 1);
+});
+
+/* ------------------------------ phase 3: tasks ------------------------------ */
+
+test('daily tasks are assigned deterministically and stable for the day', () => {
+  const db = freshDb();
+  const period = todayPeriod();
+  const first = db.listTasks('g1', 'u1', period, ECONOMY.tasks.pool, ECONOMY.tasks.dailySlots);
+  const second = db.listTasks('g1', 'u1', period, ECONOMY.tasks.pool, ECONOMY.tasks.dailySlots);
+  assert.equal(first.length, ECONOMY.tasks.dailySlots);
+  assert.deepEqual(first.map((t) => t.key), second.map((t) => t.key));
+  assert.ok(first.every((t) => t.progress === 0 && !t.claimed));
+});
+
+test('task progress bumps, is claimable once, and blocks over-claiming', () => {
+  const db = freshDb();
+  const period = todayPeriod();
+  const [task] = db.listTasks('g1', 'u1', period, ECONOMY.tasks.pool, ECONOMY.tasks.dailySlots);
+
+  for (let i = 0; i < task.goal; i++) db.bumpTask('g1', 'u1', period, task.key, 1);
+  const done = db.listTasks('g1', 'u1', period, ECONOMY.tasks.pool, ECONOMY.tasks.dailySlots).find((t) => t.key === task.key);
+  assert.equal(done.progress, task.goal);
+
+  assert.equal(db.claimTask('g1', 'u1', period, task.key), true);
+  const claimed = db.listTasks('g1', 'u1', period, ECONOMY.tasks.pool, ECONOMY.tasks.dailySlots).find((t) => t.key === task.key);
+  assert.equal(claimed.claimed, true);
+  // claiming again is a no-op
+  assert.equal(db.claimTask('g1', 'u1', period, task.key), false);
+});
+
+test('tasks are scoped per day and per guild', () => {
+  const db = freshDb();
+  const period = todayPeriod();
+  const list1 = db.listTasks('g1', 'u1', period, ECONOMY.tasks.pool, ECONOMY.tasks.dailySlots);
+  const list2 = db.listTasks('g2', 'u1', period, ECONOMY.tasks.pool, ECONOMY.tasks.dailySlots);
+  // the pick is seeded by guild+user+date, so different guilds draw different sets
+  assert.equal(list1.length, ECONOMY.tasks.dailySlots);
+  assert.equal(list2.length, ECONOMY.tasks.dailySlots);
+  db.bumpTask('g1', 'u1', period, list1[0].key, 1);
+  assert.equal(db.listTasks('g1', 'u1', period, ECONOMY.tasks.pool, ECONOMY.tasks.dailySlots)[0].progress, 1);
+  assert.equal(db.listTasks('g2', 'u1', period, ECONOMY.tasks.pool, ECONOMY.tasks.dailySlots)[0].progress, 0);
+});
+
+/* --------------------------- phase 3: achievements -------------------------- */
+
+test('achievements unlock once and persist in the state', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  assert.deepEqual(db.listAchievements('g1', 'u1'), []);
+  // 'grand_opening' is satisfied by the free taco stand
+  const state = db.buildState('g1', 'u1');
+  assert.deepEqual(state.locations.map((l) => l.key), ['taco_stand']);
+  assert.deepEqual(db.listAchievements('g1', 'u1'), ['grand_opening']);
+  // unlocking twice does not duplicate
+  assert.equal(db.unlockAchievement('g1', 'u1', 'grand_opening'), false);
+  assert.deepEqual(db.listAchievements('g1', 'u1'), ['grand_opening']);
+});
+
+test('a throwing achievement check never breaks the read', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  const original = ECONOMY.achievements;
+  ECONOMY.achievements.push({ key: 'boom', label: 'Boom', badge: '💥', test: () => { throw new Error('nope'); } });
+  try {
+    const state = db.buildState('g1', 'u1');
+    assert.ok(state.locations.length >= 1);
+  } finally {
+    ECONOMY.achievements.length = original.length;
+  }
+});
+
+/* ---------------------------- phase 3: reminders ---------------------------- */
+
+test('reminders are queued and returned only when due', () => {
+  const db = freshDb();
+  const now = Date.now();
+  db.addReminder('g1', 'c1', 'u1', 'work', now + 10 * 60_000);
+  assert.equal(db.countReminders('g1', 'u1'), 1);
+  assert.deepEqual(db.listDueReminders(now), []);
+  const due = db.listDueReminders(now + 11 * 60_000);
+  assert.equal(due.length, 1);
+  assert.equal(due[0].action, 'work');
+  db.deleteReminder(due[0].id);
+  assert.equal(db.countReminders('g1', 'u1'), 0);
+});
+
+/* ----------------------------- phase 3: coupons ----------------------------- */
+
+test('coupons redeem once per player', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  const code = ECONOMY.coupons[0].code;
+  assert.equal(db.redeemCoupon('g1', 'u1', code.toLowerCase()), true);
+  assert.equal(db.redeemCoupon('g1', 'u1', code), false);
+  assert.deepEqual(db.listRedeemedCodes('g1', 'u1'), [code.toUpperCase()]);
 });

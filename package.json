@@ -1,6 +1,6 @@
 {
   "name": "discord-ticket-bot",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "private": true,
   "type": "module",
   "description": "Self-hosted Discord ticketing bot template (discord.js v14)",
