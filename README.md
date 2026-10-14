@@ -1,7 +1,7 @@
 <div align="center">
 
 
-<img src="assets/banner-animated.svg?v=2" alt="EasySupport — Discord tickets and the Taco Empire economy" width="720">
+<img src="assets/banner.png" alt="EasySupport — self-hosted Discord ticketing" width="720">
 
 
 
