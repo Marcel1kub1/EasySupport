@@ -5,10 +5,10 @@
 
 <!-- Copy-paste in your Readme.md file -->
 
-<a href="https://next.ossinsight.io/widgets/official/analyze-repo-loc-per-month?repo_id=1416277319" target="_blank" style="display: block" align="center">
+<a href="https://next.ossinsight.io/widgets/official/analyze-repo-pushes-and-commits-per-month?repo_id=1416277319" target="_blank" style="display: block" align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://next.ossinsight.io/widgets/official/analyze-repo-loc-per-month/thumbnail.png?repo_id=1416277319&image_size=auto&color_scheme=dark" width="721" height="auto">
-    <img alt="Lines of Code Changes of Marcel1kub1/EasySupport" src="https://next.ossinsight.io/widgets/official/analyze-repo-loc-per-month/thumbnail.png?repo_id=1416277319&image_size=auto&color_scheme=light" width="721" height="auto">
+    <source media="(prefers-color-scheme: dark)" srcset="https://next.ossinsight.io/widgets/official/analyze-repo-pushes-and-commits-per-month/thumbnail.png?repo_id=1416277319&image_size=auto&color_scheme=dark" width="721" height="auto">
+    <img alt="Pushes and Commits of Marcel1kub1/EasySupport" src="https://next.ossinsight.io/widgets/official/analyze-repo-pushes-and-commits-per-month/thumbnail.png?repo_id=1416277319&image_size=auto&color_scheme=light" width="721" height="auto">
   </picture>
 </a>
 
