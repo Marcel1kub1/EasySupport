@@ -3,7 +3,16 @@
 
 <img src="assets/banner.png" alt="EasySupport — self-hosted Discord ticketing" width="720">
 
+<!-- Copy-paste in your Readme.md file -->
 
+<a href="https://next.ossinsight.io/widgets/official/analyze-repo-loc-per-month?repo_id=1416277319" target="_blank" style="display: block" align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://next.ossinsight.io/widgets/official/analyze-repo-loc-per-month/thumbnail.png?repo_id=1416277319&image_size=auto&color_scheme=dark" width="721" height="auto">
+    <img alt="Lines of Code Changes of Marcel1kub1/EasySupport" src="https://next.ossinsight.io/widgets/official/analyze-repo-loc-per-month/thumbnail.png?repo_id=1416277319&image_size=auto&color_scheme=light" width="721" height="auto">
+  </picture>
+</a>
+
+<!-- Made with [OSS Insight](https://ossinsight.io/) -->
 
 <a href="https://wispbyte.com"><img src="assets/wispbyte-hero.png" alt="Hosted by Wispbyte — free 24/7 hosting" width="680"></a>
 
