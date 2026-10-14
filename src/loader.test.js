@@ -9,7 +9,7 @@ const PROJECT_ROOT = path.join(import.meta.dirname, '..');
 
 test('existing commands load with no duplicates', async () => {
   const names = await loadCommandNames(path.join(PROJECT_ROOT, 'src', 'commands'));
-  assert.deepEqual([...names].sort(), ['panel', 'setup']);
+  assert.deepEqual([...names].sort(), ['blacklist', 'export', 'panel', 'setup']);
 });
 
 test('economy commands are discovered through the nested directory', async () => {
@@ -19,6 +19,7 @@ test('economy commands are discovered through the nested directory', async () =>
     'mine', 'shack', 'shop', 'tips', 'upgrades', 'work',
     'location', 'prestige', 'advertise', 'expand', 'hq', 'decorations',
     'tasks', 'achievements', 'badge', 'coupons', 'redeem', 'rewards', 'remind', 'rushhour', 'event',
+    'gift', 'priority', 'donate', 'goal', 'help', 'stats', 'economy-admin', 'leaderboard', 'leaderboard-post', 'staff-top',
   ];
   assert.deepEqual([...names].sort(), expected.sort());
   assert.equal(new Set(names).size, names.length, 'duplicate command names found');

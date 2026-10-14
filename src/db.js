@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS guilds (
   log_channel_id    TEXT,
   ticket_category_id TEXT,
   max_open_tickets  INTEGER NOT NULL DEFAULT 2,
+  motm_role_id      TEXT,
   updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -59,6 +60,19 @@ CREATE INDEX IF NOT EXISTS idx_tickets_guild_user   ON tickets(guild_id, user_id
 CREATE INDEX IF NOT EXISTS idx_messages_ticket      ON ticket_messages(ticket_id);
 `);
 
+// Idempotent column additions for databases created by earlier versions:
+// CREATE TABLE IF NOT EXISTS never alters an existing table.
+for (const migration of [
+    'ALTER TABLE tickets ADD COLUMN closed_by TEXT',
+    'ALTER TABLE guilds ADD COLUMN motm_role_id TEXT',
+  ]) {
+  try {
+    db.exec(migration);
+  } catch {
+    /* column already exists */
+  }
+}
+
 /* ------------------------------- guild config ------------------------------ */
 
 const getGuildStmt = db.prepare('SELECT * FROM guilds WHERE guild_id = ?');
@@ -68,18 +82,19 @@ export function getGuild(guildId) {
 }
 
 const upsertGuildStmt = db.prepare(`
-  INSERT INTO guilds (guild_id, staff_role_id, log_channel_id, ticket_category_id, max_open_tickets, updated_at)
-  VALUES (@guildId, @staffRoleId, @logChannelId, @ticketCategoryId, @maxOpenTickets, datetime('now'))
+  INSERT INTO guilds (guild_id, staff_role_id, log_channel_id, ticket_category_id, max_open_tickets, motm_role_id, updated_at)
+  VALUES (@guildId, @staffRoleId, @logChannelId, @ticketCategoryId, @maxOpenTickets, @motmRoleId, datetime('now'))
   ON CONFLICT(guild_id) DO UPDATE SET
     staff_role_id      = excluded.staff_role_id,
     log_channel_id     = excluded.log_channel_id,
     ticket_category_id = excluded.ticket_category_id,
     max_open_tickets   = excluded.max_open_tickets,
+    motm_role_id       = excluded.motm_role_id,
     updated_at         = datetime('now')
 `);
 
-export function saveGuildSettings({ guildId, staffRoleId, logChannelId, ticketCategoryId, maxOpenTickets }) {
-  upsertGuildStmt.run({ guildId, staffRoleId, logChannelId, ticketCategoryId, maxOpenTickets });
+export function saveGuildSettings({ guildId, staffRoleId, logChannelId, ticketCategoryId, maxOpenTickets, motmRoleId }) {
+  upsertGuildStmt.run({ guildId, staffRoleId, logChannelId, ticketCategoryId, maxOpenTickets, motmRoleId: motmRoleId ?? null });
 }
 
 /* --------------------------------- tickets -------------------------------- */
@@ -97,6 +112,16 @@ const countOpenTicketsStmt = db.prepare(`
 
 export function countOpenTickets(guildId, userId) {
   return countOpenTicketsStmt.get(guildId, userId, ...openStatuses).n;
+}
+
+/** Every open ticket in the guild regardless of user — drives quiet-queue bonus. */
+const countAllOpenStmt = db.prepare(`
+  SELECT COUNT(*) AS n FROM tickets
+  WHERE guild_id = ? AND status IN (${openStatuses.length ? openStatuses.map(() => '?').join(', ') : "'__none__'"})
+`);
+
+export function countAllOpenTickets(guildId) {
+  return countAllOpenStmt.get(guildId, ...openStatuses).n;
 }
 
 const nextNumberStmt = db.prepare('SELECT COALESCE(MAX(id), 0) + 1 AS n FROM tickets WHERE guild_id = ?');
@@ -151,16 +176,43 @@ export function updateTicketStatus(channelId, statusKey, claimedBy = null) {
 }
 
 /*
- * Terminal status change: records the closure time and reason. Returns false
- * when the ticket was already in a terminal status (guards double clicks).
+ * Terminal status change: records the closure time, reason and the staff member
+ * who closed it (staff payouts are credited to `closedBy`). Returns false when
+ * the ticket was already in a terminal status (guards double clicks).
  */
 const closeStmt = db.prepare(`
-  UPDATE tickets SET status = ?, closed_at = datetime('now'), close_reason = ?
+  UPDATE tickets SET status = ?, closed_at = datetime('now'), close_reason = ?, closed_by = ?
   WHERE channel_id = ? AND status != ?
 `);
 
-export function closeTicket(channelId, statusKey, reason) {
-  return closeStmt.run(statusKey, reason, channelId, statusKey).changes > 0;
+export function closeTicket(channelId, statusKey, reason, closedBy = null) {
+  return closeStmt.run(statusKey, reason, closedBy, channelId, statusKey).changes > 0;
+}
+
+/* ----------------------------- staff statistics ----------------------------- */
+
+const staffStatsStmt = db.prepare(`
+  SELECT closed_by AS user_id,
+         COUNT(*) AS closed,
+         SUM(CASE WHEN close_reason IS NOT NULL AND close_reason != '' THEN 1 ELSE 0 END) AS reasoned,
+         SUM(rating) AS rating_sum,
+         SUM(CASE WHEN rating IS NOT NULL THEN 1 ELSE 0 END) AS rated
+  FROM tickets
+  WHERE guild_id = ? AND closed_by IS NOT NULL AND strftime('%Y-%m', closed_at) = ?
+  GROUP BY closed_by
+  ORDER BY reasoned DESC, closed DESC
+`);
+
+/** Per-staff closure stats for one month ('YYYY-MM'), best closer first. */
+export function staffStats(guildId, period) {
+  return staffStatsStmt.all(guildId, period).map((row) => ({
+    userId: row.user_id,
+    closed: row.closed ?? 0,
+    reasoned: row.reasoned ?? 0,
+    ratingSum: row.rating_sum ?? 0,
+    rated: row.rated ?? 0,
+    averageRating: row.rated ? Math.round((row.rating_sum / row.rated) * 10) / 10 : null,
+  }));
 }
 
 const rateStmt = db.prepare('UPDATE tickets SET rating = ? WHERE id = ? AND user_id = ?');

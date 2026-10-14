@@ -1,7 +1,7 @@
 <div align="center">
 
 
-<img src="assets/banner.png" alt="EasySupport — self-hosted Discord ticketing" width="720">
+<img src="assets/banner-animated.svg" alt="EasySupport — Discord tickets and the Taco Empire economy" width="720">
 
 
 
@@ -33,6 +33,10 @@
 - 🎨 **Generated category art** — every ticket channel and the public panel get a banner rendered with `@resvg/resvg-js`, showing the **category name and emoji** on a palette unique to that category (deterministic, cached in `data/art/`)
 - 🧭 **Config-driven statuses** — every status in `src/categories.js` becomes a control-panel button (claim, pending, escalate, close)
 - 🎮 **Taco Empire mini-game** — a full tycoon loop (`/work`, `/tips`, `/daily`, `/menu`, `/hire`, …) with levels, upgrades, cleanliness and prestige
+- 💰 **Staff payouts** — staff earn Taco Empire cash for every ticket they close *with a reason*, tracked per month with a cap
+- ⚡ **Priority support** — members buy priority with in-game cash; their tickets flag, ping and log as priority
+- 💝 **Community pot** — donations fund a server-wide income boost when the goal is reached
+- 🧹 **Quiet queue bonus** — zero open tickets gives everyone +25% income
 - 🔒 **Private channels** — only the opener and the handling role can see the ticket
 - 📄 **Transcripts** — a TXT + HTML transcript is generated when a ticket closes
 - ⭐ **Rating prompt** — members rate the support 1–5 by DM after close
@@ -107,12 +111,29 @@ gambling — just numbers going up.
 | `/remind <action>` | Get pinged when an action is ready again |
 | `/rushhour info` · `/event info` | When the 2× income windows run |
 
+**Social & server tools:**
+
+| Command | What it does |
+|---|---|
+| `/help` | Every command, grouped by what it does |
+| `/stats` | Your lifetime stats + the live event multiplier |
+| `/leaderboard` · `/leaderboard-post` | Richest members; post a self-updating scoreboard |
+| `/gift <member> <amount>` | Send cash (small fee, anti-alt) |
+| `/priority buy\|view` | Priority support — flagged, pinged, logged tickets |
+| `/donate <amount>` · `/goal` | Community pot and its progress bar |
+| `/staff-top` | Staff of the month: reasoned closures, payouts, ratings |
+| `/economy-admin give\|set\|reset\|pot` | Admin tools (promos, fixes, pot) |
+| `/blacklist add\|remove\|check` | Ticketing: block members from opening tickets |
+| `/export` | DM yourself a database snapshot for backups |
+
 **Systems:** per-business 10-level ladders with exponential upgrade costs ·
 quadratic income growth · menu slots that unlock per level · employees with
 wages vs. bonuses · cleanliness decay with janitors that slow it · **prestige**
 for stacking multipliers · **ownership synergy** (+10% on all income per extra
 business line) · expandable upgrade slots · HQ multipliers · decorations ·
-boosts that stack · Happy Hour and Lunch Rush events.
+boosts that stack · Happy Hour and Lunch Rush events · **staff payouts** for
+reasoned ticket closures · **priority support** · **community pot** payouts ·
+seasonal windows · **quiet-queue bonus**.
 
 **Progression:** free taco stand → **Restaurant** (500k + 50 ingredients, after
 your first taco prestige) → **Taco Hotel** (5M + 250 ingredients, after a
@@ -236,7 +257,7 @@ The template writes its database to `data/tickets.db`, generated panel art to
 ## 🧪 Tests
 
 ```bash
-npm test        # 105 tests: engine math, db integration, command smoke tests, loader
+npm test        # 128 tests: engine math, db integration, command smoke tests, ticketing commands, loader
 ```
 
 The economy engine is a **pure module** — every payout, decay and multiplier is

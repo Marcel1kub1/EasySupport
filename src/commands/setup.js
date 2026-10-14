@@ -1,5 +1,5 @@
 import { ChannelType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
-import { saveGuildSettings } from '../db.js';
+import { saveGuildSettings, getGuild } from '../db.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -24,6 +24,12 @@ export default {
         .setDescription('Max simultaneously open tickets per member (default 2)')
         .setMinValue(1)
         .setMaxValue(10)
+    )
+    .addRoleOption((o) =>
+      o
+        .setName('staff_of_month_role')
+        .setDescription('Role awarded to the monthly top closer (staff-of-the-month)')
+        .setRequired(false)
     ),
   async execute(interaction) {
     // The interaction may already be acknowledged (e.g. dispatched twice after a
@@ -49,6 +55,7 @@ export default {
       logChannelId: logChannel.id,
       ticketCategoryId: category.id,
       maxOpenTickets: interaction.options.getInteger('max_open') ?? 2,
+      motmRoleId: interaction.options.getRole('staff_of_month_role')?.id ?? getGuild(interaction.guildId)?.motm_role_id ?? null,
     });
 
     const missingPerms = [];

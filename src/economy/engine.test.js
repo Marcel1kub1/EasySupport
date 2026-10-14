@@ -7,7 +7,7 @@ import {
   synergyMultiplier, headquartersMultiplier, activeBoostMultiplier,
   unlockBlockReason, menuSlots, locationAssetValue, netWorth, menuBonusPerHour,
   decorationsMultiplier, maxUpgradesOwned, expandCost, locationIngredients,
-  isRushHour, rushHourMultiplier, isLunchRush,
+  isRushHour, rushHourMultiplier, isLunchRush, seasonalMultiplier, activeSeasonal, eventMultiplier,
 } from './engine.js';
 
 const NOW = 1_700_000_000_000;
@@ -252,4 +252,26 @@ test('achievement predicates evaluate empire state', () => {
   assert.equal(byKey.restaurateur(state([shack(), shack({ key: 'restaurant' })])), true);
   assert.equal(byKey.millionaire(rich), true);
   assert.equal(byKey.prestigious(stand), false);
+});
+
+/* -------------------- phase 4: seasonal & quiet queue ----------------------- */
+
+test('seasonal windows activate on their inclusive dates', () => {
+  const window = ECONOMY.seasonal[1];
+  assert.ok(activeSeasonal(Date.parse(`${window.start}T12:00:00Z`)).some((s) => s.key === window.key));
+  assert.equal(activeSeasonal(Date.parse('2030-01-01T12:00:00Z')).length, 0);
+  assert.equal(seasonalMultiplier(Date.parse(`${window.start}T12:00:00Z`)), window.multiplier);
+});
+
+test('eventMultiplier stacks seasonal, rush hour and the quiet queue', () => {
+  const window = ECONOMY.seasonal[1];
+  const during = Date.parse(`${window.start}T19:30:00Z`); // seasonal + rush hour + quiet queue
+  const multiplier = eventMultiplier(during, { openTickets: 0 });
+  assert.equal(
+    multiplier,
+    ECONOMY.seasonal[1].multiplier * ECONOMY.events.rushHour.multiplier * ECONOMY.quietQueueBonus.multiplier
+  );
+  // an open ticket disables only the quiet-queue part
+  const busy = eventMultiplier(during, { openTickets: 3 });
+  assert.equal(busy, multiplier / ECONOMY.quietQueueBonus.multiplier);
 });

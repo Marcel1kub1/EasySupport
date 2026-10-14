@@ -338,3 +338,105 @@ test('coupons redeem once per player', () => {
   assert.equal(db.redeemCoupon('g1', 'u1', code), false);
   assert.deepEqual(db.listRedeemedCodes('g1', 'u1'), [code.toUpperCase()]);
 });
+
+/* ------------------- phase 4: payouts, perks, pot, board -------------------- */
+
+test('staff payouts respect the monthly cap', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  const base = ECONOMY.staffPayouts.perReasonedClosure;
+  const cap = ECONOMY.staffPayouts.monthlyCapPerStaff;
+
+  const first = db.addStaffPayout('g1', 'u1', '2026-10', base, cap);
+  assert.deepEqual(first, { paid: base, capped: false });
+
+  // jumping just under the cap clips the payment instead of exceeding it
+  const near = db.addStaffPayout('g1', 'u1', '2026-10', cap, cap);
+  assert.equal(near.paid, cap - base);
+  assert.equal(near.capped, true);
+
+  // past the cap nothing is paid
+  const over = db.addStaffPayout('g1', 'u1', '2026-10', base, cap);
+  assert.deepEqual(over, { paid: 0, capped: true });
+
+  const rows = db.listStaffPayouts('g1', '2026-10');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].amount, cap);
+  assert.equal(rows[0].closures, 2);
+});
+
+test('staff payouts are scoped per month and per guild', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  db.addStaffPayout('g1', 'u1', '2026-09', 1_000, 300_000);
+  db.addStaffPayout('g1', 'u1', '2026-10', 1_000, 300_000);
+  db.addStaffPayout('g2', 'u1', '2026-10', 1_000, 300_000);
+  assert.equal(db.listStaffPayouts('g1', '2026-10')[0].amount, 1_000);
+  assert.equal(db.listStaffPayouts('g1', '2026-09').length, 1);
+  assert.equal(db.listStaffPayouts('g2', '2026-10')[0].closures, 1);
+});
+
+test('perks activate and expire', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  const now = Date.now();
+  db.addPerk('g1', 'u1', 'priority', now + 3_600_000, now);
+  assert.equal(db.hasPerk('g1', 'u1', 'priority', now + 1_000), true);
+  assert.equal(db.hasPerk('g1', 'u1', 'priority', now + 7_200_000), false);
+  // re-buying extends the existing expiry
+  db.addPerk('g1', 'u1', 'priority', now + 10_000_000, now + 100);
+  assert.equal(db.hasPerk('g1', 'u1', 'priority', now + 9_000_000), true);
+});
+
+test('community pot accumulates, pays out and resets', () => {
+  const db = freshDb();
+  assert.equal(db.getPot('g1'), 0);
+  assert.equal(db.addToPot('g1', 250_000), 250_000);
+  assert.equal(db.addToPot('g1', 100_000), 350_000);
+  // draining past zero clamps at 0 (the goal payout subtracts the whole pot)
+  assert.equal(db.addToPot('g1', -999_999_999), 0);
+  assert.equal(db.getPot('g1'), 0);
+});
+
+test('leaderboard target round-trips and clears', () => {
+  const db = freshDb();
+  assert.equal(db.getLeaderboardTarget('g1'), null);
+  db.setLeaderboardTarget('g1', 'chan-1', 'msg-1');
+  assert.equal(db.getLeaderboardTarget('g1').channel_id, 'chan-1');
+  assert.equal(db.getLeaderboardTarget('g1').message_id, 'msg-1');
+  db.setLeaderboardTarget('g1', 'chan-2', 'msg-2');
+  assert.equal(db.getLeaderboardTarget('g1').channel_id, 'chan-2');
+  assert.equal(db.getLeaderboardTarget('g1').message_id, 'msg-2');
+  assert.equal(db.clearLeaderboardTarget('g1'), true);
+  assert.equal(db.getLeaderboardTarget('g1'), null);
+});
+
+test('resetPlayer returns the empire to a fresh free stand', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  db.buyLocation('g1', 'u1', 'restaurant');
+  db.buyUpgrade('g1', 'u1', 'taco_stand', 'better_stove');
+  db.hireEmployee('g1', 'u1', 'taco_stand', 'chef', 'Ana');
+  db.buyHq('g1', 'u1', 'hq_branding');
+  db.addPerk('g1', 'u1', 'priority', Date.now() + 3_600_000);
+  db.addStaffPayout('g1', 'u1', '2026-10', 1_000, 300_000);
+  db.addCash('g1', 'u1', 50_000);
+
+  db.resetPlayer('g1', 'u1');
+  const state = db.buildState('g1', 'u1');
+  assert.deepEqual(state.locations.map((l) => l.key), ['taco_stand']);
+  assert.equal(state.locations[0].level, 1);
+  assert.deepEqual(state.locations[0].upgrades, []);
+  assert.deepEqual(state.hq, []);
+  assert.deepEqual(state.boosts, []);
+  assert.equal(db.getUser('g1', 'u1').cash, 0);
+  assert.deepEqual(db.listStaffPayouts('g1', '2026-10'), []);
+});
+
+test('listPlayers covers everyone known to the economy', () => {
+  const db = freshDb();
+  db.ensureUser('g1', 'u1');
+  db.addCash('g1', 'u2', 100); // gifting creates the row
+  assert.deepEqual(db.listPlayers('g1').sort(), ['u1', 'u2']);
+  assert.deepEqual(db.listPlayers('g9'), []);
+});

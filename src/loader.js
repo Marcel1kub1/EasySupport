@@ -17,7 +17,7 @@ export async function loadModules(dir, onModule) {
       const full = path.join(current, entry.name);
       if (entry.isDirectory()) {
         await walk(full, `${prefix}${entry.name}/`);
-      } else if (entry.name.endsWith('.js')) {
+      } else if (entry.name.endsWith('.js') && !entry.name.endsWith('.test.js')) {
         const mod = await import(pathToFileURL(full).href);
         const name = entry.name.slice(0, -3);
         onModule(mod.default, `${prefix}${name}`, full);

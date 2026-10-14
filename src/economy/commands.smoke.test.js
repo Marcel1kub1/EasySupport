@@ -15,18 +15,27 @@ import { todayPeriod } from './db.js';
 const TMP_DB = path.join(os.tmpdir(), `econ-smoke-${process.pid}.db`);
 
 /** Mock of the parts of a ChatInputCommandInteraction the commands use. */
-function mockInteraction({ options = {}, subcommand = null, guildId = 'guild-1', userId = 'user-1' }) {
+function mockInteraction({ options = {}, subcommand = null, guildId = 'guild-1', userId = 'user-1', memberPermissions = { has: () => true }, channel } = {}) {
   const replies = [];
   return {
     guildId,
     channelId: 'channel-1',
     user: { id: userId, username: 'tester' },
+    memberPermissions,
+    channel: channel ?? { isTextBased: () => true },
     options: {
       getString: (name) => options[name] ?? null,
       getInteger: (name) => options[name] ?? null,
+      getUser: (name) => options[name] ?? null,
+      getRole: (name) => options[name] ?? null,
+      getChannel: (name) => options[name] ?? null,
       getSubcommand: () => subcommand,
     },
     reply: async (payload) => {
+      replies.push(payload);
+      return payload;
+    },
+    editReply: async (payload) => {
       replies.push(payload);
       return payload;
     },
@@ -57,6 +66,7 @@ test('every economy command module exposes data + execute', () => {
     'buy', 'clean', 'cooldowns', 'daily', 'employees', 'found', 'hire', 'menu', 'mine', 'shack', 'shop', 'tips', 'upgrades', 'work',
     'location', 'prestige', 'advertise', 'expand', 'hq', 'decorations',
     'tasks', 'achievements', 'badge', 'coupons', 'redeem', 'rewards', 'remind', 'rushhour', 'event',
+    'gift', 'priority', 'donate', 'goal', 'help', 'stats', 'economy-admin', 'leaderboard', 'leaderboard-post', 'staff-top',
   ];
   assert.deepEqual(Object.keys(commands).sort(), expected.sort());
   for (const [name, command] of Object.entries(commands)) {
@@ -521,3 +531,144 @@ test('/rewards summarises streak, tasks and coupons', async () => {
   assert.match(interaction.replyText(), /Daily streak/);
   assert.match(interaction.replyText(), /Coupons redeemed/);
 });
+
+/* ------------------------- phase 4: bridge commands ------------------------- */
+
+test('/gift transfers cash with a fee and blocks self-gifts', async () => {
+  give(1_000_000);
+  const before = economy.getUser('guild-1', 'user-1').cash;
+  const self = mockInteraction({ options: { member: { id: 'user-1', bot: false }, amount: 5_000 } });
+  await commands.gift.execute(self);
+  assert.match(self.replyText(), /cannot gift yourself/);
+
+  // the mock exposes a fake member object rather than a User
+  const target = { id: 'user-2', bot: false };
+  const gift = mockInteraction({ options: { member: target, amount: 5_000 } });
+  await commands.gift.execute(gift);
+  assert.match(gift.replyText(), /You sent/);
+  const fee = Math.ceil(5_000 * ECONOMY.gifting.feePercent);
+  assert.equal(economy.getUser('guild-1', 'user-1').cash, before - 5_000 - fee);
+  assert.equal(economy.getUser('guild-1', 'user-2').cash, 5_000);
+});
+
+test('/priority buy grants the perk once, /priority view reports it', async () => {
+  give(1_000_000);
+  const buy = mockInteraction({ subcommand: 'buy', options: {} });
+  await commands.priority.execute(buy);
+  assert.match(buy.replyText(), /Priority support.*active/s);
+  assert.ok(economy.hasPerk('guild-1', 'user-1', 'priority'));
+
+  const again = mockInteraction({ subcommand: 'buy', options: {} });
+  await commands.priority.execute(again);
+  assert.match(again.replyText(), /already active/);
+
+  const view = mockInteraction({ subcommand: 'view', options: {} });
+  await commands.priority.execute(view);
+  assert.match(view.replyText(), /active until/);
+});
+
+test('/donate fills the pot and /goal shows the progress bar', async () => {
+  give(1_000_000);
+  const donate = mockInteraction({ options: { amount: 100_000 } });
+  await commands.donate.execute(donate);
+  assert.match(donate.replyText(), /Pot:/);
+  assert.equal(economy.getPot('guild-1'), 100_000);
+
+  const goal = mockInteraction({ options: {} });
+  await commands.goal.execute(goal);
+  const embed = goal.lastReply().embeds[0];
+  assert.match(embed.data.description, /█/);
+  assert.match(embed.data.description, /100k/);
+});
+
+test('reaching the pot goal pays every player and resets', async () => {
+  const goalValue = ECONOMY.communityPot.goal;
+  const target = mockInteraction({ guildId: 'guild-8', userId: 'user-8', options: { name: 'Pot Tester' } });
+  await commands.found.execute(target);
+  economy.ensureUser('guild-8', 'user-2');
+  economy.addCash('guild-8', 'user-8', goalValue);
+
+  const donate = mockInteraction({ guildId: 'guild-8', userId: 'user-8', options: { amount: goalValue } });
+  await commands.donate.execute(donate);
+  assert.match(donate.replyText(), /Community goal reached/);
+  assert.equal(economy.getPot('guild-8'), 0);
+  const players = economy.listPlayers('guild-8');
+  for (const player of players) {
+    assert.ok(economy.listBoosts('guild-8', player).some((b) => b.kind === 'community'));
+  }
+});
+
+test('/help lists every command group', async () => {
+  const interaction = mockInteraction({ options: {} });
+  await commands.help.execute(interaction);
+  const text = interaction.replyText();
+  assert.match(text, /Ticketing/);
+  assert.match(text, /Earning/);
+  assert.match(text, /Empire/);
+  assert.match(text, /\/work/);
+});
+
+test('/stats shows balances and the live event multiplier', async () => {
+  give(1_000);
+  const interaction = mockInteraction({ options: {} });
+  await commands.stats.execute(interaction);
+  const embed = interaction.lastReply().embeds[0];
+  const names = embed.data.fields.map((f) => f.name);
+  assert.ok(names.includes('Balance'));
+  assert.ok(names.includes('Events now'));
+  assert.match(embed.data.fields.find((f) => f.name === 'Events now').value, /Live multiplier/);
+});
+
+test('/economy-admin give, set and reset (admin-gated)', async () => {
+  const admin = { memberPermissions: { has: () => true } };
+  give(0);
+  const enemy = { id: 'user-7', bot: false };
+
+  const set = mockInteraction({ options: { member: enemy, amount: 42_000 }, subcommand: 'set', memberPermissions: admin.memberPermissions });
+  await commands['economy-admin'].execute(set);
+  assert.match(set.replyText(), /Set/);
+  assert.equal(economy.getUser('guild-1', 'user-7').cash, 42_000);
+
+  const add = mockInteraction({ options: { member: enemy, amount: 8_000 }, subcommand: 'give', memberPermissions: admin.memberPermissions });
+  await commands['economy-admin'].execute(add);
+  assert.equal(economy.getUser('guild-1', 'user-7').cash, 50_000);
+
+  economy.buyLocation('guild-1', 'user-7', 'restaurant');
+  const reset = mockInteraction({ options: { member: enemy }, subcommand: 'reset', memberPermissions: admin.memberPermissions });
+  await commands['economy-admin'].execute(reset);
+  assert.deepEqual(economy.listShacks('guild-1', 'user-7').map((s) => s.location_key), ['taco_stand']);
+  assert.equal(economy.getUser('guild-1', 'user-7').cash, 0);
+
+  // non-admins are refused
+  const denied = mockInteraction({ options: { member: enemy, amount: 1 }, subcommand: 'give', memberPermissions: { has: () => false } });
+  await commands['economy-admin'].execute(denied);
+  assert.match(denied.replyText(), /Administrator only/);
+});
+
+test('/leaderboard ranks members by net worth', async () => {
+  give(500_000);
+  const interaction = mockInteraction({ options: {} });
+  await commands.leaderboard.execute(interaction);
+  const embed = interaction.lastReply().embeds[0];
+  assert.match(embed.data.description, /<@user-1>/);
+});
+
+test('/leaderboard-post stores a live target (admin-gated)', async () => {
+  const admin = { memberPermissions: { has: () => true } };
+  const interaction = mockInteraction({ options: {}, memberPermissions: admin.memberPermissions, channelId: 'chan-9' });
+  // the command sends a bootstrap message; stub the channel surface
+  interaction.channel = { id: 'chan-9', isTextBased: () => true, send: async (payload) => ({ id: 'msg-99', ...payload }) };
+  await commands['leaderboard-post'].execute(interaction);
+  const target = economy.getLeaderboardTarget('guild-1');
+  assert.equal(target.channel_id, 'chan-9');
+  assert.equal(target.message_id, 'msg-99');
+  economy.clearLeaderboardTarget('guild-1');
+});
+
+test('/staff-top ranks reasoned closures (empty until a close with reason)', async () => {
+  const interaction = mockInteraction({ options: {} });
+  await commands['staff-top'].execute(interaction);
+  // this suite never closes a ticket, so the ranking is empty
+  assert.match(interaction.replyText(), /No closures with a reason yet this month/);
+});
+

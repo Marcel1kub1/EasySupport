@@ -240,9 +240,66 @@ export const ECONOMY = {
     { code: 'GRANDOPENING', reward: 250_000, note: 'First-location bonus' },
   ],
 
+  /* ------------------------------ staff payouts -----------------------------*
+   * Staff earn economy cash for closing tickets WITH a reason (a closure
+   * without a reason pays nothing, to keep closure notes meaningful).
+   * Monthly caps keep one busy month from printing unlimited coins.
+   */
+  staffPayouts: {
+    perReasonedClosure: 1_000,
+    monthlyCapPerStaff: 300_000,
+    monthlyBonusWinner: 500_000,    // staff-of-the-month extra
+    leaderboardSize: 10,
+  },
+
+  /* ------------------------------- ticket perks -----------------------------*
+   * Coins buy priority support: every ticket opened while the perk is active
+   * is flagged, pinged and logged as priority.
+   */
+  perks: {
+    priority: { price: 50_000, durationHours: 24 * 7, label: 'Priority support' },
+  },
+
+  /* ------------------------------ community pot -----------------------------*
+   * /donate fills the pot; reaching the goal pays a server-wide boost and
+   * resets the pot.
+   */
+  communityPot: {
+    goal: 10_000_000,
+    boostMultiplier: 2,
+    boostDurationHours: 6,
+  },
+
+  /* -------------------------------- gifting ---------------------------------*/
+  gifting: { feePercent: 0.05, minAmount: 1_000 },
+
+  /* --------------------------- seasonal / live events -----------------------*
+   * Seasonal windows stack with everything else. quietQueueBonus applies while
+   * the guild has zero open tickets (ticket-driven event).
+   */
+  seasonal: [
+    {
+      key: 'anniversary',
+      name: 'Anniversary Week',
+      start: '2026-11-01',
+      end: '2026-11-07',
+      multiplier: 3,
+      note: 'The bot turns one — triple income all week!',
+    },
+    {
+      key: 'launch_fiesta',
+      name: 'Launch Fiesta',
+      start: '2026-10-14',
+      end: '2026-10-21',
+      multiplier: 2,
+      note: 'Taco Empire launch week — double income!',
+    },
+  ],
+  quietQueueBonus: { multiplier: 1.25, openTickets: 0 },
+  leaderboardRefreshMinutes: 10,
+
   /* --------------------- idle accrual, tasks, economy safety -----------------*/
   accrual: { maxHours: 24 },      // offline income is capped at 24h
-  gifting: { feePercent: 0.05 },  // anti-alt-farming fee on /gift
   gambling: { enabled: false },   // Phase 6, opt-in
 
   /* -------------------------------- flavor text -----------------------------*/

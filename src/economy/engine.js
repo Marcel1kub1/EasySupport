@@ -136,13 +136,13 @@ export function hourlyRate(state, config = ECONOMY) {
 }
 
 /** Payout for a duration of passive income, honouring boost multipliers. */
-export function passiveIncome(state, minutes, now = Date.now(), config = ECONOMY) {
+export function passiveIncome(state, minutes, now = Date.now(), config = ECONOMY, context = {}) {
   const hours = minutes / 60;
   return (
     hourlyRate(state, config) *
     hours *
     activeBoostMultiplier(state, now, config) *
-    rushHourMultiplier(now, config)
+    eventMultiplier(now, context, config)
   );
 }
 
@@ -155,6 +155,30 @@ export function isRushHour(now = Date.now(), config = ECONOMY) {
 
 export function rushHourMultiplier(now = Date.now(), config = ECONOMY) {
   return isRushHour(now, config) ? config.events.rushHour.multiplier : 1;
+}
+
+/** Active seasonal windows (inclusive dates, UTC). */
+export function activeSeasonal(now = Date.now(), config = ECONOMY) {
+  const today = new Date(now).toISOString().slice(0, 10);
+  return (config.seasonal ?? []).filter((s) => today >= s.start && today <= s.end);
+}
+
+export function seasonalMultiplier(now = Date.now(), config = ECONOMY) {
+  return activeSeasonal(now, config).reduce((mult, s) => mult * s.multiplier, 1);
+}
+
+/**
+ * Everything that multiplies income for a moment in time: seasonal windows,
+ * Rush Hour and the quiet-queue bonus (context.openTickets === 0). Context is
+ * optional so pure per-state maths stays testable.
+ */
+export function eventMultiplier(now = Date.now(), context = {}, config = ECONOMY) {
+  const quiet = context.openTickets === 0 && config.quietQueueBonus.openTickets === 0;
+  return (
+    seasonalMultiplier(now, config) *
+    rushHourMultiplier(now, config) *
+    (quiet ? config.quietQueueBonus.multiplier : 1)
+  );
 }
 
 /** Weekend Lunch Rush: double tips on Saturday/Sunday. */

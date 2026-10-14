@@ -133,6 +133,38 @@ export function createEconomyDb(db) {
       due_at      TEXT NOT NULL,
       created_at  TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS economy_staff_payouts (
+      guild_id     TEXT NOT NULL,
+      user_id      TEXT NOT NULL,
+      period       TEXT NOT NULL,
+      amount       INTEGER NOT NULL DEFAULT 0,
+      closures     INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (guild_id, user_id, period)
+    );
+
+    CREATE TABLE IF NOT EXISTS economy_perks (
+      guild_id     TEXT NOT NULL,
+      user_id      TEXT NOT NULL,
+      kind         TEXT NOT NULL,
+      expires_at   TEXT NOT NULL,
+      created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (guild_id, user_id, kind)
+    );
+
+    CREATE TABLE IF NOT EXISTS economy_community_pot (
+      guild_id     TEXT NOT NULL,
+      amount       INTEGER NOT NULL DEFAULT 0,
+      updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (guild_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS economy_leaderboard_target (
+      guild_id     TEXT NOT NULL,
+      channel_id   TEXT NOT NULL,
+      message_id   TEXT NOT NULL,
+      PRIMARY KEY (guild_id)
+    );
   `);
 
   /*
@@ -417,7 +449,123 @@ function pickedOrder(pool, slots, seedText) {
   return dailyTaskPick(pool, slots, seedText);
 }
 
-/* ---------------------------------- tasks --------------------------------- */
+  /* -------------------------------- staff payouts --------------------------- *
+   * Monthly ledger of ticket-closure payouts, honouring the per-staff cap.
+   */
+  const getPayoutStmt = db.prepare(
+    'SELECT amount, closures FROM economy_staff_payouts WHERE guild_id = ? AND user_id = ? AND period = ?');
+  const addPayoutStmt = db.prepare(`UPDATE economy_staff_payouts
+    SET amount = amount + ?, closures = closures + 1
+    WHERE guild_id = ? AND user_id = ? AND period = ?`);
+  const insertPayoutStmt = db.prepare(`INSERT INTO economy_staff_payouts (guild_id, user_id, period, amount, closures)
+    VALUES (?, ?, ?, ?, 1) ON CONFLICT(guild_id, user_id, period) DO UPDATE SET
+      amount = amount + excluded.amount, closures = closures + 1`);
+  const listPayoutsStmt = db.prepare(
+    'SELECT user_id, amount, closures FROM economy_staff_payouts WHERE guild_id = ? AND period = ? ORDER BY amount DESC');
+
+  /** Returns { paid, capped } — paid is the amount actually credited. */
+  function addStaffPayout(guildId, userId, period, baseAmount, cap) {
+    const row = getPayoutStmt.get(guildId, userId, period);
+    const already = row?.amount ?? 0;
+    if (already >= cap) return { paid: 0, capped: true };
+    const paid = Math.min(baseAmount, cap - already);
+    if (row) addPayoutStmt.run(paid, guildId, userId, period);
+    else insertPayoutStmt.run(guildId, userId, period, paid);
+    return { paid, capped: paid < baseAmount };
+  }
+
+  function listStaffPayouts(guildId, period) {
+    return listPayoutsStmt.all(guildId, period).map((r) => ({ userId: r.user_id, amount: r.amount, closures: r.closures }));
+  }
+
+  /* ----------------------------------- perks -------------------------------- */
+
+  const addPerkStmt = db.prepare(`INSERT INTO economy_perks (guild_id, user_id, kind, expires_at)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(guild_id, user_id, kind) DO UPDATE SET expires_at = excluded.expires_at, created_at = datetime('now')`);
+  const listPerksStmt = db.prepare(
+    'SELECT kind, expires_at FROM economy_perks WHERE guild_id = ? AND user_id = ? AND expires_at > ?');
+
+  function addPerk(guildId, userId, kind, expiresAt, now = Date.now()) {
+    addPerkStmt.run(guildId, userId, kind, nowIso(expiresAt));
+    return listPerks(guildId, userId, now);
+  }
+
+  function listPerks(guildId, userId, now = Date.now()) {
+    return listPerksStmt.all(guildId, userId, nowIso(now));
+  }
+
+  function hasPerk(guildId, userId, kind, now = Date.now()) {
+    return listPerks(guildId, userId, now).some((p) => p.kind === kind);
+  }
+
+  /* ------------------------------- community pot ---------------------------- */
+
+  const getPotStmt = db.prepare('SELECT amount FROM economy_community_pot WHERE guild_id = ?');
+  const setPotStmt = db.prepare(`INSERT INTO economy_community_pot (guild_id, amount)
+    VALUES (?, ?)
+    ON CONFLICT(guild_id) DO UPDATE SET amount = excluded.amount, updated_at = datetime('now')`);
+
+  function getPot(guildId) {
+    return getPotStmt.get(guildId)?.amount ?? 0;
+  }
+
+  function addToPot(guildId, amount) {
+    const total = Math.max(0, getPot(guildId) + amount);
+    setPotStmt.run(guildId, total);
+    return total;
+  }
+
+  /* ----------------------------- leaderboard target ------------------------- */
+
+  const setLeaderboardTargetStmt = db.prepare(`INSERT INTO economy_leaderboard_target (guild_id, channel_id, message_id)
+    VALUES (?, ?, ?)
+    ON CONFLICT(guild_id) DO UPDATE SET channel_id = excluded.channel_id, message_id = excluded.message_id`);
+  const getLeaderboardTargetStmt = db.prepare(
+    'SELECT channel_id, message_id FROM economy_leaderboard_target WHERE guild_id = ?');
+
+  function setLeaderboardTarget(guildId, channelId, messageId) {
+    setLeaderboardTargetStmt.run(guildId, channelId, messageId);
+  }
+
+  function getLeaderboardTarget(guildId) {
+    return getLeaderboardTargetStmt.get(guildId) ?? null;
+  }
+
+  function clearLeaderboardTarget(guildId) {
+    return db.prepare('DELETE FROM economy_leaderboard_target WHERE guild_id = ?').run(guildId).changes > 0;
+  }
+
+  /* ---------------------------------- tasks --------------------------------- */
+
+  const listPlayersStmt = db.prepare('SELECT user_id FROM economy_users WHERE guild_id = ?');
+
+  /** Every player known to the economy in this guild. */
+  function listPlayers(guildId) {
+    return listPlayersStmt.all(guildId).map((r) => r.user_id);
+  }
+
+  /** Full reset for one player: fresh free stand, zeroed balances and rows. */
+  function resetPlayer(guildId, userId) {
+    db.prepare('DELETE FROM economy_shacks WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    db.prepare('DELETE FROM economy_upgrades WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    db.prepare('DELETE FROM economy_menu WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    db.prepare('DELETE FROM economy_employees WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    db.prepare('DELETE FROM economy_decorations WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    db.prepare('DELETE FROM economy_hq WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    db.prepare('DELETE FROM economy_boosts WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    db.prepare('DELETE FROM economy_tasks WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    db.prepare('DELETE FROM economy_achievements WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    db.prepare('DELETE FROM economy_perks WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    db.prepare('DELETE FROM economy_reminders WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    db.prepare('DELETE FROM economy_staff_payouts WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    ensureUser(guildId, userId);
+    db.prepare(`UPDATE economy_users
+      SET cash = 0, bank = 0, ingredients = 0, daily_streak = 0,
+          last_daily_at = NULL, last_work_at = NULL, last_tips_at = NULL,
+          last_clean_at = NULL, last_mine_at = NULL, last_ad_at = NULL
+      WHERE guild_id = ? AND user_id = ?`).run(guildId, userId);
+  }
 
   const listTasksStmt = db.prepare(
     'SELECT task_key, progress, claimed FROM economy_tasks WHERE guild_id = ? AND user_id = ? AND period = ?');
@@ -660,6 +808,18 @@ function pickedOrder(pool, slots, seedText) {
     countReminders,
     redeemCoupon,
     listRedeemedCodes,
+    addStaffPayout,
+    listStaffPayouts,
+    addPerk,
+    listPerks,
+    hasPerk,
+    listPlayers,
+    resetPlayer,
+    getPot,
+    addToPot,
+    setLeaderboardTarget,
+    getLeaderboardTarget,
+    clearLeaderboardTarget,
     buildState,
   };
 }
