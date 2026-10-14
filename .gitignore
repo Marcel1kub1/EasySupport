@@ -29,4 +29,5 @@ desktop.ini
 *.swp
 
 # Mockup intermediates (regenerated with the README previews)
-assets/*.svg
+assets/panel.svg
+assets/ticket.svg
