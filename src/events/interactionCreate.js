@@ -29,6 +29,7 @@ import { categoryArt } from '../art.js';
 import { economy } from '../economy/instance.js';
 import { ECONOMY } from '../economy/config.js';
 import { saveTranscripts } from '../transcripts.js';
+import { handlePanelInteraction, handlePanelModal, PANEL_PREFIX } from '../economy/panel.js';
 
 const COLORS = { blurple: 0x5865f2, green: 0x57f287, red: 0xed4245, yellow: 0xfee75c };
 const PANEL_COOLDOWN_MS = 5_000;
@@ -92,6 +93,12 @@ export default {
 /* -------------------------------- routing --------------------------------- */
 
 async function handleButton(interaction, client) {
+  // Taco Empire panel buttons live in their own namespace and never collide
+  // with the ticketing buttons ('ticket:*').
+  if (interaction.customId.startsWith(PANEL_PREFIX)) {
+    const view = await handlePanelInteraction(interaction);
+    return interaction.update(view);
+  }
   const id = interaction.customId;
 
   if (id.startsWith('ticket:open:')) return onPanelClick(interaction, client);
@@ -128,6 +135,10 @@ async function handleModalSubmit(interaction, client) {
     const key = interaction.customId.slice('ticket:status:reason:'.length);
     const reason = interaction.fields.getTextInputValue('reason').trim();
     return finalizeClose(interaction, key, reason);
+  }
+
+  if (interaction.customId.startsWith(PANEL_PREFIX)) {
+    return handlePanelModal(interaction);
   }
 }
 

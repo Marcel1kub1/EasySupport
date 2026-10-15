@@ -159,6 +159,43 @@ export function createEconomyDb(db) {
       PRIMARY KEY (guild_id)
     );
 
+    CREATE TABLE IF NOT EXISTS economy_sauce_positions (
+      guild_id     TEXT NOT NULL,
+      user_id      TEXT NOT NULL,
+      sauce        TEXT NOT NULL,
+      qty          INTEGER NOT NULL DEFAULT 0,
+      avg_price    INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (guild_id, user_id, sauce)
+    );
+
+    CREATE TABLE IF NOT EXISTS economy_kitchen (
+      guild_id     TEXT NOT NULL,
+      user_id      TEXT NOT NULL,
+      recipe       TEXT NOT NULL,
+      expires_at   TEXT NOT NULL,
+      started_at   TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (guild_id, user_id, recipe)
+    );
+
+    CREATE TABLE IF NOT EXISTS economy_franchises (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id    TEXT NOT NULL,
+      name        TEXT NOT NULL,
+      owner_id    TEXT NOT NULL,
+      pot         INTEGER NOT NULL DEFAULT 0,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE (guild_id, name)
+    );
+
+    CREATE TABLE IF NOT EXISTS economy_franchise_members (
+      guild_id     TEXT NOT NULL,
+      franchise_id INTEGER NOT NULL,
+      user_id      TEXT NOT NULL,
+      role         INTEGER NOT NULL DEFAULT 3,
+      joined_at    TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (guild_id, user_id)
+    );
+
     CREATE TABLE IF NOT EXISTS economy_leaderboard_target (
       guild_id     TEXT NOT NULL,
       channel_id   TEXT NOT NULL,
@@ -166,6 +203,7 @@ export function createEconomyDb(db) {
       PRIMARY KEY (guild_id)
     );
   `);
+
 
   /*
    * Idempotent column additions for databases created by earlier versions.
@@ -536,6 +574,141 @@ function pickedOrder(pool, slots, seedText) {
     return db.prepare('DELETE FROM economy_leaderboard_target WHERE guild_id = ?').run(guildId).changes > 0;
   }
 
+  /* -------------------------------- sauce market ---------------------------- */
+
+  const getSaucePositionStmt = db.prepare(
+    'SELECT qty, avg_price FROM economy_sauce_positions WHERE guild_id = ? AND user_id = ? AND sauce = ?');
+  const listSaucePositionsStmt = db.prepare(
+    'SELECT sauce, qty, avg_price FROM economy_sauce_positions WHERE guild_id = ? AND user_id = ? AND qty > 0');
+  const upsertSauceStmt = db.prepare(`INSERT INTO economy_sauce_positions (guild_id, user_id, sauce, qty, avg_price)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(guild_id, user_id, sauce) DO UPDATE SET
+      qty = qty + excluded.qty,
+      avg_price = (avg_price * qty + excluded.avg_price * excluded.qty) / (qty + excluded.qty)`);
+  const setSauceStmt = db.prepare(
+    'UPDATE economy_sauce_positions SET qty = ?, avg_price = ? WHERE guild_id = ? AND user_id = ? AND sauce = ?');
+
+  function getSaucePosition(guildId, userId, sauce) {
+    const row = getSaucePositionStmt.get(guildId, userId, sauce);
+    return row && row.qty > 0 ? { qty: row.qty, avgPrice: row.avg_price } : null;
+  }
+
+  function listSaucePositions(guildId, userId) {
+    return listSaucePositionsStmt.all(guildId, userId).map((r) => ({ sauce: r.sauce, qty: r.qty, avgPrice: r.avg_price }));
+  }
+
+  function buySauce(guildId, userId, sauce, qty, price) {
+    ensureUser(guildId, userId);
+    upsertSauceStmt.run(guildId, userId, sauce, qty, price);
+    return getSaucePosition(guildId, userId, sauce);
+  }
+
+  function sellSauce(guildId, userId, sauce, qty) {
+    const row = getSaucePositionStmt.get(guildId, userId, sauce);
+    if (!row || row.qty < qty) return null;
+    setSauceStmt.run(row.qty - qty, row.avg_price, guildId, userId, sauce);
+    return { qty: row.qty - qty, avgPrice: row.avg_price };
+  }
+
+  /* ----------------------------------- kitchen ------------------------------ */
+
+  const listCookingStmt = db.prepare(
+    'SELECT recipe, expires_at FROM economy_kitchen WHERE guild_id = ? AND user_id = ? AND expires_at > ?');
+  const allCookingStmt = db.prepare(
+    'SELECT recipe, expires_at FROM economy_kitchen WHERE guild_id = ? AND user_id = ?');
+  const startCookingStmt = db.prepare(`INSERT INTO economy_kitchen (guild_id, user_id, recipe, expires_at)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(guild_id, user_id, recipe) DO UPDATE SET expires_at = excluded.expires_at, started_at = datetime('now')`);
+  const finishCookingStmt = db.prepare('DELETE FROM economy_kitchen WHERE guild_id = ? AND user_id = ? AND recipe = ?');
+
+  /** Jobs still cooking (expires_at in the future). */
+  function listCooking(guildId, userId, now = Date.now()) {
+    return listCookingStmt.all(guildId, userId, nowIso(now)).map((r) => ({
+      recipe: r.recipe,
+      expiresAt: parseDbTime(r.expires_at),
+    }));
+  }
+
+  /** All kitchen jobs including completed ones (for collection). */
+  function listKitchen(guildId, userId) {
+    return allCookingStmt.all(guildId, userId).map((r) => ({
+      recipe: r.recipe,
+      expiresAt: parseDbTime(r.expires_at),
+    });
+  }
+
+  function startCooking(guildId, userId, recipe, expiresAt) {
+    startCookingStmt.run(guildId, userId, recipe, nowIso(expiresAt));
+    return listCooking(guildId, userId);
+  }
+
+  function finishCooking(guildId, userId, recipe) {
+    return finishCookingStmt.run(guildId, userId, recipe).changes > 0;
+  }
+
+  /* --------------------------------- franchises ----------------------------- */
+
+  const getFranchiseForUserStmt = db.prepare(`
+    SELECT f.id, f.name, f.pot, f.owner_id, m.role
+    FROM economy_franchise_members m JOIN economy_franchises f ON f.id = m.franchise_id
+    WHERE m.guild_id = ? AND m.user_id = ?`);
+  const listFranchisesStmt = db.prepare(
+    'SELECT id, name, pot FROM economy_franchises WHERE guild_id = ? ORDER BY pot DESC');
+  const listMembersStmt = db.prepare(
+    'SELECT user_id, role FROM economy_franchise_members WHERE guild_id = ? AND franchise_id = ?');
+  const countMembersStmt = db.prepare(
+    'SELECT COUNT(*) AS n FROM economy_franchise_members WHERE guild_id = ? AND franchise_id = ?');
+  const createFranchiseStmt = db.prepare(
+    'INSERT INTO economy_franchises (guild_id, name, owner_id) VALUES (?, ?, ?)');
+  const joinFranchiseStmt = db.prepare(`INSERT INTO economy_franchise_members (guild_id, franchise_id, user_id, role)
+    VALUES (?, ?, ?, 3) ON CONFLICT(guild_id, user_id) DO UPDATE SET franchise_id = excluded.franchise_id, role = 3`);
+  const leaveFranchiseStmt = db.prepare('DELETE FROM economy_franchise_members WHERE guild_id = ? AND user_id = ?');
+  const donateFranchiseStmt = db.prepare(
+    'UPDATE economy_franchises SET pot = pot + ? WHERE guild_id = ? AND id = ?');
+  const getFranchiseStmt = db.prepare('SELECT id, name, pot, owner_id FROM economy_franchises WHERE guild_id = ? AND id = ?');
+
+  function getFranchise(guildId, userId) {
+    return getFranchiseForUserStmt.get(guildId, userId) ?? null;
+  }
+
+  function listFranchises(guildId) {
+    return listFranchisesStmt.all(guildId).map((f) => {
+      const members = countMembersStmt.get(guildId, f.id).n;
+      return { id: f.id, name: f.name, pot: f.pot, members };
+    });
+  }
+
+  function listFranchiseMembers(guildId, franchiseId) {
+    return listMembersStmt.all(guildId, franchiseId);
+  }
+
+  function createFranchise(guildId, userId, name) {
+    const result = createFranchiseStmt.run(guildId, name, userId);
+    const id = Number(result.lastInsertRowid);
+    joinFranchiseStmt.run(guildId, id, userId);
+    return getFranchise(guildId, userId);
+  }
+
+  function joinFranchise(guildId, userId, franchiseId) {
+    const franchise = getFranchiseStmt.get(guildId, Number(franchiseId));
+    if (!franchise) return { ok: false, reason: 'That franchise no longer exists.' };
+    const members = countMembersStmt.get(guildId, franchise.id).n;
+    if (members >= ECONOMY.franchise.maxMembers) return { ok: false, reason: 'That franchise is full.' };
+    joinFranchiseStmt.run(guildId, franchise.id, userId);
+    return { ok: true, name: franchise.name };
+  }
+
+  function leaveFranchise(guildId, userId) {
+    return leaveFranchiseStmt.run(guildId, userId).changes > 0;
+  }
+
+  function donateToFranchise(guildId, userId, amount) {
+    const membership = getFranchiseForUserStmt.get(guildId, userId);
+    if (!membership) return 0;
+    donateFranchiseStmt.run(amount, guildId, membership.id);
+    return getFranchiseStmt.get(guildId, membership.id).pot;
+  }
+
   /* ---------------------------------- tasks --------------------------------- */
 
   const listPlayersStmt = db.prepare('SELECT user_id FROM economy_users WHERE guild_id = ?');
@@ -797,6 +970,21 @@ function pickedOrder(pool, slots, seedText) {
     listHq,
     hasHq,
     buyHq,
+    getSaucePosition,
+    listSaucePositions,
+    buySauce,
+    sellSauce,
+    listCooking,
+    listKitchen,
+    startCooking,
+    finishCooking,
+    getFranchise,
+    listFranchises,
+    listFranchiseMembers,
+    createFranchise,
+    joinFranchise,
+    leaveFranchise,
+    donateToFranchise,
     listTasks,
     bumpTask,
     claimTask,

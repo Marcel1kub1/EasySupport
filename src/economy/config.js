@@ -58,9 +58,31 @@ export const ECONOMY = {
       buyPrice: 5_000_000,
       ingredients: 250,
     },
+    beach_shack: {
+      label: 'Beach Shack',
+      order: 3,
+      base: 12_000,
+      upgradeBase: 150_000,
+      upgradeGrowth: 2.35,
+      maxLevel: 10,
+      unlock: { location: 'restaurant', prestige: 2 },
+      buyPrice: 2_000_000,
+      ingredients: 120,
+    },
+    city_shack: {
+      label: 'City Shack',
+      order: 4,
+      base: 90_000,
+      upgradeBase: 1_200_000,
+      upgradeGrowth: 2.45,
+      maxLevel: 10,
+      unlock: { location: 'beach_shack', prestige: 2 },
+      buyPrice: 20_000_000,
+      ingredients: 500,
+    },
     taco_truck: {
       label: 'Taco Truck',
-      order: 3,
+      order: 5,
       side: true,                 // side business: own mini-ladder, no prestige
       base: 900,
       upgradeBase: 12_000,
@@ -68,6 +90,30 @@ export const ECONOMY = {
       maxLevel: 10,
       unlock: { location: 'taco_stand', level: 3 },
       buyPrice: 75_000,
+      ingredients: 0,
+    },
+    hotdog_cart: {
+      label: 'Hotdog Cart',
+      order: 6,
+      side: true,
+      base: 6_000,
+      upgradeBase: 80_000,
+      upgradeGrowth: 2.35,
+      maxLevel: 10,
+      unlock: { location: 'taco_truck', level: 5 },
+      buyPrice: 400_000,
+      ingredients: 0,
+    },
+    mall_kiosk: {
+      label: 'Mall Kiosk',
+      order: 7,
+      side: true,
+      base: 40_000,
+      upgradeBase: 600_000,
+      upgradeGrowth: 2.45,
+      maxLevel: 10,
+      unlock: { location: 'hotdog_cart', level: 5 },
+      buyPrice: 5_000_000,
       ingredients: 0,
     },
   },
@@ -297,6 +343,57 @@ export const ECONOMY = {
   ],
   quietQueueBonus: { multiplier: 1.25, openTickets: 0 },
   leaderboardRefreshMinutes: 10,
+
+  /* ------------------------------- sauce market -----------------------------*
+   * Per-guild simulated stock market: prices drift hourly, positions are held
+   * until sold. /taco market (view: market)
+   */
+  sauceMarket: {
+    sauces: [
+      { key: 'mild', label: 'Mild', base: 800, volatility: 0.18 },
+      { key: 'medium', label: 'Medium', base: 2_500, volatility: 0.24 },
+      { key: 'diablo', label: 'Diablo', base: 9_000, volatility: 0.35 },
+      { key: 'volcano', label: 'Volcano', base: 30_000, volatility: 0.45 },
+    ],
+    maxPositionsPerSauce: 50,
+    tickHours: 1,
+  },
+
+  /* ---------------------------------- kitchen --------------------------------*
+   * Recipes consume ingredients and a cooking time; completing one pays cash
+   * plus a chance of a rare reward.
+   */
+  kitchen: {
+    slots: 3,
+    recipes: [
+      { key: 'quesadilla', label: 'Quesadilla', ingredients: 8, minutes: 30, reward: 25_000 },
+      { key: 'burrito_bowl', label: 'Burrito Bowl', ingredients: 18, minutes: 60, reward: 90_000 },
+      { key: 'taco_pizza', label: 'Taco Pizza', ingredients: 40, minutes: 180, reward: 280_000 },
+      { key: 'golden_taco', label: 'Golden Taco', ingredients: 80, minutes: 480, reward: 1_200_000 },
+    ],
+  },
+
+  /* -------------------------------- franchises -------------------------------*/
+  franchise: {
+    createCost: 250_000,
+    maxMembers: 12,
+    levels: [
+      { members: 3, cost: 500_000, bonus: 0.05 },
+      { members: 6, cost: 2_000_000, bonus: 0.12 },
+      { members: 10, cost: 8_000_000, bonus: 0.25 },
+    ],
+    roles: ['Owner', 'Co-Owner', 'Recruiter', 'Member'],
+  },
+
+  /* ------------------------------- mini-games -------------------------------*/
+  games: {
+    slots: { cost: 10_000, reelPay: 2.5, jackpotMultiplier: 8 },
+    blackjack: { minBet: 5_000, maxBet: 250_000, payout: 2 },
+    scratch: { cost: 20_000, tiers: [0, 25_000, 80_000, 400_000] },
+    flip: { cost: 10_000, payout: 1.95 },
+    cups: { cost: 15_000, payout: 2.9 },
+    roll: { cost: 10_000, payout: 5.5 },
+  },
 
   /* --------------------- idle accrual, tasks, economy safety -----------------*/
   accrual: { maxHours: 24 },      // offline income is capped at 24h
