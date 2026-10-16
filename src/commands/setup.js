@@ -5,12 +5,10 @@ import {
   ChannelType,
   EmbedBuilder,
   MessageFlags,
-  ModalBuilder,
   PermissionFlagsBits,
   RoleSelectMenuBuilder,
+  ChannelSelectMenuBuilder,
   SlashCommandBuilder,
-  TextInputBuilder,
-  TextInputStyle,
 } from 'discord.js';
 import {
   getGuild,
@@ -21,8 +19,10 @@ import {
 
 const MODULES = ['ticket', 'highrankdm'];
 
-/** Shared setup state for Advanced Setup. Keyed by user id. */
-const setupState = new Map();
+/** In-progress configure form state, keyed by user id. */
+const configureSessions = new Map();
+
+const CLEAR_VALUE = '__none__';
 
 function moduleBadge(enabled) {
   return enabled ? '✅ Enabled' : '❌ Disabled';
@@ -35,7 +35,7 @@ function settingsEmbed(guild, settings) {
     .setDescription(
       'Welcome to EasySupport setup. Choose how you would like to configure ticketing for this server.\n\n' +
         '• **Quick Setup** — creates sensible defaults in one click.\n' +
-        '• **Advanced Setup** — configure every option in a single modal.\n' +
+        '• **Configure** — pick the log channel, ticket category and roles from dropdowns, then submit.\n' +
         '• Toggle modules and view current settings below.',
     )
     .addFields(
@@ -75,6 +75,41 @@ function settingsEmbed(guild, settings) {
   return embed;
 }
 
+function configureEmbed(guild, session) {
+  const embed = new EmbedBuilder()
+    .setColor(0x4a3b32)
+    .setTitle('EasySupport — Configure')
+    .setDescription(
+      'Pick the channel and roles from the dropdowns below, then press **Submit**. ' +
+        'Leave a dropdown untouched to keep its current value.',
+    )
+    .addFields(
+      {
+        name: 'Staff role',
+        value: session.staffRoleId ? `<@&${session.staffRoleId}>` : 'not set',
+        inline: true,
+      },
+      {
+        name: 'Log channel',
+        value: session.logChannelId ? `<#${session.logChannelId}>` : 'not set',
+        inline: true,
+      },
+      {
+        name: 'Ticket category',
+        value: session.ticketCategoryId ? `<#${session.ticketCategoryId}>` : 'not set',
+        inline: true,
+      },
+      {
+        name: 'Management role',
+        value: session.managementRoleId ? `<@&${session.managementRoleId}>` : 'not set',
+        inline: true,
+      },
+    )
+    .setFooter({ text: 'No IDs or mentions to type — select, submit, done.' });
+
+  return embed;
+}
+
 function isModuleEnabledSync(settings, module) {
   if (!settings?.enabled_modules) return true;
   try {
@@ -91,7 +126,7 @@ function panelButtons(settings) {
   return [
     new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('setup:quick').setLabel('Quick Setup').setStyle(ButtonStyle.Success).setEmoji('⚡'),
-      new ButtonBuilder().setCustomId('setup:advanced').setLabel('Advanced Setup').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('setup:configure').setLabel('Configure').setStyle(ButtonStyle.Primary).setEmoji('🔧'),
     ),
     new ActionRowBuilder().addComponents(
       new ButtonBuilder()
@@ -133,53 +168,9 @@ export default {
         return button.reply({ content: 'Only the person who ran /setup can use these buttons.', flags: MessageFlags.Ephemeral });
       }
 
-      // Advanced Setup must be the initial response (modal), so do not defer.
-      if (button.customId === 'setup:advanced') {
-        setupState.set(interaction.user.id, { values: {} });
-        const modal = new ModalBuilder().setCustomId('setup:submit').setTitle('EasySupport — Advanced Setup');
-        modal.addComponents(
-          new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-              .setCustomId('staff_role')
-              .setLabel('Staff role mention or ID')
-              .setStyle(TextInputStyle.Short)
-              .setPlaceholder('<@&123456789012345678>')
-              .setRequired(true),
-          ),
-          new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-              .setCustomId('log_channel')
-              .setLabel('Log channel mention or ID')
-              .setStyle(TextInputStyle.Short)
-              .setPlaceholder('<#123456789012345678>')
-              .setRequired(true),
-          ),
-          new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-              .setCustomId('category')
-              .setLabel('Ticket category mention or ID')
-              .setStyle(TextInputStyle.Short)
-              .setPlaceholder('<#123456789012345678>')
-              .setRequired(true),
-          ),
-          new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-              .setCustomId('max_open')
-              .setLabel('Max open tickets per member (1-10)')
-              .setStyle(TextInputStyle.Short)
-              .setPlaceholder('2')
-              .setRequired(true),
-          ),
-          new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-              .setCustomId('management_role')
-              .setLabel('Management role mention or ID')
-              .setStyle(TextInputStyle.Short)
-              .setPlaceholder('<@&123456789012345678>')
-              .setRequired(true),
-          ),
-        );
-        return button.showModal(modal);
+      if (button.customId === 'setup:configure') {
+        await button.deferReply({ flags: MessageFlags.Ephemeral });
+        return openConfigureForm(interaction);
       }
 
       await button.deferReply({ flags: MessageFlags.Ephemeral });
@@ -288,46 +279,108 @@ async function runQuickSetup(guild) {
   });
 }
 
-/* ---------------------------- advanced setup modal ---------------------------- */
+/* ---------------------------- configure form ---------------------------- */
 
-function extractId(value) {
-  const m = value.match(/<@&(\d+)>/) || value.match(/<#(\d+)>/) || value.match(/^(\d+)$/);
-  return m ? m[1] : null;
-}
-
-export async function handleSetupModal(interaction, client) {
-  if (interaction.customId !== 'setup:submit') return false;
-  const state = setupState.get(interaction.user.id);
-  if (!state) {
-    return interaction.reply({ content: 'Setup session expired. Please run /setup again.', flags: MessageFlags.Ephemeral });
-  }
-
-  const maxOpen = parseInt(interaction.fields.getTextInputValue('max_open'), 10);
-  if (Number.isNaN(maxOpen) || maxOpen < 1 || maxOpen > 10) {
-    return interaction.reply({ content: 'Max open tickets must be a number between 1 and 10.', flags: MessageFlags.Ephemeral });
-  }
-
+async function openConfigureForm(interaction) {
   const settings = await getGuild(interaction.guildId);
-  await saveGuildSettings({
-    guildId: interaction.guildId,
-    staffRoleId: extractId(interaction.fields.getTextInputValue('staff_role')),
-    logChannelId: extractId(interaction.fields.getTextInputValue('log_channel')),
-    ticketCategoryId: extractId(interaction.fields.getTextInputValue('category')),
-    maxOpenTickets: maxOpen,
-    motmRoleId: settings?.motm_role_id ?? null,
-    managementRoleId: extractId(interaction.fields.getTextInputValue('management_role')),
-    enabledModules: settings?.enabled_modules ?? null,
+  const session = {
+    staffRoleId: settings?.staff_role_id ?? null,
+    logChannelId: settings?.log_channel_id ?? null,
+    ticketCategoryId: settings?.ticket_category_id ?? null,
+    managementRoleId: settings?.management_role_id ?? null,
+  };
+  configureSessions.set(interaction.user.id, session);
+
+  const form = await interaction.followUp({
+    embeds: [configureEmbed(interaction.guild, session)],
+    components: [
+      new ActionRowBuilder().addComponents(
+        new RoleSelectMenuBuilder()
+          .setCustomId('setup:role:staff')
+          .setPlaceholder('Staff role')
+          .setMaxValues(1)
+          .addOptions({ label: 'None — clear', value: CLEAR_VALUE, description: 'Remove the staff role' }),
+      ),
+      new ActionRowBuilder().addComponents(
+        new ChannelSelectMenuBuilder()
+          .setCustomId('setup:channel:log')
+          .setPlaceholder('Log channel')
+          .addChannelTypes(ChannelType.GuildText)
+          .setMaxValues(1)
+          .addOptions({ label: 'None — clear', value: CLEAR_VALUE, description: 'Remove the log channel' }),
+      ),
+      new ActionRowBuilder().addComponents(
+        new ChannelSelectMenuBuilder()
+          .setCustomId('setup:channel:category')
+          .setPlaceholder('Ticket category')
+          .addChannelTypes(ChannelType.GuildCategory)
+          .setMaxValues(1)
+          .addOptions({ label: 'None — clear', value: CLEAR_VALUE, description: 'Remove the ticket category' }),
+      ),
+      new ActionRowBuilder().addComponents(
+        new RoleSelectMenuBuilder()
+          .setCustomId('setup:role:management')
+          .setPlaceholder('Management role')
+          .setMaxValues(1)
+          .addOptions({ label: 'None — clear', value: CLEAR_VALUE, description: 'Remove the management role' }),
+      ),
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('setup:submit').setLabel('Submit').setStyle(ButtonStyle.Success),
+      ),
+    ],
+    flags: MessageFlags.Ephemeral,
+    fetchReply: true,
   });
 
-  setupState.delete(interaction.user.id);
-  const updated = await getGuild(interaction.guildId);
-  await interaction.reply({
-    content: '✅ Advanced Setup complete. Ticketing is configured.',
-    embeds: [settingsEmbed(interaction.guild, updated)],
-    components: panelButtons(updated),
-    flags: MessageFlags.Ephemeral,
+  const formCollector = form.createMessageComponentCollector({ time: 5 * 60_000 });
+
+  formCollector.on('collect', async (component) => {
+    if (component.user.id !== interaction.user.id) {
+      return component.reply({ content: 'Only the person who ran /setup can use this form.', flags: MessageFlags.Ephemeral });
+    }
+
+    if (component.isButton() && component.customId === 'setup:submit') {
+      await component.deferReply({ flags: MessageFlags.Ephemeral });
+      const current = await getGuild(interaction.guildId);
+      const saved = configureSessions.get(interaction.user.id) ?? {};
+      await saveGuildSettings({
+        guildId: interaction.guildId,
+        staffRoleId: saved.staffRoleId ?? current?.staff_role_id ?? null,
+        logChannelId: saved.logChannelId ?? current?.log_channel_id ?? null,
+        ticketCategoryId: saved.ticketCategoryId ?? current?.ticket_category_id ?? null,
+        maxOpenTickets: current?.max_open_tickets ?? 2,
+        motmRoleId: current?.motm_role_id ?? null,
+        managementRoleId: saved.managementRoleId ?? current?.management_role_id ?? null,
+        enabledModules: current?.enabled_modules ?? null,
+      });
+      configureSessions.delete(interaction.user.id);
+      const updated = await getGuild(interaction.guildId);
+      await component.editReply({
+        content: '✅ Configuration saved.',
+        embeds: [settingsEmbed(interaction.guild, updated)],
+        components: panelButtons(updated),
+      });
+      await component.message.edit({ components: [] }).catch(() => {});
+      return;
+    }
+
+    if (component.isRoleSelectMenu() || component.isChannelSelectMenu()) {
+      await component.deferUpdate();
+      const saved = configureSessions.get(interaction.user.id) ?? {};
+      const value = component.values[0] === CLEAR_VALUE ? null : component.values[0];
+      if (component.customId === 'setup:role:staff') saved.staffRoleId = value;
+      if (component.customId === 'setup:channel:log') saved.logChannelId = value;
+      if (component.customId === 'setup:channel:category') saved.ticketCategoryId = value;
+      if (component.customId === 'setup:role:management') saved.managementRoleId = value;
+      configureSessions.set(interaction.user.id, saved);
+      await component.update({ embeds: [configureEmbed(interaction.guild, saved)] });
+    }
   });
-  return true;
+
+  formCollector.on('end', () => {
+    form.edit({ components: [] }).catch(() => {});
+    configureSessions.delete(interaction.user.id);
+  });
 }
 
 export { panelButtons };

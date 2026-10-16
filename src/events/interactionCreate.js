@@ -25,7 +25,6 @@ import {
   setPanelMessageId,
   updateTicketStatus,
 } from '../db.js';
-import { handleSetupModal } from '../commands/setup.js';
 import { CATEGORIES, DEFAULT_STATUS, TICKET_STATUSES, getStatusMeta, resolveStaffRole } from '../categories.js';
 import { categoryArt } from '../art.js';
 import { saveTranscripts } from '../transcripts.js';
@@ -125,10 +124,6 @@ async function handleButton(interaction, client) {
 }
 
 async function handleModalSubmit(interaction, client) {
-  if (interaction.customId.startsWith('setup:')) {
-    return handleSetupModal(interaction, client);
-  }
-
   if (interaction.customId.startsWith('ticket:intake:')) {
     const key = interaction.customId.slice('ticket:intake:'.length);
     const category = CATEGORIES[key];
