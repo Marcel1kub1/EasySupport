@@ -21,8 +21,10 @@ async function renderPage(res, template, pageLocals = {}) {
   const body = await ejs.renderFile(path.join(viewsDir, `${template}.ejs`), {
     ...pageLocals,
     active,
+    message: pageLocals.message,
+    repoUrl: pageLocals.repoUrl ?? 'https://github.com/Marcel1kub1/EasySupport',
   });
-  return res.render('layout', { ...pageLocals, active, body });
+  return res.render('layout', { ...pageLocals, active, message: pageLocals.message, body });
 }
 
 async function getSystemMetrics() {
