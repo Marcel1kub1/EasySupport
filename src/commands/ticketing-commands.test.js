@@ -1,6 +1,6 @@
 /*
- * Ticketing-side commands (src/commands/): the new admin tools and that their
- * guards hold. Runs against a throwaway database like the economy smoke suite.
+ * Ticketing-side commands (src/commands/): the new admin tools and their guards hold.
+ * Runs against a throwaway database.
  */
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';

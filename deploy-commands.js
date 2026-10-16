@@ -7,11 +7,11 @@ import { loadModules } from './src/loader.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /*
- * Load every command from src/commands/** and src/economy/commands/** — the
- * deploy set is always exactly what the running system has.
+ * Load every command from src/commands/** — the deploy set is always exactly
+ * what the running system has.
  */
 const body = [];
-for (const dir of ['commands', path.join('economy', 'commands')]) {
+for (const dir of ['commands']) {
   await loadModules(path.join(__dirname, 'src', dir), (command) => {
     if (command?.data?.name && typeof command.execute === 'function') {
       body.push(command.data.toJSON());

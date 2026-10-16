@@ -12,19 +12,6 @@ test('existing commands load with no duplicates', async () => {
   assert.deepEqual([...names].sort(), ['blacklist', 'export', 'panel', 'setup']);
 });
 
-test('economy commands are discovered through the nested directory', async () => {
-  const names = await loadCommandNames(path.join(PROJECT_ROOT, 'src', 'economy', 'commands'));
-  const expected = [
-    'buy', 'clean', 'cooldowns', 'daily', 'employees', 'found', 'hire', 'menu',
-    'mine', 'shack', 'shop', 'tips', 'upgrades', 'work',
-    'location', 'prestige', 'advertise', 'expand', 'hq', 'decorations',
-    'tasks', 'achievements', 'badge', 'coupons', 'redeem', 'rewards', 'remind', 'rushhour', 'event',
-    'gift', 'priority', 'donate', 'goal', 'help', 'stats', 'economy-admin', 'leaderboard', 'leaderboard-post', 'staff-top',
-  ];
-  assert.deepEqual([...names].sort(), expected.sort());
-  assert.equal(new Set(names).size, names.length, 'duplicate command names found');
-});
-
 test('loader walks nested directories and skips non-js files', async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'loader-test-'));
   try {
@@ -63,13 +50,11 @@ test('modules without a command shape are ignored, not fatal', async () => {
  */
 test('every command payload satisfies Discord option rules', async () => {
   const payload = [];
-  for (const dir of ['commands', 'economy/commands']) {
-    await loadModules(path.join(PROJECT_ROOT, 'src', dir), (command) => {
+  await loadModules(path.join(PROJECT_ROOT, 'src', 'commands'), (command) => {
       if (command?.data?.name && typeof command.execute === 'function') {
         payload.push(command.data.toJSON());
       }
     });
-  }
 
   const SUB = new Set([1, 2]); // subcommand, subcommand group
   for (const command of payload) {

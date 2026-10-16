@@ -26,10 +26,7 @@ import {
 } from '../db.js';
 import { CATEGORIES, DEFAULT_STATUS, TICKET_STATUSES, getStatusMeta, resolveStaffRole } from '../categories.js';
 import { categoryArt } from '../art.js';
-import { economy } from '../economy/instance.js';
-import { ECONOMY } from '../economy/config.js';
 import { saveTranscripts } from '../transcripts.js';
-import { handlePanelInteraction, handlePanelModal, PANEL_PREFIX } from '../economy/panel.js';
 
 const COLORS = { blurple: 0x5865f2, green: 0x57f287, red: 0xed4245, yellow: 0xfee75c };
 const PANEL_COOLDOWN_MS = 5_000;
@@ -93,12 +90,6 @@ export default {
 /* -------------------------------- routing --------------------------------- */
 
 async function handleButton(interaction, client) {
-  // Taco Empire panel buttons live in their own namespace and never collide
-  // with the ticketing buttons ('ticket:*').
-  if (interaction.customId.startsWith(PANEL_PREFIX)) {
-    const view = await handlePanelInteraction(interaction);
-    return interaction.update(view);
-  }
   const id = interaction.customId;
 
   if (id.startsWith('ticket:open:')) return onPanelClick(interaction, client);
@@ -135,10 +126,6 @@ async function handleModalSubmit(interaction, client) {
     const key = interaction.customId.slice('ticket:status:reason:'.length);
     const reason = interaction.fields.getTextInputValue('reason').trim();
     return finalizeClose(interaction, key, reason);
-  }
-
-  if (interaction.customId.startsWith(PANEL_PREFIX)) {
-    return handlePanelModal(interaction);
   }
 }
 
@@ -293,18 +280,11 @@ async function openTicket(interaction, client, key, answers) {
     category: key,
   });
 
-  // Priority support: an active perk (bought with economy cash) flags the
-  // ticket, the staff ping and the audit log.
-  const priority = economy.hasPerk(guild.id, interaction.user.id, 'priority');
-
   const initialStatus = getStatusMeta(DEFAULT_STATUS);
   const fields = [
     { name: 'Opened by', value: `<@${interaction.user.id}>`, inline: true },
     { name: 'Status', value: statusText(initialStatus, interaction.user), inline: true },
   ];
-  if (priority) {
-    fields.unshift({ name: '⚡ Priority support', value: 'This member holds priority support.', inline: false });
-  }
   for (const answer of answers ?? []) {
     fields.push({
       name: answer.question.slice(0, 256),
@@ -313,8 +293,8 @@ async function openTicket(interaction, client, key, answers) {
   }
 
   const control = new EmbedBuilder()
-    .setColor(priority ? COLORS.yellow : COLORS.blurple)
-    .setTitle(`${priority ? '⚡ ' : ''}Ticket #${ticketId} — ${category.label}`)
+    .setColor(COLORS.blurple)
+    .setTitle(`Ticket #${ticketId} — ${category.label}`)
     .setDescription(
       `${category.description ?? 'Our team will reply shortly.'}\n\nPlease describe what was happening when the problem occurred and include any screenshots — it helps us reply faster.`
     )
@@ -343,13 +323,12 @@ async function openTicket(interaction, client, key, answers) {
     interaction.guildId,
     client,
     new EmbedBuilder()
-      .setColor(priority ? COLORS.yellow : COLORS.green)
-      .setTitle(priority ? '⚡ Priority ticket opened' : 'Ticket opened')
+      .setColor(COLORS.green)
+      .setTitle('Ticket opened')
       .addFields(
         { name: 'Ticket', value: `#${ticketId} (${category.label})`, inline: true },
         { name: 'Opened by', value: `<@${interaction.user.id}>`, inline: true },
-        { name: 'Channel', value: `<#${channel.id}>`, inline: true },
-        { name: 'Priority', value: priority ? '⚡ yes (perk active)' : 'no', inline: true }
+        { name: 'Channel', value: `<#${channel.id}>`, inline: true }
       )
       .setTimestamp()
   );
@@ -545,22 +524,6 @@ async function finalizeClose(interaction, key, reason) {
 
   closeTicket(interaction.channelId, key, reason || null, interaction.user.id);
 
-  // Staff payout: economy cash for closing a ticket WITH a reason, credited to
-  // the closer and tracked per month (capped in the economy repository).
-  let payout = null;
-  if (reason?.trim() && interaction.guildId) {
-    const period = new Date().toISOString().slice(0, 7);
-    const result = economy.addStaffPayout(
-      interaction.guildId,
-      interaction.user.id,
-      period,
-      ECONOMY.staffPayouts.perReasonedClosure,
-      ECONOMY.staffPayouts.monthlyCapPerStaff
-    );
-    if (result.paid > 0) economy.addCash(interaction.guildId, interaction.user.id, result.paid);
-    payout = result.capped ? { paid: 0, capped: true } : { paid: result.paid, capped: false };
-  }
-
   const closed = getTicketById(ticket.id);
   const messages = getTicketMessages(ticket.id);
   const { textPath, htmlPath } = saveTranscripts(closed, messages);
@@ -611,25 +574,13 @@ async function finalizeClose(interaction, key, reason) {
         { name: 'Set by', value: `<@${interaction.user.id}>`, inline: true },
         { name: 'Claimed by', value: ticket.claimed_by ? `<@${ticket.claimed_by}>` : '—', inline: true },
         { name: 'Reason', value: reason || '—' },
-        {
-          name: 'Staff payout',
-          value: payout
-            ? payout.capped
-              ? 'monthly cap reached — no payout'
-              : `+${payout.paid.toLocaleString('en-US')} ${ECONOMY.currency} to <@${interaction.user.id}>`
-            : 'no reason given — no payout',
-          inline: true,
-        },
         { name: 'Transcript', value: dmDelivered ? `DM'd to <@${ticket.user_id}>` : `saved on server: \`${htmlPath}\`` },
         { name: 'Messages logged', value: String(messages.length), inline: true }
       )
       .setTimestamp()
   );
 
-  await interaction.editReply(
-    `Ticket ${meta.label.toLowerCase()}. Deleting this channel in 10 seconds…` +
-      (payout && payout.paid > 0 ? `\n💰 Staff payout: **+${payout.paid.toLocaleString('en-US')}** ${ECONOMY.currency}.` : '')
-  );
+  await interaction.editReply(`Ticket ${meta.label.toLowerCase()}. Deleting this channel in 10 seconds…`);
   setTimeout(() => {
     interaction.channel?.delete(`Ticket #${ticket.id} closed by ${interaction.user.tag}`).catch(() => {});
   }, 10_000);

@@ -4,9 +4,9 @@ import { pathToFileURL } from 'node:url';
 
 /**
  * Recursively imports every .js module under `dir` and reports it to `onModule`.
- * Used for commands (src/commands/**), gateway events (src/events/**) and the
- * economy command tree (src/economy/commands/**) — subdirectories are supported
- * so new modules can be grouped without touching the loaders.
+ * Used for commands (src/commands/**) and gateway events (src/events/**) —
+ * subdirectories are supported so new modules can be grouped without touching
+ * the loaders.
  *
  * onModule(moduleDefault, relativePathWithoutExtension)
  */

@@ -41,11 +41,6 @@
 - 🧩 **Everything in one panel** — art, status, intake answers and all status buttons live in a single message
 - 🎨 **Generated category art** — every ticket channel and the public panel get a banner rendered with `@resvg/resvg-js`, showing the **category name and emoji** on a palette unique to that category (deterministic, cached in `data/art/`)
 - 🧭 **Config-driven statuses** — every status in `src/categories.js` becomes a control-panel button (claim, pending, escalate, close)
-- 🎮 **Taco Empire mini-game** — a full tycoon loop (`/work`, `/tips`, `/daily`, `/menu`, `/hire`, …) with levels, upgrades, cleanliness and prestige
-- 💰 **Staff payouts** — staff earn Taco Empire cash for every ticket they close *with a reason*, tracked per month with a cap
-- ⚡ **Priority support** — members buy priority with in-game cash; their tickets flag, ping and log as priority
-- 💝 **Community pot** — donations fund a server-wide income boost when the goal is reached
-- 🧹 **Quiet queue bonus** — zero open tickets gives everyone +25% income
 - 🔒 **Private channels** — only the opener and the handling role can see the ticket
 - 📄 **Transcripts** — a TXT + HTML transcript is generated when a ticket closes
 - ⭐ **Rating prompt** — members rate the support 1–5 by DM after close
@@ -62,93 +57,6 @@
 **Inside a ticket** (status buttons, staff ping, intake answers):
 
 <img src="assets/ticket.png" alt="Discord ticket channel showing the control panel, status buttons and conversation" width="100%">
-
-## 🌮 Taco Empire — the built-in tycoon game
-
-A chill, no-PvP business sim that lives in the same bot: start with a free taco
-stand, reinvest everything, grow into restaurants and hotels. No robbing, no
-gambling — just numbers going up.
-
-<img src="assets/economy-banner.png" alt="Taco Empire location ladder: Taco Stand, Restaurant, Taco Hotel" width="100%">
-
-**Core loop:** `/work` for cash → `/buy` upgrades → `/menu` high-value items →
-`/hire` staff for passive income → keep the shack `/clean` so customers stay.
-
-**`/shack` — your empire at a glance:**
-
-<img src="assets/economy-shack.png" alt="Discord message showing the /shack stats embed with balance, income and per-business fields" width="100%">
-
-**`/shop` — the boost store, and buying a boost:**
-
-<img src="assets/economy-shop.png" alt="Discord message showing the /shop embed with the Lucky Sombrero and Golden Ticket boosts" width="100%">
-
-**`/upgrades` — the reinvestment ladder, and `/tips` payouts:**
-
-<img src="assets/economy-upgrades.png" alt="Discord message showing the /upgrades embed with the equipment ladder" width="100%">
-
-**`/location list` — the three business lines, and a `/work` shift:**
-
-<img src="assets/economy-location.png" alt="Discord message showing the /location list embed with the business progression" width="100%">
-
-| Command | What it does |
-|---|---|
-| `/found <name>` | Name your shack (first run also grants the free stand) |
-| `/work` | Cook tacos for cash — main earner, 1h cooldown, random Happy Hour doubles |
-| `/tips` | Collect the tip jar (8 min) — pays less when the shack is dirty |
-| `/daily` | Streak bonus, up to 7× |
-| `/clean` | Scrub the shack — dirt cuts income and tips |
-| `/mine` | Gather ingredients for restaurants, hotels and recipes |
-| `/shack` | Stats: balance, income, cleanliness, menu, staff, net worth |
-| `/cooldowns` | Which actions are ready |
-| `/upgrades` | Browse the upgrade ladder (+% income each) |
-| `/buy <upgrade\|boost>` | Buy equipment or a temporary boost |
-| `/shop` | Browse boosts (Lucky Sombrero, Golden Ticket) |
-| `/menu view\|set` | Fill menu slots — empty slots silently cap your income |
-| `/hire <type> <name>` | Hire chefs, line cooks and janitors for passive income |
-| `/employees list\|train` | View staff; train them after your first prestige |
-| `/location list\|buy` | Browse and buy businesses (restaurant, hotel, taco truck) |
-| `/prestige` | Reset a maxed business to level 1 for a stacking multiplier |
-| `/advertise` | Biktok campaign: ×1.75 income for 3h (unlocks with prestige) |
-| `/expand` | More upgrade slots for a business |
-| `/hq` | Headquarters: global income upgrades for every business |
-| `/decorations` | Browse cosmetics with small income bonuses |
-| `/tasks view\|claim` | Three daily tasks (work shifts, tips, mining…) with cash rewards |
-| `/achievements` | Long-term goals — badges unlock automatically as you play |
-| `/badge view` | Your badge collection |
-| `/coupons` · `/redeem <code>` | Active coupon codes and redemption |
-| `/rewards` | Your streak, claimed tasks and redeemed coupons |
-| `/remind <action>` | Get pinged when an action is ready again |
-| `/rushhour info` · `/event info` | When the 2× income windows run |
-
-**Social & server tools:**
-
-| Command | What it does |
-|---|---|
-| `/help` | Every command, grouped by what it does |
-| `/stats` | Your lifetime stats + the live event multiplier |
-| `/leaderboard` · `/leaderboard-post` | Richest members; post a self-updating scoreboard |
-| `/gift <member> <amount>` | Send cash (small fee, anti-alt) |
-| `/priority buy\|view` | Priority support — flagged, pinged, logged tickets |
-| `/donate <amount>` · `/goal` | Community pot and its progress bar |
-| `/staff-top` | Staff of the month: reasoned closures, payouts, ratings |
-| `/economy-admin give\|set\|reset\|pot` | Admin tools (promos, fixes, pot) |
-| `/blacklist add\|remove\|check` | Ticketing: block members from opening tickets |
-| `/export` | DM yourself a database snapshot for backups |
-
-**Systems:** per-business 10-level ladders with exponential upgrade costs ·
-quadratic income growth · menu slots that unlock per level · employees with
-wages vs. bonuses · cleanliness decay with janitors that slow it · **prestige**
-for stacking multipliers · **ownership synergy** (+10% on all income per extra
-business line) · expandable upgrade slots · HQ multipliers · decorations ·
-boosts that stack · Happy Hour and Lunch Rush events · **staff payouts** for
-reasoned ticket closures · **priority support** · **community pot** payouts ·
-seasonal windows · **quiet-queue bonus**.
-
-**Progression:** free taco stand → **Restaurant** (500k + 50 ingredients, after
-your first taco prestige) → **Taco Hotel** (5M + 250 ingredients, after a
-restaurant prestige), plus the **Taco Truck** side business at level 3.
-
-**Coming next** (roadmap): franchises & leaderboards · the Sauce Market, Kitchen recipes and gambling.
 
 ## 📋 Requirements
 
@@ -226,21 +134,8 @@ src/
 
 assets/
 ├── fonts/                   Inter (OFL) bundled for banner text rendering
-├── emoji/                   Twemoji SVGs for the emojis used in categories.js
-└── economy-banner.png       Taco Empire preview image
-
-src/economy/
-├── config.js                ALL game balance: locations, ladders, employees, market
-├── engine.js                PURE math: income, payouts, decay, prestige, synergy
-├── db.js                    schema + repository (dependency-injected for tests)
-├── instance.js              the repository bound to the shared bot database
-├── util.js                  cooldowns, location picker and formatting helpers
-├── format.js                money/rate formatting
-└── commands/                found work tips clean daily shack cooldowns upgrades
-                             buy shop menu employees hire mine location prestige
-                             advertise expand hq decorations
+└── emoji/                   Twemoji SVGs for the emojis used in categories.js
 ```
-
 ## 🖥️ Hosting on a server
 
 The template writes its database to `data/tickets.db`, generated panel art to
@@ -266,12 +161,8 @@ The template writes its database to `data/tickets.db`, generated panel art to
 ## 🧪 Tests
 
 ```bash
-npm test        # 128 tests: engine math, db integration, command smoke tests, ticketing commands, loader
+npm test
 ```
-
-The economy engine is a **pure module** — every payout, decay and multiplier is
-unit-tested against the config, and every command is executed end-to-end against
-a throwaway database in `src/economy/commands.smoke.test.js`.
 
 ## 🧩 Extending
 
