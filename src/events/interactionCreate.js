@@ -19,11 +19,13 @@ import {
   getTicketByChannel,
   getTicketMessages,
   isBlacklisted,
+  isModuleEnabled,
   nextTicketNumber,
   rateTicket,
   setPanelMessageId,
   updateTicketStatus,
 } from '../db.js';
+import { handleSetupModal } from '../commands/setup.js';
 import { CATEGORIES, DEFAULT_STATUS, TICKET_STATUSES, getStatusMeta, resolveStaffRole } from '../categories.js';
 import { categoryArt } from '../art.js';
 import { saveTranscripts } from '../transcripts.js';
@@ -31,6 +33,14 @@ import { saveTranscripts } from '../transcripts.js';
 const COLORS = { blurple: 0x5865f2, green: 0x57f287, red: 0xed4245, yellow: 0xfee75c };
 const PANEL_COOLDOWN_MS = 5_000;
 const panelCooldowns = new Map();
+
+/** Maps slash-command names to the module they belong to (for deactivation). */
+const COMMAND_MODULES = {
+  panel: 'ticket',
+  blacklist: 'ticket',
+  export: 'ticket',
+  highrankdm: 'highrankdm',
+};
 
 /*
  * Discord can re-dispatch an interaction (gateway resume, a second client
@@ -73,7 +83,13 @@ export default {
       if (interaction.isModalSubmit()) return handleModalSubmit(interaction, client);
       if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
-        if (command) await command.execute(interaction, client);
+        if (command) {
+          const commandModule = COMMAND_MODULES[interaction.commandName];
+          if (commandModule && !(await isModuleEnabled(interaction.guildId, commandModule))) {
+            return interaction.reply({ content: 'This command is disabled for this server.', flags: MessageFlags.Ephemeral });
+          }
+          await command.execute(interaction, client);
+        }
       }
     } catch (error) {
       console.error('[interaction] Failed to handle interaction:', error);
@@ -109,6 +125,10 @@ async function handleButton(interaction, client) {
 }
 
 async function handleModalSubmit(interaction, client) {
+  if (interaction.customId.startsWith('setup:')) {
+    return handleSetupModal(interaction, client);
+  }
+
   if (interaction.customId.startsWith('ticket:intake:')) {
     const key = interaction.customId.slice('ticket:intake:'.length);
     const category = CATEGORIES[key];

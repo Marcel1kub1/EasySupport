@@ -55,6 +55,8 @@ export async function initialize() {
   ticket_category_id VARCHAR(255),
   max_open_tickets  INT NOT NULL DEFAULT 2,
   motm_role_id      VARCHAR(255),
+  management_role_id VARCHAR(255),
+  enabled_modules   TEXT,
   updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )`,
     `CREATE TABLE IF NOT EXISTS tickets (
@@ -110,6 +112,8 @@ export async function initialize() {
   for (const migration of [
     'ALTER TABLE tickets ADD COLUMN closed_by VARCHAR(255)',
     'ALTER TABLE guilds ADD COLUMN motm_role_id VARCHAR(255)',
+    'ALTER TABLE guilds ADD COLUMN management_role_id VARCHAR(255)',
+    'ALTER TABLE guilds ADD COLUMN enabled_modules TEXT',
   ]) {
     try {
       await pool.query(migration);
@@ -128,19 +132,21 @@ export async function getGuild(guildId) {
 }
 
 const upsertGuildStmt = `
-INSERT INTO guilds (guild_id, staff_role_id, log_channel_id, ticket_category_id, max_open_tickets, motm_role_id, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, NOW())
+INSERT INTO guilds (guild_id, staff_role_id, log_channel_id, ticket_category_id, max_open_tickets, motm_role_id, management_role_id, enabled_modules, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
 ON DUPLICATE KEY UPDATE
   staff_role_id      = VALUES(staff_role_id),
   log_channel_id     = VALUES(log_channel_id),
   ticket_category_id = VALUES(ticket_category_id),
   max_open_tickets   = VALUES(max_open_tickets),
   motm_role_id       = VALUES(motm_role_id),
+  management_role_id = VALUES(management_role_id),
+  enabled_modules    = VALUES(enabled_modules),
   updated_at         = NOW()
 `;
 
-export async function saveGuildSettings({ guildId, staffRoleId, logChannelId, ticketCategoryId, maxOpenTickets, motmRoleId }) {
-  await run(upsertGuildStmt, [guildId, staffRoleId, logChannelId, ticketCategoryId, maxOpenTickets, motmRoleId ?? null]);
+export async function saveGuildSettings({ guildId, staffRoleId, logChannelId, ticketCategoryId, maxOpenTickets, motmRoleId, managementRoleId, enabledModules }) {
+  await run(upsertGuildStmt, [guildId, staffRoleId, logChannelId, ticketCategoryId, maxOpenTickets, motmRoleId ?? null, managementRoleId ?? null, enabledModules ?? null]);
 }
 
 /* --------------------------------- tickets -------------------------------- */
@@ -304,6 +310,53 @@ export async function addToBlacklist(guildId, userId) {
 
 export async function removeFromBlacklist(guildId, userId) {
   await run('DELETE FROM blacklist WHERE guild_id = ? AND user_id = ?', [guildId, userId]);
+}
+
+/* ------------------------------- module toggles ---------------------------- */
+
+/** Module names recognized by the system. */
+const MODULES = ['ticket', 'highrankdm'];
+
+/** Resolve the enabled_modules JSON array for a guild. NULL means all enabled. */
+async function getEnabledModules(guildId) {
+  const row = await get('SELECT enabled_modules FROM guilds WHERE guild_id = ?', [guildId]);
+  if (!row || row.enabled_modules == null) return null;
+  try {
+    return JSON.parse(row.enabled_modules);
+  } catch {
+    return null;
+  }
+}
+
+/** Check whether a module is enabled for a guild. Defaults to enabled. */
+export async function isModuleEnabled(guildId, module) {
+  const enabled = await getEnabledModules(guildId);
+  if (enabled === null) return true;
+  return enabled.includes(module);
+}
+
+/** Enable or disable a module for a guild. */
+export async function setModuleEnabled(guildId, module, enabled) {
+  if (!MODULES.includes(module)) return;
+  const current = await getEnabledModules(guildId);
+  let next;
+  if (enabled) {
+    next = current === null ? [...MODULES] : [...new Set([...current, module])];
+  } else {
+    next = current === null ? MODULES.filter((m) => m !== module) : current.filter((m) => m !== module);
+  }
+  await run('UPDATE guilds SET enabled_modules = ? WHERE guild_id = ?', [JSON.stringify(next), guildId]);
+}
+
+/* ------------------------------- management role --------------------------- */
+
+export async function getManagementRole(guildId) {
+  const row = await get('SELECT management_role_id FROM guilds WHERE guild_id = ?', [guildId]);
+  return row?.management_role_id ?? null;
+}
+
+export async function setManagementRole(guildId, roleId) {
+  await run('UPDATE guilds SET management_role_id = ? WHERE guild_id = ?', [roleId ?? null, guildId]);
 }
 
 /* ------------------------------- website data ------------------------------ */
