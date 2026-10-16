@@ -16,15 +16,26 @@ const __dirname = path.resolve();
 const viewsDir = path.join(__dirname, 'src', 'views');
 const startTime = Date.now();
 
+const templateDefaults = {
+  active: '',
+  message: undefined,
+  repoUrl: 'https://github.com/Marcel1kub1/EasySupport',
+  admin: false,
+  notFound: false,
+  status: null,
+  announcements: [],
+  metrics: null,
+  stats: [],
+  recent: [],
+  guildCount: 0,
+  totalTickets: 0,
+  openTickets: 0,
+};
+
 async function renderPage(res, template, pageLocals = {}) {
-  const active = pageLocals.active ?? '';
-  const body = await ejs.renderFile(path.join(viewsDir, `${template}.ejs`), {
-    ...pageLocals,
-    active,
-    message: pageLocals.message,
-    repoUrl: pageLocals.repoUrl ?? 'https://github.com/Marcel1kub1/EasySupport',
-  });
-  return res.render('layout', { ...pageLocals, active, message: pageLocals.message, body });
+  const locals = { ...templateDefaults, ...pageLocals, active: pageLocals.active ?? '' };
+  const body = await ejs.renderFile(path.join(viewsDir, `${template}.ejs`), locals);
+  return res.render('layout', locals);
 }
 
 async function getSystemMetrics() {
