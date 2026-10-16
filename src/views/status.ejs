@@ -36,34 +36,23 @@
     </div>
   </section>
 
-  <% if (announcements.length) { %>
-    <section class="announcements" style="margin-bottom: 40px;">
-      <div class="section-title">Announcements</div>
-      <% announcements.forEach((a) => { %>
-        <div class="announce card">
-          <div class="announce-title" style="font-weight: 800; color: var(--accent); margin-bottom: 4px; font-size: 0.95rem;"><%= a.title %></div>
-          <div class="announce-content" style="color: var(--text); font-size: 0.95rem; white-space: pre-wrap;"><%= a.content %></div>
-        </div>
-      <% }) %>
-    </section>
-  <% } %>
-
-  <% if (admin) { %>
-    <section class="admin-form" style="margin-bottom: 30px;">
-      <div class="section-title">Post announcement</div>
-      <form method="post" action="/admin/announce" class="form" style="max-width: 520px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px;">
-        <div class="form-group">
-          <label>Title</label>
-          <input name="title" required placeholder="e.g. Maintenance tonight">
-        </div>
-        <div class="form-group">
-          <label>Content</label>
-          <input name="content" required placeholder="What&rsquo;s happening?">
-        </div>
-        <button class="btn btn-primary">Post announcement</button>
-      </form>
-    </section>
-  <% } %>
+  <section class="announcements" style="margin-bottom: 40px;">
+    <div class="section-title">Status announcements</div>
+    <div class="announcements-hardcoded" style="display: flex; flex-direction: column; gap: 12px; max-width: 520px;">
+      <div class="announce card">
+        <div class="announce-title" style="font-weight: 800; color: var(--accent); margin-bottom: 4px; font-size: 0.95rem;">System status</div>
+        <div class="announce-content" style="color: var(--text); font-size: 0.95rem; white-space: pre-wrap;">All systems operational. Gateway, database, and API endpoints are healthy.</div>
+      </div>
+      <div class="announce card">
+        <div class="announce-title" style="font-weight: 800; color: var(--warn); margin-bottom: 4px; font-size: 0.95rem;">Scheduled maintenance</div>
+        <div class="announce-content" style="color: var(--text); font-size: 0.95rem; white-space: pre-wrap;">MySQL maintenance window tonight 02:00–04:00 UTC. Brief blips possible during failover.</div>
+      </div>
+      <div class="announce card">
+        <div class="announce-title" style="font-weight: 800; color: #7A69F9; margin-bottom: 4px; font-size: 0.95rem;">New feature</div>
+        <div class="announce-content" style="color: var(--text); font-size: 0.95rem; white-space: pre-wrap;">High-rank DM module is now live. Use /setup to configure per-guild module toggles.</div>
+      </div>
+    </div>
+  </section>
 <% } %>
 
 <style>

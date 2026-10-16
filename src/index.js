@@ -5,6 +5,7 @@ import { Client, Events, GatewayIntentBits, Partials } from 'discord.js';
 import { config } from './config.js';
 import { loadModules } from './loader.js';
 import { createWebApp } from './web.js';
+import { deployCommands } from '../deploy-commands.js';
 import { connect, initialize, pool } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -51,6 +52,15 @@ async function boot() {
     console.log('[db] Connected to MySQL.');
     await initialize();
     console.log('[db] Schema initialized.');
+
+    // Sync slash commands with Discord: register current ones and prune any
+    // stale commands left over from older builds (both scopes).
+    try {
+      await deployCommands();
+    } catch (error) {
+      console.error('[deploy] Command sync failed (non-fatal):', error.message ?? error);
+    }
+
   } catch (error) {
     console.error('[db] Failed to connect to MySQL:', error);
     process.exit(1);

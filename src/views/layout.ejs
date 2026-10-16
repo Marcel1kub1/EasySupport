@@ -143,6 +143,110 @@
       .nav-links { gap: 18px; }
       .nav-links a { font-size: 0.9rem; padding: 4px 0; }
     }
+    /* Tiny animated gradient button */
+    .tiny-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      position: relative;
+      height: 30px;
+      padding: 1px;
+      border-radius: 9999px;
+      overflow: hidden;
+      background: #050708;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+    }
+    .tiny-btn .glow-wrap {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      overflow: hidden;
+    }
+    .tiny-btn .gradient-blur {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      width: 22px;
+      height: 22px;
+      left: 50%;
+      top: 35%;
+      transform: translate(-50%, -35%);
+      filter: blur(14px);
+      background: linear-gradient(135deg, #7A69F9, #F26378, #F5833F);
+      opacity: 0.55;
+    }
+    .tiny-btn .border-glow {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      animation: border-glow-translate 10s ease-in-out infinite alternate;
+    }
+    .tiny-btn .border-glow span {
+      position: absolute;
+      inset: 0;
+      width: 10px;
+      height: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: inherit;
+      filter: blur(14px);
+      animation: border-glow-scale 10s ease-in-out infinite alternate;
+      background: linear-gradient(135deg, #7A69F9, #F26378, #F5833F);
+    }
+    .tiny-btn .content {
+      position: relative;
+      z-index: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      height: 28px;
+      padding: 0 14px 0 8px;
+      border-radius: inherit;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .tiny-btn .icon-wrap {
+      position: relative;
+      width: 16px;
+      height: 16px;
+      animation: star-rotate 14s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite alternate;
+    }
+    .tiny-btn .icon-wrap svg { width: 16px; height: 16px; opacity: 0.85; }
+    .tiny-btn .icon-wrap .shine {
+      position: absolute;
+      inset: 50%;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      opacity: 0.25;
+      background: linear-gradient(135deg, #3BC4F2, #7A69F9, #F26378, #F5833F);
+      filter: blur(7px);
+      animation: star-shine 14s ease-in-out infinite alternate;
+      transform: translate(-50%, -50%);
+    }
+    .tiny-btn .label {
+      margin-left: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #fff;
+      animation: star-rotate 14s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite alternate;
+      white-space: nowrap;
+    }
+    .tiny-btn:hover .icon-wrap,
+    .tiny-btn:hover .label {
+      animation: none;
+      transform: scale(1.05) rotate(0deg);
+    }
+    @keyframes border-glow-translate { from { transform: translateX(0); } to { transform: translateX(14px); } }
+    @keyframes border-glow-scale { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.15); } }
+    @keyframes star-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes star-shine { from { opacity: 0.15; transform: translate(-50%, -50%) scale(1); } to { opacity: 0.45; transform: translate(-50%, -50%) scale(1.25); } }
   </style>
 </head>
 <body>
