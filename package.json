@@ -6,6 +6,9 @@
   "description": "Self-hosted Discord ticketing bot template (discord.js v14) with MySQL storage and public website",
   "main": "src/index.js",
   "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
     "start": "node src/index.js",
     "deploy": "node deploy-commands.js",
     "test": "DISCORD_TOKEN=test CLIENT_ID=test DB_FILE=data/test.db node --experimental-sqlite --test src/commands/*.test.js src/loader.test.js"
@@ -21,5 +24,15 @@
     "express": "^4.19.2",
     "express-session": "^1.18.0",
     "mysql2": "^3.11.0"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-node": "^2.1.2",
+    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/vite-plugin-svelte": "^4.0.4",
+    "autoprefixer": "^10.6.1",
+    "postcss": "^8.5.30",
+    "svelte": "^5.57.2",
+    "tailwindcss": "^3.4.19",
+    "vite": "^5.4.21"
   }
 }
