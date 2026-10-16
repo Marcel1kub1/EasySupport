@@ -33,5 +33,4 @@ assets/panel.svg
 assets/ticket.svg
 
 # SvelteKit build output
-build/
-.svelte-kit/
+
