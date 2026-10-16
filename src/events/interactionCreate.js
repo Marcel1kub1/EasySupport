@@ -377,7 +377,7 @@ function statusButtonRows(currentStatus) {
   return rows;
 }
 
-function isStaff(interaction) {
+async function isStaff(interaction) {
   const settings = await getGuild(interaction.guildId);
   return (
     interaction.member.permissions.has(PermissionFlagsBits.ManageMessages) ||
@@ -389,11 +389,11 @@ async function onStatusButton(interaction, key) {
   const meta = getStatusMeta(key);
   if (!meta) return interaction.reply({ content: 'Unknown status.', flags: MessageFlags.Ephemeral });
 
-  if (meta.staffOnly !== false && !isStaff(interaction)) {
+  if (meta.staffOnly !== false && !(await isStaff(interaction))) {
     return interaction.reply({ content: 'Only staff can change the ticket status.', flags: MessageFlags.Ephemeral });
   }
 
-  const ticket = getTicketByChannel(interaction.channelId);
+  const ticket = await getTicketByChannel(interaction.channelId);
   if (!ticket) return interaction.reply({ content: 'This channel is not a ticket.', flags: MessageFlags.Ephemeral });
 
   const current = getStatusMeta(ticket.status);
@@ -491,7 +491,7 @@ async function onStatusConfirm(interaction, key) {
   const meta = getStatusMeta(key);
   if (!meta) return interaction.reply({ content: 'Unknown status.', flags: MessageFlags.Ephemeral });
 
-  if (meta.staffOnly !== false && !isStaff(interaction)) {
+  if (meta.staffOnly !== false && !(await isStaff(interaction))) {
     return interaction.reply({ content: 'Only staff can change the ticket status.', flags: MessageFlags.Ephemeral });
   }
 
@@ -516,7 +516,7 @@ async function finalizeClose(interaction, key, reason) {
   }
   await acknowledge(interaction);
 
-  const ticket = getTicketByChannel(interaction.channelId);
+  const ticket = await getTicketByChannel(interaction.channelId);
   const current = ticket ? getStatusMeta(ticket.status) : null;
   if (!ticket || current?.terminal) {
     return interaction.editReply(`This ticket is already ${current?.label ?? 'closed'}.`);
@@ -600,7 +600,7 @@ async function onRatingClick(interaction) {
     return interaction.reply({ content: 'Invalid rating.', flags: MessageFlags.Ephemeral });
   }
 
-  rateTicket(ticket.id, ticket.user_id, rating);
+  await rateTicket(ticket.id, ticket.user_id, rating);
   await interaction
     .update({ content: `Thanks! You rated this ticket ${rating}/5 ${'⭐'.repeat(rating)}`, components: [] })
     .catch(() => {});

@@ -49,7 +49,7 @@ export default {
       return interaction.editReply('The `log_channel` option must be a text channel.');
     }
 
-    saveGuildSettings({
+    await saveGuildSettings({
       guildId: interaction.guildId,
       staffRoleId: staffRole.id,
       logChannelId: logChannel.id,
