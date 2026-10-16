@@ -19,6 +19,7 @@ const startTime = Date.now();
 const templateDefaults = {
   active: '',
   message: undefined,
+  error: null,
   repoUrl: 'https://github.com/Marcel1kub1/EasySupport',
   admin: false,
   notFound: false,
@@ -35,7 +36,7 @@ const templateDefaults = {
 async function renderPage(res, template, pageLocals = {}) {
   const locals = { ...templateDefaults, ...pageLocals, active: pageLocals.active ?? '' };
   const body = await ejs.renderFile(path.join(viewsDir, `${template}.ejs`), locals);
-  return res.render('layout', locals);
+  return res.render('layout', { ...locals, body });
 }
 
 async function getSystemMetrics() {
