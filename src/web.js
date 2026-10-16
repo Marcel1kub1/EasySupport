@@ -15,8 +15,12 @@ const __dirname = path.resolve();
 const viewsDir = path.join(__dirname, 'src', 'views');
 
 async function renderPage(res, template, pageLocals = {}) {
-  const body = await ejs.renderFile(path.join(viewsDir, `${template}.ejs`), pageLocals);
-  return res.render('layout', { ...pageLocals, body });
+  const active = pageLocals.active ?? '';
+  const body = await ejs.renderFile(path.join(viewsDir, `${template}.ejs`), {
+    ...pageLocals,
+    active,
+  });
+  return res.render('layout', { ...pageLocals, active, body });
 }
 
 export function createWebApp() {
