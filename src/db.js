@@ -47,8 +47,8 @@ export async function connect() {
 /* -------------------------------------------------------------------------- */
 
 export async function initialize() {
-  await pool.query(`
-CREATE TABLE IF NOT EXISTS guilds (
+  const statements = [
+    `CREATE TABLE IF NOT EXISTS guilds (
   guild_id          VARCHAR(255) PRIMARY KEY,
   staff_role_id     VARCHAR(255),
   log_channel_id    VARCHAR(255),
@@ -56,9 +56,8 @@ CREATE TABLE IF NOT EXISTS guilds (
   max_open_tickets  INT NOT NULL DEFAULT 2,
   motm_role_id      VARCHAR(255),
   updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS tickets (
+)`,
+    `CREATE TABLE IF NOT EXISTS tickets (
   id               INT PRIMARY KEY AUTO_INCREMENT,
   guild_id         VARCHAR(255) NOT NULL,
   channel_id       VARCHAR(255) UNIQUE,
@@ -73,9 +72,8 @@ CREATE TABLE IF NOT EXISTS tickets (
   closed_at        TIMESTAMP NULL,
   close_reason     TEXT,
   rating           INT
-);
-
-CREATE TABLE IF NOT EXISTS ticket_messages (
+)`,
+    `CREATE TABLE IF NOT EXISTS ticket_messages (
   id         INT PRIMARY KEY AUTO_INCREMENT,
   ticket_id  INT NOT NULL,
   author_id  VARCHAR(255) NOT NULL,
@@ -83,31 +81,30 @@ CREATE TABLE IF NOT EXISTS ticket_messages (
   content    TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS blacklist (
+)`,
+    `CREATE TABLE IF NOT EXISTS blacklist (
   guild_id VARCHAR(255) NOT NULL,
   user_id  VARCHAR(255) NOT NULL,
   PRIMARY KEY (guild_id, user_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_tickets_guild_user   ON tickets(guild_id, user_id, status);
-CREATE INDEX IF NOT EXISTS idx_messages_ticket      ON ticket_messages(ticket_id);
-
-CREATE TABLE IF NOT EXISTS system_status (
+)`,
+    `CREATE INDEX IF NOT EXISTS idx_tickets_guild_user   ON tickets(guild_id, user_id, status)`,
+    `CREATE INDEX IF NOT EXISTS idx_messages_ticket      ON ticket_messages(ticket_id)`,
+    `CREATE TABLE IF NOT EXISTS system_status (
   id          INT PRIMARY KEY DEFAULT 1,
   status_text VARCHAR(255) NOT NULL DEFAULT 'All systems operational',
   updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS announcements (
+)`,
+    `CREATE TABLE IF NOT EXISTS announcements (
   id          INT PRIMARY KEY AUTO_INCREMENT,
   title       VARCHAR(255) NOT NULL,
   content     TEXT NOT NULL,
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   created_by  VARCHAR(255)
-);
-`);
+)`,
+  ];
+  for (const sql of statements) {
+    await pool.query(sql);
+  }
 
   // Idempotent column additions for databases created by earlier versions:
   for (const migration of [
