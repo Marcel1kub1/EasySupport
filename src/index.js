@@ -4,6 +4,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Client, Events, GatewayIntentBits, Partials } from 'discord.js';
 import { config } from './config.js';
 import { loadModules } from './loader.js';
+import { createWebApp } from './web.js';
+import { connect, initialize, pool } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -14,7 +16,6 @@ export const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
   ],
-  // Partials.Channel is required so the bot can DM users and interact there.
   partials: [Partials.Channel],
 });
 
@@ -39,10 +40,36 @@ client.once(Events.ClientReady, (ready) => {
   console.log(`[bot] Serving ${client.guilds.cache.size} guild(s)`);
 });
 
-// discord.js surfaces failures inside event handlers as Client 'error' events;
-// without this listener such an error takes the whole process down.
 client.on(Events.Error, (error) => console.error('[bot] Client error:', error));
 
 process.on('unhandledRejection', (err) => console.error('[bot] Unhandled promise rejection:', err));
 
-client.login(config.token);
+/* Boot: connect to MySQL, initialize schema, then start the combined bot + web process. */
+async function boot() {
+  try {
+    await connect();
+    console.log('[db] Connected to MySQL.');
+    await initialize();
+    console.log('[db] Schema initialized.');
+  } catch (error) {
+    console.error('[db] Failed to connect to MySQL:', error);
+    process.exit(1);
+  }
+
+  // Start the public website (homepage + status + admin) alongside the bot.
+  const app = createWebApp();
+  const server = app.listen(config.port, () => {
+    console.log(`[web] Listening on http://localhost:${config.port}`);
+  });
+
+  // Graceful shutdown.
+  process.on('SIGTERM', () => {
+    server.close(() => pool.end());
+    client.destroy();
+    process.exit(0);
+  });
+
+  await client.login(config.token);
+}
+
+boot();

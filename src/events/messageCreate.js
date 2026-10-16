@@ -11,14 +11,14 @@ export default {
   async execute(message) {
     if (message.author.bot || !message.guild) return;
 
-    const ticket = getTicketByChannel(message.channel.id);
+    const ticket = await getTicketByChannel(message.channel.id);
     if (!ticket || getStatusMeta(ticket.status)?.terminal) return;
 
     const content =
       message.content?.trim() ||
       (message.attachments.size > 0 ? `[${message.attachments.size} attachment(s)]` : '[no text content]');
 
-    logMessage({
+    await logMessage({
       ticketId: ticket.id,
       authorId: message.author.id,
       authorTag: message.author.tag,

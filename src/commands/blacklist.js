@@ -30,14 +30,14 @@ export default {
     const sub = interaction.options.getSubcommand();
 
     if (sub === 'add') {
-      addToBlacklist(guildId, member.id);
+      await addToBlacklist(guildId, member.id);
       return interaction.reply({ content: `⛔ <@${member.id}> can no longer open tickets.`, flags: MessageFlags.Ephemeral });
     }
     if (sub === 'remove') {
-      removeFromBlacklist(guildId, member.id);
+      await removeFromBlacklist(guildId, member.id);
       return interaction.reply({ content: `✅ <@${member.id}> can open tickets again.`, flags: MessageFlags.Ephemeral });
     }
-    const blocked = isBlacklisted(guildId, member.id);
+    const blocked = await isBlacklisted(guildId, member.id);
     return interaction.reply({
       content: blocked ? `⛔ <@${member.id}> is blocked from opening tickets.` : `✅ <@${member.id}> is not blocked.`,
       flags: MessageFlags.Ephemeral,

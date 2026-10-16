@@ -55,7 +55,7 @@ export default {
       logChannelId: logChannel.id,
       ticketCategoryId: category.id,
       maxOpenTickets: interaction.options.getInteger('max_open') ?? 2,
-      motmRoleId: interaction.options.getRole('staff_of_month_role')?.id ?? getGuild(interaction.guildId)?.motm_role_id ?? null,
+      motmRoleId: interaction.options.getRole('staff_of_month_role')?.id ?? (await getGuild(interaction.guildId))?.motm_role_id ?? null,
     });
 
     const missingPerms = [];

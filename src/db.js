@@ -1,100 +1,149 @@
-// Uses Node's built-in SQLite module (node:sqlite, Node >= 22.5) so the bot has
-// no native dependencies to compile. To move to PostgreSQL later, replace the
-// statement definitions in this file — nothing else touches the database.
-import { DatabaseSync } from 'node:sqlite';
-import fs from 'node:fs';
-import path from 'node:path';
+// MySQL storage (mysql2/promise). Replaces the previous SQLite implementation.
+// The public API is intentionally identical so callers only need to `await` the
+// now-async repository functions.
+import { createPool } from 'mysql2/promise';
 import { config } from './config.js';
 import { TICKET_STATUSES } from './categories.js';
 
-fs.mkdirSync(path.dirname(config.dbFile), { recursive: true });
+export const pool = createPool({
+  host: config.mysqlHost,
+  port: config.mysqlPort,
+  user: config.mysqlUser,
+  password: config.mysqlPassword,
+  database: config.mysqlDatabase,
+  connectionLimit: 10,
+});
 
-export const db = new DatabaseSync(config.dbFile);
-db.exec('PRAGMA journal_mode = WAL;');
-db.exec('PRAGMA foreign_keys = ON;');
+/** Run a query and return the row array. */
+export async function query(sql, params = []) {
+  const [rows] = await pool.query(sql, params);
+  return rows;
+}
 
-db.exec(`
+/** Run a query and return the first row, or null. */
+export async function get(sql, params = []) {
+  const rows = await query(sql, params);
+  return rows[0] ?? null;
+}
+
+/** Run a statement and return the MySQL result object (insertId, changedRows...). */
+export async function run(sql, params = []) {
+  const [result] = await pool.query(sql, params);
+  return result;
+}
+
+/** Execute one or more statements without expecting rows. */
+export async function exec(sql) {
+  await pool.query(sql);
+}
+
+/* Verify connectivity on boot so the process fails fast without a DB. */
+export async function connect() {
+  await pool.query('SELECT 1');
+}
+
+/* -------------------------------------------------------------------------- */
+/* Schema                                                                     */
+/* -------------------------------------------------------------------------- */
+
+export async function initialize() {
+  await pool.query(`
 CREATE TABLE IF NOT EXISTS guilds (
-  guild_id          TEXT PRIMARY KEY,
-  staff_role_id     TEXT,
-  log_channel_id    TEXT,
-  ticket_category_id TEXT,
-  max_open_tickets  INTEGER NOT NULL DEFAULT 2,
-  motm_role_id      TEXT,
-  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+  guild_id          VARCHAR(255) PRIMARY KEY,
+  staff_role_id     VARCHAR(255),
+  log_channel_id    VARCHAR(255),
+  ticket_category_id VARCHAR(255),
+  max_open_tickets  INT NOT NULL DEFAULT 2,
+  motm_role_id      VARCHAR(255),
+  updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS tickets (
-  id               INTEGER PRIMARY KEY AUTOINCREMENT,
-  guild_id         TEXT NOT NULL,
-  channel_id       TEXT UNIQUE,
-  panel_message_id TEXT,
-  user_id          TEXT NOT NULL,
-  user_tag         TEXT NOT NULL,
-  category         TEXT NOT NULL,
-  status           TEXT NOT NULL DEFAULT 'open',
-  claimed_by       TEXT,
-  opened_at        TEXT NOT NULL DEFAULT (datetime('now')),
-  claimed_at       TEXT,
-  closed_at        TEXT,
+  id               INT PRIMARY KEY AUTO_INCREMENT,
+  guild_id         VARCHAR(255) NOT NULL,
+  channel_id       VARCHAR(255) UNIQUE,
+  panel_message_id VARCHAR(255),
+  user_id          VARCHAR(255) NOT NULL,
+  user_tag         VARCHAR(255) NOT NULL,
+  category         VARCHAR(255) NOT NULL,
+  status           VARCHAR(255) NOT NULL DEFAULT 'open',
+  claimed_by       VARCHAR(255),
+  opened_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  claimed_at       TIMESTAMP NULL,
+  closed_at        TIMESTAMP NULL,
   close_reason     TEXT,
-  rating           INTEGER
+  rating           INT
 );
 
 CREATE TABLE IF NOT EXISTS ticket_messages (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  ticket_id  INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
-  author_id  TEXT NOT NULL,
-  author_tag TEXT NOT NULL,
+  id         INT PRIMARY KEY AUTO_INCREMENT,
+  ticket_id  INT NOT NULL,
+  author_id  VARCHAR(255) NOT NULL,
+  author_tag VARCHAR(255) NOT NULL,
   content    TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS blacklist (
-  guild_id TEXT NOT NULL,
-  user_id  TEXT NOT NULL,
+  guild_id VARCHAR(255) NOT NULL,
+  user_id  VARCHAR(255) NOT NULL,
   PRIMARY KEY (guild_id, user_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_tickets_guild_user   ON tickets(guild_id, user_id, status);
 CREATE INDEX IF NOT EXISTS idx_messages_ticket      ON ticket_messages(ticket_id);
+
+CREATE TABLE IF NOT EXISTS system_status (
+  id          INT PRIMARY KEY DEFAULT 1,
+  status_text VARCHAR(255) NOT NULL DEFAULT 'All systems operational',
+  updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS announcements (
+  id          INT PRIMARY KEY AUTO_INCREMENT,
+  title       VARCHAR(255) NOT NULL,
+  content     TEXT NOT NULL,
+  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by  VARCHAR(255)
+);
 `);
 
-// Idempotent column additions for databases created by earlier versions:
-// CREATE TABLE IF NOT EXISTS never alters an existing table.
-for (const migration of [
-    'ALTER TABLE tickets ADD COLUMN closed_by TEXT',
-    'ALTER TABLE guilds ADD COLUMN motm_role_id TEXT',
+  // Idempotent column additions for databases created by earlier versions:
+  for (const migration of [
+    'ALTER TABLE tickets ADD COLUMN closed_by VARCHAR(255)',
+    'ALTER TABLE guilds ADD COLUMN motm_role_id VARCHAR(255)',
   ]) {
-  try {
-    db.exec(migration);
-  } catch {
-    /* column already exists */
+    try {
+      await pool.query(migration);
+    } catch {
+      /* column already exists */
+    }
   }
 }
 
 /* ------------------------------- guild config ------------------------------ */
 
-const getGuildStmt = db.prepare('SELECT * FROM guilds WHERE guild_id = ?');
+const getGuildStmt = 'SELECT * FROM guilds WHERE guild_id = ?';
 
-export function getGuild(guildId) {
-  return getGuildStmt.get(guildId) ?? null;
+export async function getGuild(guildId) {
+  return get(getGuildStmt, [guildId]) ?? null;
 }
 
-const upsertGuildStmt = db.prepare(`
-  INSERT INTO guilds (guild_id, staff_role_id, log_channel_id, ticket_category_id, max_open_tickets, motm_role_id, updated_at)
-  VALUES (@guildId, @staffRoleId, @logChannelId, @ticketCategoryId, @maxOpenTickets, @motmRoleId, datetime('now'))
-  ON CONFLICT(guild_id) DO UPDATE SET
-    staff_role_id      = excluded.staff_role_id,
-    log_channel_id     = excluded.log_channel_id,
-    ticket_category_id = excluded.ticket_category_id,
-    max_open_tickets   = excluded.max_open_tickets,
-    motm_role_id       = excluded.motm_role_id,
-    updated_at         = datetime('now')
-`);
+const upsertGuildStmt = `
+INSERT INTO guilds (guild_id, staff_role_id, log_channel_id, ticket_category_id, max_open_tickets, motm_role_id, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, NOW())
+ON DUPLICATE KEY UPDATE
+  staff_role_id      = VALUES(staff_role_id),
+  log_channel_id     = VALUES(log_channel_id),
+  ticket_category_id = VALUES(ticket_category_id),
+  max_open_tickets   = VALUES(max_open_tickets),
+  motm_role_id       = VALUES(motm_role_id),
+  updated_at         = NOW()
+`;
 
-export function saveGuildSettings({ guildId, staffRoleId, logChannelId, ticketCategoryId, maxOpenTickets, motmRoleId }) {
-  upsertGuildStmt.run({ guildId, staffRoleId, logChannelId, ticketCategoryId, maxOpenTickets, motmRoleId: motmRoleId ?? null });
+export async function saveGuildSettings({ guildId, staffRoleId, logChannelId, ticketCategoryId, maxOpenTickets, motmRoleId }) {
+  await run(upsertGuildStmt, [guildId, staffRoleId, logChannelId, ticketCategoryId, maxOpenTickets, motmRoleId ?? null]);
 }
 
 /* --------------------------------- tickets -------------------------------- */
@@ -105,74 +154,76 @@ const openStatuses = Object.entries(TICKET_STATUSES)
   .filter(([, meta]) => !meta.terminal)
   .map(([key]) => key);
 
-const countOpenTicketsStmt = db.prepare(`
-  SELECT COUNT(*) AS n FROM tickets
-  WHERE guild_id = ? AND user_id = ? AND status IN (${openStatuses.length ? openStatuses.map(() => '?').join(', ') : "'__none__'"})
-`);
+const countOpenTicketsStmt = `
+SELECT COUNT(*) AS n FROM tickets
+WHERE guild_id = ? AND user_id = ? AND status IN (${openStatuses.length ? openStatuses.map(() => '?').join(', ') : "'__none__'"})
+`;
 
-export function countOpenTickets(guildId, userId) {
-  return countOpenTicketsStmt.get(guildId, userId, ...openStatuses).n;
+export async function countOpenTickets(guildId, userId) {
+  const row = await get(countOpenTicketsStmt, [guildId, userId, ...openStatuses]);
+  return Number(row?.n ?? 0);
 }
 
 /** Every open ticket in the guild regardless of user — drives quiet-queue bonus. */
-const countAllOpenStmt = db.prepare(`
-  SELECT COUNT(*) AS n FROM tickets
-  WHERE guild_id = ? AND status IN (${openStatuses.length ? openStatuses.map(() => '?').join(', ') : "'__none__'"})
-`);
+const countAllOpenStmt = `
+SELECT COUNT(*) AS n FROM tickets
+WHERE guild_id = ? AND status IN (${openStatuses.length ? openStatuses.map(() => '?').join(', ') : "'__none__'"})
+`;
 
-export function countAllOpenTickets(guildId) {
-  return countAllOpenStmt.get(guildId, ...openStatuses).n;
+export async function countAllOpenTickets(guildId) {
+  const row = await get(countAllOpenStmt, [guildId, ...openStatuses]);
+  return Number(row?.n ?? 0);
 }
 
-const nextNumberStmt = db.prepare('SELECT COALESCE(MAX(id), 0) + 1 AS n FROM tickets WHERE guild_id = ?');
+const nextNumberStmt = 'SELECT COALESCE(MAX(id), 0) + 1 AS n FROM tickets WHERE guild_id = ?';
 
-export function nextTicketNumber(guildId) {
-  return nextNumberStmt.get(guildId).n;
+export async function nextTicketNumber(guildId) {
+  const row = await get(nextNumberStmt, [guildId]);
+  return Number(row?.n ?? 1);
 }
 
-const insertTicketStmt = db.prepare(`
-  INSERT INTO tickets (guild_id, channel_id, user_id, user_tag, category)
-  VALUES (?, ?, ?, ?, ?)
-`);
+const insertTicketStmt = `
+INSERT INTO tickets (guild_id, channel_id, user_id, user_tag, category)
+VALUES (?, ?, ?, ?, ?)
+`;
 
-export function createTicket({ guildId, channelId, userId, userTag, category }) {
-  const info = insertTicketStmt.run(guildId, channelId, userId, userTag, category);
-  return Number(info.lastInsertRowid);
+export async function createTicket({ guildId, channelId, userId, userTag, category }) {
+  const result = await run(insertTicketStmt, [guildId, channelId, userId, userTag, category]);
+  return Number(result.insertId);
 }
 
-const getByChannelStmt = db.prepare('SELECT * FROM tickets WHERE channel_id = ?');
+const getByChannelStmt = 'SELECT * FROM tickets WHERE channel_id = ?';
 
-export function getTicketByChannel(channelId) {
-  return getByChannelStmt.get(channelId) ?? null;
+export async function getTicketByChannel(channelId) {
+  return get(getByChannelStmt, [channelId]);
 }
 
-const getByIdStmt = db.prepare('SELECT * FROM tickets WHERE id = ?');
+const getByIdStmt = 'SELECT * FROM tickets WHERE id = ?';
 
-export function getTicketById(ticketId) {
-  return getByIdStmt.get(ticketId) ?? null;
+export async function getTicketById(ticketId) {
+  return get(getByIdStmt, [ticketId]);
 }
 
-export function setPanelMessageId(ticketId, messageId) {
-  db.prepare('UPDATE tickets SET panel_message_id = ? WHERE id = ?').run(messageId, ticketId);
+export async function setPanelMessageId(ticketId, messageId) {
+  await run('UPDATE tickets SET panel_message_id = ? WHERE id = ?', [messageId, ticketId]);
 }
 
 /*
  * Generic status change used by every non-terminal status button.
  * claimedBy is stored (with timestamp) when the status is claimable.
  */
-const setStatusStmt = db.prepare(`
-  UPDATE tickets
-  SET status      = ?,
-      claimed_by  = CASE WHEN ? = 1 THEN ? ELSE claimed_by END,
-      claimed_at  = CASE WHEN ? = 1 THEN datetime('now') ELSE claimed_at END
-  WHERE channel_id = ? AND status != ?
-`);
+const setStatusStmt = `
+UPDATE tickets
+SET status      = ?,
+    claimed_by  = CASE WHEN ? = 1 THEN ? ELSE claimed_by END,
+    claimed_at  = CASE WHEN ? = 1 THEN NOW() ELSE claimed_at END
+WHERE channel_id = ? AND status != ?
+`;
 
-export function updateTicketStatus(channelId, statusKey, claimedBy = null) {
-  // node:sqlite binds only number/bigint/string/Buffer/null — a boolean here
-  // would throw "cannot be bound to SQLite parameter 2" and crash the process.
+export async function updateTicketStatus(channelId, statusKey, claimedBy = null) {
   const claim = claimedBy !== null ? 1 : 0;
-  return setStatusStmt.run(statusKey, claim, claimedBy, claim, channelId, statusKey).changes > 0;
+  const result = await run(setStatusStmt, [statusKey, claim, claimedBy, claim, channelId, statusKey]);
+  return result.changedRows > 0;
 }
 
 /*
@@ -180,76 +231,156 @@ export function updateTicketStatus(channelId, statusKey, claimedBy = null) {
  * who closed it (staff payouts are credited to `closedBy`). Returns false when
  * the ticket was already in a terminal status (guards double clicks).
  */
-const closeStmt = db.prepare(`
-  UPDATE tickets SET status = ?, closed_at = datetime('now'), close_reason = ?, closed_by = ?
-  WHERE channel_id = ? AND status != ?
-`);
+const closeStmt = `
+UPDATE tickets SET status = ?, closed_at = NOW(), close_reason = ?, closed_by = ?
+WHERE channel_id = ? AND status != ?
+`;
 
-export function closeTicket(channelId, statusKey, reason, closedBy = null) {
-  return closeStmt.run(statusKey, reason, closedBy, channelId, statusKey).changes > 0;
+export async function closeTicket(channelId, statusKey, reason, closedBy = null) {
+  const result = await run(closeStmt, [statusKey, reason, closedBy, channelId, statusKey]);
+  return result.changedRows > 0;
 }
 
 /* ----------------------------- staff statistics ----------------------------- */
 
-const staffStatsStmt = db.prepare(`
-  SELECT closed_by AS user_id,
-         COUNT(*) AS closed,
-         SUM(CASE WHEN close_reason IS NOT NULL AND close_reason != '' THEN 1 ELSE 0 END) AS reasoned,
-         SUM(rating) AS rating_sum,
-         SUM(CASE WHEN rating IS NOT NULL THEN 1 ELSE 0 END) AS rated
-  FROM tickets
-  WHERE guild_id = ? AND closed_by IS NOT NULL AND strftime('%Y-%m', closed_at) = ?
-  GROUP BY closed_by
-  ORDER BY reasoned DESC, closed DESC
-`);
+const staffStatsStmt = `
+SELECT closed_by AS user_id,
+       COUNT(*) AS closed,
+       SUM(CASE WHEN close_reason IS NOT NULL AND close_reason != '' THEN 1 ELSE 0 END) AS reasoned,
+       SUM(rating) AS rating_sum,
+       SUM(CASE WHEN rating IS NOT NULL THEN 1 ELSE 0 END) AS rated
+FROM tickets
+WHERE guild_id = ? AND closed_by IS NOT NULL AND DATE_FORMAT(closed_at, '%Y-%m') = ?
+GROUP BY closed_by
+ORDER BY reasoned DESC, closed DESC
+`;
 
 /** Per-staff closure stats for one month ('YYYY-MM'), best closer first. */
-export function staffStats(guildId, period) {
-  return staffStatsStmt.all(guildId, period).map((row) => ({
+export async function staffStats(guildId, period) {
+  const rows = await query(staffStatsStmt, [guildId, period]);
+  return rows.map((row) => ({
     userId: row.user_id,
     closed: row.closed ?? 0,
     reasoned: row.reasoned ?? 0,
     ratingSum: row.rating_sum ?? 0,
     rated: row.rated ?? 0,
-    averageRating: row.rated ? Math.round((row.rating_sum / row.rated) * 10) / 10 : null,
+    averageRating: row.rated ? Math.round((Number(row.rating_sum) / Number(row.rated)) * 10) / 10 : null,
   }));
 }
 
-const rateStmt = db.prepare('UPDATE tickets SET rating = ? WHERE id = ? AND user_id = ?');
+const rateStmt = 'UPDATE tickets SET rating = ? WHERE id = ? AND user_id = ?';
 
-export function rateTicket(ticketId, userId, rating) {
-  return rateStmt.run(rating, ticketId, userId).changes > 0;
+export async function rateTicket(ticketId, userId, rating) {
+  const result = await run(rateStmt, [rating, ticketId, userId]);
+  return result.changedRows > 0;
 }
 
 /* ------------------------------ interaction log ---------------------------- */
 
-const logMessageStmt = db.prepare(`
-  INSERT INTO ticket_messages (ticket_id, author_id, author_tag, content, created_at)
-  VALUES (?, ?, ?, ?, ?)
-`);
+const logMessageStmt = `
+INSERT INTO ticket_messages (ticket_id, author_id, author_tag, content, created_at)
+VALUES (?, ?, ?, ?, ?)
+`;
 
-export function logMessage({ ticketId, authorId, authorTag, content, createdAt }) {
-  logMessageStmt.run(ticketId, authorId, authorTag, content, createdAt);
+export async function logMessage({ ticketId, authorId, authorTag, content, createdAt }) {
+  await run(logMessageStmt, [ticketId, authorId, authorTag, content, createdAt]);
 }
 
-const getMessagesStmt = db.prepare('SELECT * FROM ticket_messages WHERE ticket_id = ? ORDER BY id ASC');
+const getMessagesStmt = 'SELECT * FROM ticket_messages WHERE ticket_id = ? ORDER BY id ASC';
 
-export function getTicketMessages(ticketId) {
-  return getMessagesStmt.all(ticketId);
+export async function getTicketMessages(ticketId) {
+  return query(getMessagesStmt, [ticketId]);
 }
 
 /* -------------------------------- blacklist -------------------------------- */
 
-const blacklistStmt = db.prepare('SELECT 1 FROM blacklist WHERE guild_id = ? AND user_id = ?');
+const blacklistStmt = 'SELECT 1 FROM blacklist WHERE guild_id = ? AND user_id = ?';
 
-export function isBlacklisted(guildId, userId) {
-  return blacklistStmt.get(guildId, userId) !== undefined;
+export async function isBlacklisted(guildId, userId) {
+  const row = await get(blacklistStmt, [guildId, userId]);
+  return row !== undefined;
 }
 
-export function addToBlacklist(guildId, userId) {
-  db.prepare('INSERT OR IGNORE INTO blacklist (guild_id, user_id) VALUES (?, ?)').run(guildId, userId);
+export async function addToBlacklist(guildId, userId) {
+  await run('INSERT IGNORE INTO blacklist (guild_id, user_id) VALUES (?, ?)', [guildId, userId]);
 }
 
-export function removeFromBlacklist(guildId, userId) {
-  db.prepare('DELETE FROM blacklist WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+export async function removeFromBlacklist(guildId, userId) {
+  await run('DELETE FROM blacklist WHERE guild_id = ? AND user_id = ?', [guildId, userId]);
+}
+
+/* ------------------------------- website data ------------------------------ */
+
+export async function getSystemStatus() {
+  return get('SELECT * FROM system_status WHERE id = 1', []);
+}
+
+export async function setSystemStatus(statusText) {
+  await run(`
+    INSERT INTO system_status (id, status_text, updated_at) VALUES (1, ?, NOW())
+    ON DUPLICATE KEY UPDATE status_text = VALUES(status_text), updated_at = NOW()
+  `, [statusText]);
+}
+
+export async function getAnnouncements() {
+  return query('SELECT * FROM announcements ORDER BY created_at DESC LIMIT 10');
+}
+
+export async function createAnnouncement(title, content, createdBy) {
+  await run('INSERT INTO announcements (title, content, created_by) VALUES (?, ?, ?)', [title, content, createdBy]);
+}
+
+export async function getGuildStats() {
+  const rows = await query(`
+    SELECT g.guild_id,
+           COUNT(t.id) AS total,
+           SUM(CASE WHEN t.status != 'closed' THEN 1 ELSE 0 END) AS open,
+           SUM(CASE WHEN t.status = 'closed' THEN 1 ELSE 0 END) AS closed,
+           AVG(CASE WHEN t.rating IS NOT NULL THEN t.rating END) AS avgRating
+    FROM guilds g
+    LEFT JOIN tickets t ON t.guild_id = g.guild_id
+    GROUP BY g.guild_id
+    ORDER BY total DESC
+  `);
+  return rows;
+}
+
+export async function getRecentClosures(limit = 10) {
+  const rows = await query(`
+    SELECT id, guild_id, user_tag, category, closed_at, close_reason, rating
+    FROM tickets
+    WHERE status = 'closed' AND closed_at IS NOT NULL
+    ORDER BY closed_at DESC
+    LIMIT ?
+  `, [limit]);
+  return rows;
+}
+
+/* ---------------------------------- dump ---------------------------------- */
+
+/** Build a plain SQL dump of every table for the /export backup command. */
+export async function dumpDatabase() {
+  const tables = ['guilds', 'tickets', 'ticket_messages', 'blacklist'];
+  const parts = [`-- EasySupport database dump -- generated ${new Date().toISOString()}\n`];
+  for (const table of tables) {
+    const rows = await query(`SELECT * FROM \`${table}\``);
+    parts.push(`-- Table: ${table}`);
+    parts.push(`DELETE FROM \`${table}\`;`);
+    for (const row of rows) {
+      const cols = Object.keys(row).map((c) => `\`${c}\``).join(', ');
+      const vals = Object.values(row).map((v) => mysqlValue(v)).join(', ');
+      parts.push(`INSERT INTO \`${table}\` (${cols}) VALUES (${vals});`);
+    }
+    parts.push('');
+  }
+  return parts.join('\n');
+}
+
+function mysqlValue(v) {
+  if (v === null || v === undefined) return 'NULL';
+  if (typeof v === 'boolean') return v ? '1' : '0';
+  if (typeof v === 'number') return String(v);
+  if (v instanceof Date) return `'${v.toISOString()}'`;
+  const s = String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  return `'${s}'`;
 }

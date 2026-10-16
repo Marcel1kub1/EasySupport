@@ -22,7 +22,7 @@ export default {
       o.setName('channel').setDescription('Channel to post the panel in (default: current channel)').setRequired(false)
     ),
   async execute(interaction) {
-    const settings = getGuild(interaction.guildId);
+    const settings = await getGuild(interaction.guildId);
     if (!settings?.staff_role_id) {
       return interaction.reply({ content: 'Run `/setup` before posting a panel.', flags: MessageFlags.Ephemeral });
     }

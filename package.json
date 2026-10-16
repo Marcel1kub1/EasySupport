@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Self-hosted Discord ticketing bot template (discord.js v14)",
+  "description": "Self-hosted Discord ticketing bot template (discord.js v14) with MySQL storage and public website",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
@@ -16,6 +16,10 @@
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
     "discord.js": "^14.16.3",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "mysql2": "^3.11.0"
   }
 }

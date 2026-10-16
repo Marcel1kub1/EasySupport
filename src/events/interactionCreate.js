@@ -148,7 +148,7 @@ async function onPanelClick(interaction, client) {
   }
   panelCooldowns.set(interaction.user.id, now);
 
-  const settings = getGuild(interaction.guildId);
+  const settings = await getGuild(interaction.guildId);
   if (!settings?.staff_role_id || !settings.log_channel_id || !settings.ticket_category_id) {
     return interaction.reply({
       content: 'Ticketing is not configured yet. An admin must run `/setup` first.',
@@ -156,12 +156,12 @@ async function onPanelClick(interaction, client) {
     });
   }
 
-  if (isBlacklisted(interaction.guildId, interaction.user.id)) {
+  if (await isBlacklisted(interaction.guildId, interaction.user.id)) {
     return interaction.reply({ content: 'You are not allowed to open tickets.', flags: MessageFlags.Ephemeral });
   }
 
   // Counts every non-terminal status (open, pending, claimed, escalated, ...).
-  const open = countOpenTickets(interaction.guildId, interaction.user.id);
+  const open = await countOpenTickets(interaction.guildId, interaction.user.id);
   if (open >= settings.max_open_tickets) {
     return interaction.reply({
       content: `You already have ${open} open ticket(s) — the limit is ${settings.max_open_tickets}.`,
@@ -198,10 +198,10 @@ function buildIntakeModal(key, category) {
 }
 
 async function openTicket(interaction, client, key, answers) {
-  const settings = getGuild(interaction.guildId);
+  const settings = await getGuild(interaction.guildId);
   const category = CATEGORIES[key];
   const guild = interaction.guild;
-  const number = nextTicketNumber(interaction.guildId);
+  const number = await nextTicketNumber(interaction.guildId);
 
   // Category staff role (name or ID from src/categories.js): resolved against
   // this guild; unknown values are skipped so nothing breaks.
@@ -272,7 +272,7 @@ async function openTicket(interaction, client, key, answers) {
     ],
   });
 
-  const ticketId = createTicket({
+  const ticketId = await createTicket({
     guildId: guild.id,
     channelId: channel.id,
     userId: interaction.user.id,
@@ -317,7 +317,7 @@ async function openTicket(interaction, client, key, answers) {
     components: statusButtonRows(DEFAULT_STATUS),
     files: [{ attachment: await categoryArt(key, category.label, category.emoji), name: 'ticket-art.png' }],
   });
-  setPanelMessageId(ticketId, panelMessage.id);
+  await setPanelMessageId(ticketId, panelMessage.id);
 
   await sendLog(
     interaction.guildId,
@@ -378,7 +378,7 @@ function statusButtonRows(currentStatus) {
 }
 
 function isStaff(interaction) {
-  const settings = getGuild(interaction.guildId);
+  const settings = await getGuild(interaction.guildId);
   return (
     interaction.member.permissions.has(PermissionFlagsBits.ManageMessages) ||
     interaction.member.roles.cache.has(settings?.staff_role_id)
@@ -522,10 +522,10 @@ async function finalizeClose(interaction, key, reason) {
     return interaction.editReply(`This ticket is already ${current?.label ?? 'closed'}.`);
   }
 
-  closeTicket(interaction.channelId, key, reason || null, interaction.user.id);
+  await closeTicket(interaction.channelId, key, reason || null, interaction.user.id);
 
-  const closed = getTicketById(ticket.id);
-  const messages = getTicketMessages(ticket.id);
+  const closed = await getTicketById(ticket.id);
+  const messages = await getTicketMessages(ticket.id);
   const { textPath, htmlPath } = saveTranscripts(closed, messages);
 
   // Rating prompt + transcripts, delivered by DM.
@@ -588,7 +588,7 @@ async function finalizeClose(interaction, key, reason) {
 
 async function onRatingClick(interaction) {
   const [, , ticketIdPart, ratingPart] = interaction.customId.split(':');
-  const ticket = getTicketById(Number(ticketIdPart));
+  const ticket = await getTicketById(Number(ticketIdPart));
 
   if (!ticket) return interaction.reply({ content: 'Unknown ticket.', flags: MessageFlags.Ephemeral });
   if (ticket.user_id !== interaction.user.id) {
@@ -609,7 +609,7 @@ async function onRatingClick(interaction) {
 /* --------------------------------- helpers -------------------------------- */
 
 async function sendLog(guildId, client, embed) {
-  const settings = getGuild(guildId);
+  const settings = await getGuild(guildId);
   if (!settings?.log_channel_id) return;
   const channel = await client.channels.fetch(settings.log_channel_id).catch(() => null);
   if (channel?.isTextBased()) {

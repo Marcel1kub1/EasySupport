@@ -1,0 +1,41 @@
+<section class="hero">
+  <h1>EasySupport</h1>
+  <p>Private support tickets, staff workflows, transcripts and ratings — driven by one config file. Self-hosted on your server with a public status page.</p>
+  <div class="stats">
+    <div class="stat"><div class="value"><%= guildCount %></div><div class="label">Configured guilds</div></div>
+    <div class="stat"><div class="value"><%= totalTickets %></div><div class="label">Total tickets</div></div>
+    <div class="stat"><div class="value"><%= openTickets %></div><div class="label">Open tickets</div></div>
+  </div>
+  <div class="cta">
+    <h2>Get the bot now</h2>
+    <p>Deploy EasySupport on your own server in minutes. All source is open and the website you're on runs alongside the bot on a single host.</p>
+    <a class="btn btn-primary" href="<%= repoUrl %>" target="_blank" rel="noopener">View on GitHub →</a>
+  </div>
+</section>
+
+<section class="features">
+  <div class="card">
+    <h3><span class="emoji">🎫</span> One-click tickets</h3>
+    <p>/panel posts a button per category; members get a private channel instantly with intake questions.</p>
+  </div>
+  <div class="card">
+    <h3><span class="emoji">🧩</span> Everything in one panel</h3>
+    <p>Art, status, intake answers and all status buttons live in a single message per ticket.</p>
+  </div>
+  <div class="card">
+    <h3><span class="emoji">🎨</span> Generated category art</h3>
+    <p>Every ticket channel and the public panel get a unique banner rendered with @resvg/resvg-js.</p>
+  </div>
+  <div class="card">
+    <h3><span class="emoji">🧭</span> Config-driven statuses</h3>
+    <p>Every status in src/categories.js becomes a control-panel button — claim, pending, escalate, close.</p>
+  </div>
+  <div class="card">
+    <h3><span class="emoji">📄</span> Transcripts &amp; ratings</h3>
+    <p>TXT + HTML transcripts on closure plus a 1–5 star rating DM to the member.</p>
+  </div>
+  <div class="card">
+    <h3><span class="emoji">🗄️</span> MySQL storage</h3>
+    <p>Bot and website share a single MySQL database on one host — no separate bot process needed.</p>
+  </div>
+</section>

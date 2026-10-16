@@ -1,0 +1,107 @@
+<% if (notFound) { %>
+  <div style="text-align:center; padding: 40px 0;">
+    <h1 style="font-size: 2rem; margin-bottom: 8px;">404 — Not Found</h1>
+    <p class="muted" style="margin-bottom: 20px;">The page you're looking for doesn't exist.</p>
+    <a href="/" class="btn btn-outline">Back to home</a>
+  </div>
+<% } else { %>
+  <section style="margin-bottom: 30px;">
+    <div class="cta">
+      <h2>System status</h2>
+      <span class="badge <%= (status?.status_text || '').toLowerCase().includes('operational') ? 'badge-operational' : 'badge-degraded' %>">
+        <%= status?.status_text || 'No status set' %>
+      </span>
+      <% if (admin) { %>
+        <form method="post" action="/admin/status" style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+          <input name="status_text" placeholder="New status message" required style="flex:1; min-width:200px;">
+          <button class="btn btn-primary btn-sm">Update</button>
+        </form>
+        <form method="get" action="/admin/logout" style="margin-top:10px;">
+          <button class="btn btn-outline btn-sm">Logout</button>
+        </form>
+      <% } else { %>
+        <a href="/admin/login" class="btn btn-outline btn-sm" style="margin-top:14px;">Admin login</a>
+      <% } %>
+    </div>
+  </section>
+
+  <% if (announcements.length) { %>
+    <section class="muted" style="margin-bottom: 30px;">
+      <h3 style="margin-bottom: 10px; font-size: 1rem;">Announcements</h3>
+      <% announcements.forEach((a) => { %>
+        <div class="announce">
+          <div class="title"><%= a.title %></div>
+          <div class="content"><%= a.content %></div>
+        </div>
+      <% }) %>
+    </section>
+  <% } %>
+
+  <div class="grid-2">
+    <section class="card">
+      <h3>Per-guild ticket stats</h3>
+      <% if (stats.length) { %>
+        <table>
+          <thead>
+            <tr><th>Guild</th><th>Total</th><th>Open</th><th>Closed</th><th>Avg rating</th></tr>
+          </thead>
+          <tbody>
+            <% stats.forEach((s) => { %>
+              <tr>
+                <td><code><%= s.guild_id %></code></td>
+                <td><%= s.total %></td>
+                <td><span class="badge badge-open"><%= s.open %></span></td>
+                <td><span class="badge badge-closed"><%= s.closed %></span></td>
+                <td><%= s.avgRating ? Number(s.avgRating).toFixed(1) : '—' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <div class="empty">No guilds configured yet.</div>
+      <% } %>
+    </section>
+
+    <section class="card">
+      <h3>Recent closures</h3>
+      <% if (recent.length) { %>
+        <table>
+          <thead>
+            <tr><th>Ticket</th><th>Guild</th><th>User</th><th>Category</th><th>Closed</th><th>Rating</th></tr>
+          </thead>
+          <tbody>
+            <% recent.forEach((r) => { %>
+              <tr>
+                <td>#<%= r.id %></td>
+                <td><code><%= r.guild_id %></code></td>
+                <td><%= r.user_tag %></td>
+                <td><%= r.category %></td>
+                <td><%= new Date(r.closed_at).toLocaleString() %></td>
+                <td><%= r.rating !== null ? r.rating : '—' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <div class="empty">No recent closures.</div>
+      <% } %>
+    </section>
+  </div>
+
+  <% if (admin) { %>
+    <section class="card" style="margin-top: 20px;">
+      <h3>Post announcement</h3>
+      <form method="post" action="/admin/announce">
+        <div class="form-group">
+          <label>Title</label>
+          <input name="title" required placeholder="e.g. Maintenance tonight">
+        </div>
+        <div class="form-group">
+          <label>Content</label>
+          <input name="content" required placeholder="What's happening?">
+        </div>
+        <button class="btn btn-primary">Post announcement</button>
+      </form>
+    </section>
+  <% } %>
+<% } %>
