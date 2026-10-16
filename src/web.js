@@ -101,6 +101,7 @@ export function createWebApp() {
     ]);
     return renderPage(res, 'index', {
       title: 'EasySupport — Home',
+      active: 'home',
       admin,
       repoUrl: 'https://github.com/Marcel1kub1/EasySupport',
       status,
@@ -118,6 +119,7 @@ export function createWebApp() {
     const overall = overallStatus(components);
     return renderPage(res, 'status', {
       title: 'EasySupport — Status',
+      active: 'status',
       admin,
       status,
       announcements,
@@ -129,7 +131,7 @@ export function createWebApp() {
 
   app.get('/admin/login', (req, res) => {
     if (isAuthed(req)) return res.redirect('/');
-    return renderPage(res, 'login', { title: 'EasySupport — Admin Login', error: null });
+    return renderPage(res, 'login', { title: 'EasySupport — Admin Login', active: 'login', error: null });
   });
 
   app.post('/admin/login', (req, res) => {
@@ -139,7 +141,7 @@ export function createWebApp() {
       req.session.adminUser = user;
       return res.redirect('/');
     }
-    return renderPage(res, 'login', { title: 'EasySupport — Admin Login', error: 'Invalid credentials.' });
+    return renderPage(res, 'login', { title: 'EasySupport — Admin Login', active: 'login', error: 'Invalid credentials.' });
   });
 
   app.get('/admin/logout', (req, res) => {
