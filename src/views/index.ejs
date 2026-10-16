@@ -1,0 +1,102 @@
+<section class="home">
+  <div class="marquee-wrap">
+    <div class="marquee-track">
+      <span>EasySupport</span><span class="sep">·</span><span>Discord ticketing</span><span class="sep">·</span><span>Self-hosted</span><span class="sep">·</span><span>MySQL storage</span><span class="sep">·</span><span>One panel</span><span class="sep">·</span><span>EasySupport</span><span class="sep">·</span><span>Discord ticketing</span><span class="sep">·</span><span>Self-hosted</span><span class="sep">·</span><span>MySQL storage</span><span class="sep">·</span><span>One panel</span>
+    </div>
+  </div>
+
+  <div class="canvas">
+    <div class="blob blob--1"></div>
+    <div class="blob blob--2"></div>
+    <div class="blob blob--3"></div>
+  </div>
+
+  <div class="hero">
+    <div class="flex items-center gap-2" style="margin-bottom: 8px;">
+      <span class="inline-flex h-6 items-center rounded-full bg-panel border border-border px-2.5 text-[0.7rem] text-muted font-medium tracking-wider">Public status</span>
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>
+    </div>
+    <h1 class="text-[3.2rem] lg:text-[4.6rem] font-extrabold tracking-tight leading-[1.02] text-text mb-4">
+      Ticketing, <span class="text-transparent bg-clip-text bg-gradient-to-r from-accent to-accent-2">rebuilt.</span>
+    </h1>
+    <p class="text-lg text-muted leading-relaxed max-w-[46ch] mb-8">
+      Private support tickets, staff workflows, transcripts and ratings &mdash; driven by one config file.
+      Self-hosted on your server alongside the bot, sharing a single database.
+    </p>
+    <div class="flex flex-col sm:flex-row gap-4">
+      <a
+        href="<%= repoUrl %>"
+        target="_blank"
+        rel="noopener"
+        class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-accent text-white font-semibold text-sm hover:scale-[1.02] active:scale-95 transition-transform duration-150 shadow-[0_0_25px_rgba(88,101,242,0.4)]"
+      >
+        <span>Invite Bot</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+      </a>
+      <a
+        href="/status"
+        class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-panel border border-border text-text font-semibold text-sm hover:bg-panel-hover transition-colors duration-200"
+      >
+        View GitHub
+      </a>
+    </div>
+  </div>
+
+  <section class="features" style="border-top: 1px solid var(--border);">
+    <div class="section-title">What it does</div>
+    <div class="feature-grid">
+      <div class="feature card">
+        <div class="feature-dot"></div>
+        <h3 style="font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); margin-bottom: 8px;">One-click tickets</h3>
+        <p style="color: var(--muted); font-size: 0.9rem; line-height: 1.65; margin: 0;">/panel posts a button per category; members get a private channel instantly with intake questions.</p>
+      </div>
+      <div class="feature card">
+        <div class="feature-dot"></div>
+        <h3 style="font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); margin-bottom: 8px;">Staff workflow</h3>
+        <p style="color: var(--muted); font-size: 0.9rem; line-height: 1.65; margin: 0;">Claim, pending, escalate, close &mdash; every status is a button on the ticket panel. Changes are atomic.</p>
+      </div>
+      <div class="feature card">
+        <div class="feature-dot"></div>
+        <h3 style="font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); margin-bottom: 8px;">Transcripts &amp; ratings</h3>
+        <p style="color: var(--muted); font-size: 0.9rem; line-height: 1.65; margin: 0;">TXT + HTML transcripts on closure plus a 1&ndash;5 star rating DM to the member.</p>
+      </div>
+      <div class="feature card">
+        <div class="feature-dot"></div>
+        <h3 style="font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); margin-bottom: 8px;">MySQL storage</h3>
+        <p style="color: var(--muted); font-size: 0.9rem; line-height: 1.65; margin: 0;">Bot and website share a single MySQL database on one host &mdash; no separate process needed.</p>
+      </div>
+    </div>
+  </section>
+</section>
+
+<style>
+  .home { position: relative; overflow: hidden; }
+  .marquee-wrap { width: 100%; overflow: hidden; border-bottom: 1px solid var(--border); background: var(--bg); }
+  .marquee-track { display: inline-block; white-space: nowrap; animation: marquee 22s linear infinite; padding: 10px 0; }
+  .marquee-track span { display: inline-block; margin: 0 20px; color: var(--muted); font-size: 0.85rem; font-weight: 700; letter-spacing: 0.08em; }
+  .marquee-track .sep { color: var(--border); font-weight: 400; }
+  @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+  .canvas { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(44px);
+    opacity: 0.35;
+    animation: drift 14s ease-in-out infinite alternate;
+  }
+  .blob--1 { top: 8%; left: 6%; width: 380px; height: 380px; background: var(--accent); animation-delay: 0s; }
+  .blob--2 { bottom: 12%; right: 10%; width: 460px; height: 460px; background: #ec4899; animation-delay: -4s; }
+  .blob--3 { top: 40%; left: 55%; width: 340px; height: 340px; background: #22c55e; animation-delay: -8s; }
+  @keyframes drift { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(45px, -70px) scale(1.18); } }
+  .hero { position: relative; z-index: 1; padding: 100px 0 60px; text-align: left; max-width: 720px; }
+  .features { position: relative; z-index: 1; padding: 60px 0 100px; }
+  .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .feature { position: relative; padding-left: 30px; padding: 20px; }
+  .feature-dot { position: absolute; left: 0; top: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.18); }
+  @media (max-width: 640px) {
+    .hero { padding: 80px 0 40px; }
+    .hero h1 { font-size: 2.8rem; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .features { padding: 40px 0 80px; }
+  }
+</style>

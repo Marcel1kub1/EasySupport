@@ -1,65 +1,196 @@
 import express from 'express';
 import session from 'express-session';
+import ejs from 'ejs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
+import {
+  getSystemStatus,
+  setSystemStatus,
+  getAnnouncements,
+  createAnnouncement,
+  pool,
+} from './db.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.join(__dirname, '..');
+const __dirname = path.resolve();
+const viewsDir = path.join(__dirname, 'src', 'views');
 
-const app = express();
+const templateDefaults = {
+  active: '',
+  message: undefined,
+  error: null,
+  repoUrl: 'https://github.com/Marcel1kub1/EasySupport',
+  admin: false,
+  notFound: false,
+  status: null,
+  announcements: [],
+  components: [],
+  overallStatus: 'operational',
+  overallLabel: 'All systems operational',
+};
 
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
-
-app.use(
-  session({
-    name: 'es_session',
-    secret: config.sessionSecret,
-    resave: false,
-    saveUninitialized: false,
-    cookie: { httpOnly: true, sameSite: 'lax', maxAge: 1000 * 60 * 60 * 24 * 7 },
-  })
-);
-
-/* ---------------------------------- API routes ---------------------------------- */
-
-app.post('/api/admin/login', async (req, res) => {
-  const { user, pass } = req.body;
-  if (user === config.adminUser && pass === config.adminPassword) {
-    req.session.admin = true;
-    req.session.adminUser = user;
-    return res.json({ ok: true });
-  }
-  res.status(401).json({ error: 'Invalid credentials.' });
-});
-
-app.get('/api/admin/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.clearCookie('es_session');
-    res.json({ ok: true });
-  });
-});
-
-/* ---------------------------------- SvelteKit handler ---------------------------------- */
-
-let svelteHandler;
-try {
-  const mod = await import(path.join(root, 'build/handler.js'));
-  svelteHandler = mod.handler;
-} catch {
-  svelteHandler = null;
+async function renderPage(res, template, pageLocals = {}) {
+  const locals = { ...templateDefaults, ...pageLocals, active: pageLocals.active ?? '' };
+  const body = await ejs.renderFile(path.join(viewsDir, `${template}.ejs`), locals);
+  return res.render('layout', { ...locals, body });
 }
 
-app.use((req, res) => {
-  if (svelteHandler) {
-    svelteHandler(req, res);
-  } else {
-    res.status(503).type('text').send('SvelteKit build not found. Run `npm run build` first.');
+const STATUS_ORDER = { operational: 0, degraded: 1, outage: 2 };
+const STATUS_LABEL = {
+  operational: 'Operational',
+  degraded: 'Degraded Performance',
+  outage: 'Major Outage',
+  maintenance: 'Maintenance',
+};
+
+async function getComponentStatuses() {
+  let dbStatus = 'operational';
+  try {
+    await pool.query('SELECT 1');
+  } catch {
+    dbStatus = 'outage';
   }
-});
+
+  return [
+    { name: 'Gateway', desc: 'Discord gateway WebSocket', status: 'operational', label: STATUS_LABEL.operational },
+    { name: 'Database', desc: 'MySQL storage', status: dbStatus, label: STATUS_LABEL[dbStatus] ?? STATUS_LABEL.operational },
+    { name: 'API', desc: 'REST API and HTTP endpoints', status: 'operational', label: STATUS_LABEL.operational },
+  ];
+}
+
+function overallStatus(components) {
+  let worst = 'operational';
+  for (const c of components) {
+    if (STATUS_ORDER[c.status] > STATUS_ORDER[worst]) worst = c.status;
+  }
+  return worst;
+}
 
 export function createWebApp() {
+  const app = express();
+
+  app.set('views', viewsDir);
+  app.set('view engine', 'ejs');
+
+  app.use(express.urlencoded({ extended: false }));
+  app.use(express.json());
+
+  app.use(
+    session({
+      name: 'es_session',
+      secret: config.sessionSecret,
+      resave: false,
+      saveUninitialized: false,
+      cookie: { httpOnly: true, sameSite: 'lax', maxAge: 1000 * 60 * 60 * 24 * 7 },
+    })
+  );
+
+  /* ---------------------------------- auth ---------------------------------- */
+
+  function isAuthed(req) {
+    return Boolean(req.session.admin);
+  }
+
+  function requireAdmin(req, res, next) {
+    if (!isAuthed(req)) return res.redirect('/admin/login');
+    next();
+  }
+
+  /* ---------------------------------- routes -------------------------------- */
+
+  app.get('/', async (req, res) => {
+    const admin = isAuthed(req);
+    const [status, announcements] = await Promise.all([
+      getSystemStatus(),
+      getAnnouncements(),
+    ]);
+    return renderPage(res, 'index', {
+      title: 'EasySupport — Home',
+      active: 'home',
+      admin,
+      repoUrl: 'https://github.com/Marcel1kub1/EasySupport',
+      status,
+      announcements,
+    });
+  });
+
+  app.get('/status', async (req, res) => {
+    const admin = isAuthed(req);
+    const [status, announcements, components] = await Promise.all([
+      getSystemStatus(),
+      getAnnouncements(),
+      getComponentStatuses(),
+    ]);
+    const overall = overallStatus(components);
+    return renderPage(res, 'status', {
+      title: 'EasySupport — Status',
+      active: 'status',
+      admin,
+      status,
+      announcements,
+      components,
+      overallStatus: overall,
+      overallLabel: STATUS_LABEL[overall],
+    });
+  });
+
+  app.get('/admin/login', (req, res) => {
+    if (isAuthed(req)) return res.redirect('/');
+    return renderPage(res, 'login', { title: 'EasySupport — Admin Login', active: 'login', error: null });
+  });
+
+  app.post('/admin/login', (req, res) => {
+    const { user, pass } = req.body;
+    if (user === config.adminUser && pass === config.adminPassword) {
+      req.session.admin = true;
+      req.session.adminUser = user;
+      return res.redirect('/');
+    }
+    return renderPage(res, 'login', { title: 'EasySupport — Admin Login', active: 'login', error: 'Invalid credentials.' });
+  });
+
+  app.get('/admin/logout', (req, res) => {
+    req.session.destroy(() => {
+      res.clearCookie('es_session');
+      res.redirect('/');
+    });
+  });
+
+  app.get('/admin', requireAdmin, (req, res) => {
+    res.redirect('/');
+  });
+
+  app.post('/admin/status', requireAdmin, async (req, res) => {
+    const { status_text } = req.body;
+    if (!status_text || !status_text.trim()) {
+      return res.redirect('/');
+    }
+    await setSystemStatus(status_text.trim());
+    res.redirect('/');
+  });
+
+  app.post('/admin/announce', requireAdmin, async (req, res) => {
+    const { title, content } = req.body;
+    if (!title || !content) {
+      return res.redirect('/');
+    }
+    await createAnnouncement(title.trim(), content.trim(), req.session.adminUser ?? 'admin');
+    res.redirect('/');
+  });
+
+  app.use((req, res) => {
+    res.status(404);
+    return renderPage(res, 'status', {
+      title: 'EasySupport — Not Found',
+      admin: isAuthed(req),
+      status: null,
+      announcements: [],
+      components: [],
+      overallStatus: 'outage',
+      overallLabel: STATUS_LABEL.outage,
+      notFound: true,
+    });
+  });
+
   return app;
 }
 
