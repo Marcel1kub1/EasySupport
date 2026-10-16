@@ -14,10 +14,9 @@
       </div>
     </div>
     <% if (admin) { %>
-      <form method="post" action="/admin/status" class="status-form">
-        <input name="status_text" placeholder="New status message" required style="background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; color: var(--text); font-size: 0.95rem; width: 240px;">
-        <button class="btn btn-sm btn-primary">Update status</button>
-      </form>
+      <div class="admin-note" style="color: var(--muted); font-size: 0.85rem; font-weight: 600; margin-left: auto;">
+        Manage status and announcements → <a href="/admin" style="color: var(--accent); text-decoration: underline;">Admin page</a>
+      </div>
     <% } %>
   </section>
 

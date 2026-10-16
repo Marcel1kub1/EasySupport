@@ -22,8 +22,6 @@ const MODULES = ['ticket', 'highrankdm'];
 /** In-progress configure form state, keyed by user id. */
 const configureSessions = new Map();
 
-const CLEAR_VALUE = '__none__';
-
 function moduleBadge(enabled) {
   return enabled ? '✅ Enabled' : '❌ Disabled';
 }
@@ -220,8 +218,6 @@ export default {
   },
 };
 
-/* ---------------------------- quick setup ---------------------------- */
-
 async function runQuickSetup(guild) {
   const settings = await getGuild(guild.id);
 
@@ -279,8 +275,6 @@ async function runQuickSetup(guild) {
   });
 }
 
-/* ---------------------------- configure form ---------------------------- */
-
 async function openConfigureForm(interaction) {
   const settings = await getGuild(interaction.guildId);
   const session = {
@@ -298,31 +292,27 @@ async function openConfigureForm(interaction) {
         new RoleSelectMenuBuilder()
           .setCustomId('setup:role:staff')
           .setPlaceholder('Staff role')
-          .setMaxValues(1)
-          .addOptions({ label: 'None — clear', value: CLEAR_VALUE, description: 'Remove the staff role' }),
+          .setMaxValues(1),
       ),
       new ActionRowBuilder().addComponents(
         new ChannelSelectMenuBuilder()
           .setCustomId('setup:channel:log')
           .setPlaceholder('Log channel')
           .addChannelTypes(ChannelType.GuildText)
-          .setMaxValues(1)
-          .addOptions({ label: 'None — clear', value: CLEAR_VALUE, description: 'Remove the log channel' }),
+          .setMaxValues(1),
       ),
       new ActionRowBuilder().addComponents(
         new ChannelSelectMenuBuilder()
           .setCustomId('setup:channel:category')
           .setPlaceholder('Ticket category')
           .addChannelTypes(ChannelType.GuildCategory)
-          .setMaxValues(1)
-          .addOptions({ label: 'None — clear', value: CLEAR_VALUE, description: 'Remove the ticket category' }),
+          .setMaxValues(1),
       ),
       new ActionRowBuilder().addComponents(
         new RoleSelectMenuBuilder()
           .setCustomId('setup:role:management')
           .setPlaceholder('Management role')
-          .setMaxValues(1)
-          .addOptions({ label: 'None — clear', value: CLEAR_VALUE, description: 'Remove the management role' }),
+          .setMaxValues(1),
       ),
       new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('setup:submit').setLabel('Submit').setStyle(ButtonStyle.Success),
@@ -367,7 +357,7 @@ async function openConfigureForm(interaction) {
     if (component.isRoleSelectMenu() || component.isChannelSelectMenu()) {
       await component.deferUpdate();
       const saved = configureSessions.get(interaction.user.id) ?? {};
-      const value = component.values[0] === CLEAR_VALUE ? null : component.values[0];
+      const value = component.values[0] ?? null;
       if (component.customId === 'setup:role:staff') saved.staffRoleId = value;
       if (component.customId === 'setup:channel:log') saved.logChannelId = value;
       if (component.customId === 'setup:channel:category') saved.ticketCategoryId = value;

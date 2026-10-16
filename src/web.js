@@ -41,6 +41,34 @@ const STATUS_LABEL = {
   maintenance: 'Maintenance',
 };
 
+/** Hardcoded announcement templates an admin can post to the status page with one click. */
+const HARDCODED_ANNOUNCEMENTS = [
+  {
+    key: 'operational',
+    title: 'All systems operational',
+    content: 'All systems operational. Gateway, database, and API endpoints are healthy.',
+    type: 'info',
+  },
+  {
+    key: 'maintenance',
+    title: 'Scheduled maintenance',
+    content: 'MySQL maintenance window tonight 02:00–04:00 UTC. Brief blips possible during failover.',
+    type: 'warn',
+  },
+  {
+    key: 'feature',
+    title: 'New feature',
+    content: 'High-rank DM module is now live. Use /setup to configure per-guild module toggles.',
+    type: 'feature',
+  },
+  {
+    key: 'outage',
+    title: 'Major outage',
+    content: 'We are experiencing issues with the Discord gateway. Some features may be delayed.',
+    type: 'err',
+  },
+];
+
 async function getComponentStatuses() {
   let dbStatus = 'operational';
   try {
@@ -154,17 +182,35 @@ export function createWebApp() {
     });
   });
 
-  app.get('/admin', requireAdmin, (req, res) => {
-    res.redirect('/');
+  app.get('/admin', requireAdmin, async (req, res) => {
+    const [status, announcements] = await Promise.all([
+      getSystemStatus(),
+      getAnnouncements(),
+    ]);
+    return renderPage(res, 'admin', {
+      title: 'EasySupport — Admin',
+      active: 'admin',
+      status,
+      announcements,
+      hardcoded: HARDCODED_ANNOUNCEMENTS,
+    });
   });
 
   app.post('/admin/status', requireAdmin, async (req, res) => {
     const { status_text } = req.body;
     if (!status_text || !status_text.trim()) {
-      return res.redirect('/');
+      return res.redirect('/admin');
     }
     await setSystemStatus(status_text.trim());
-    res.redirect('/');
+    res.redirect('/admin');
+  });
+
+  app.post('/admin/announce', requireAdmin, async (req, res) => {
+    const { key } = req.body;
+    const template = HARDCODED_ANNOUNCEMENTS.find((t) => t.key === key);
+    if (!template) return res.redirect('/admin');
+    await createAnnouncement(template.title, template.content, req.session.adminUser ?? 'admin');
+    res.redirect('/admin');
   });
 
   app.use((req, res) => {

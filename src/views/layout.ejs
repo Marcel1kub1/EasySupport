@@ -256,7 +256,7 @@
       <div class="nav-links">
         <a href="/" class="<%= active === 'home' ? 'active' : '' %>">Home</a>
         <a href="/status" class="<%= active === 'status' ? 'active' : '' %>">Status</a>
-        <% if (admin) { %><a href="/admin/logout" class="btn btn-danger btn-sm">Logout</a><% } else { %><a href="/admin/login" class="btn btn-outline btn-sm">Admin</a><% } %>
+        <% if (admin) { %><a href="/admin" class="btn btn-outline btn-sm">Admin</a><a href="/admin/logout" class="btn btn-danger btn-sm">Logout</a><% } else { %><a href="/admin/login" class="btn btn-outline btn-sm">Admin</a><% } %>
       </div>
     </nav>
   </header>
