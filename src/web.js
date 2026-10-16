@@ -7,7 +7,6 @@ import {
   getSystemStatus,
   setSystemStatus,
   getAnnouncements,
-  createAnnouncement,
   pool,
 } from './db.js';
 
@@ -165,15 +164,6 @@ export function createWebApp() {
       return res.redirect('/');
     }
     await setSystemStatus(status_text.trim());
-    res.redirect('/');
-  });
-
-  app.post('/admin/announce', requireAdmin, async (req, res) => {
-    const { title, content } = req.body;
-    if (!title || !content) {
-      return res.redirect('/');
-    }
-    await createAnnouncement(title.trim(), content.trim(), req.session.adminUser ?? 'admin');
     res.redirect('/');
   });
 
