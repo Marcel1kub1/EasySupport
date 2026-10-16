@@ -2,17 +2,19 @@ import express from 'express';
 import session from 'express-session';
 import ejs from 'ejs';
 import path from 'node:path';
+import os from 'node:os';
 import { config } from './config.js';
 import {
   getSystemStatus,
   setSystemStatus,
   getAnnouncements,
   createAnnouncement,
-  getGuildStats,
-  getRecentClosures,
+  pool,
 } from './db.js';
+
 const __dirname = path.resolve();
 const viewsDir = path.join(__dirname, 'src', 'views');
+const startTime = Date.now();
 
 async function renderPage(res, template, pageLocals = {}) {
   const active = pageLocals.active ?? '';
@@ -21,6 +23,40 @@ async function renderPage(res, template, pageLocals = {}) {
     active,
   });
   return res.render('layout', { ...pageLocals, active, body });
+}
+
+async function getSystemMetrics() {
+  const mem = process.memoryUsage();
+  const uptime = process.uptime();
+  let dbStatus = 'disconnected';
+  try {
+    await pool.query('SELECT 1');
+    dbStatus = 'connected';
+  } catch {
+    dbStatus = 'disconnected';
+  }
+  return {
+    uptime,
+    uptimeFormatted: formatUptime(uptime),
+    memoryUsedMB: Math.round(mem.heapUsed / 1024 / 1024),
+    memoryTotalMB: Math.round(mem.heapTotal / 1024 / 1024),
+    cpuCount: os.cpus().length,
+    dbStatus,
+    apiStatus: 'operational',
+  };
+}
+
+function formatUptime(seconds) {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  const parts = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  parts.push(`${secs}s`);
+  return parts.join(' ');
 }
 
 export function createWebApp() {
@@ -57,41 +93,32 @@ export function createWebApp() {
 
   app.get('/', async (req, res) => {
     const admin = isAuthed(req);
-    const [status, announcements, stats] = await Promise.all([
+    const [status, announcements] = await Promise.all([
       getSystemStatus(),
       getAnnouncements(),
-      getGuildStats(),
     ]);
-    const guildCount = stats.length;
-    const totalTickets = stats.reduce((sum, s) => sum + Number(s.total || 0), 0);
-    const openTickets = stats.reduce((sum, s) => sum + Number(s.open || 0), 0);
     return renderPage(res, 'index', {
       title: 'EasySupport — Home',
       admin,
       repoUrl: 'https://github.com/Marcel1kub1/EasySupport',
       status,
       announcements,
-      guildCount,
-      totalTickets,
-      openTickets,
     });
   });
 
   app.get('/status', async (req, res) => {
     const admin = isAuthed(req);
-    const [status, announcements, stats, recent] = await Promise.all([
+    const [status, announcements, metrics] = await Promise.all([
       getSystemStatus(),
       getAnnouncements(),
-      getGuildStats(),
-      getRecentClosures(),
+      getSystemMetrics(),
     ]);
     return renderPage(res, 'status', {
       title: 'EasySupport — Status',
       admin,
       status,
       announcements,
-      stats,
-      recent,
+      metrics,
     });
   });
 
@@ -146,8 +173,7 @@ export function createWebApp() {
       admin: isAuthed(req),
       status: null,
       announcements: [],
-      stats: [],
-      recent: [],
+      metrics: null,
       notFound: true,
     });
   });
@@ -156,4 +182,3 @@ export function createWebApp() {
 }
 
 export default { createWebApp };
-

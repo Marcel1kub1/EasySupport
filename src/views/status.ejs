@@ -39,52 +39,43 @@
 
   <div class="grid-2">
     <section class="card">
-      <h3>Per-guild ticket stats</h3>
-      <% if (stats.length) { %>
+      <h3>System metrics</h3>
+      <% if (metrics) { %>
         <table>
-          <thead>
-            <tr><th>Guild</th><th>Total</th><th>Open</th><th>Closed</th><th>Avg rating</th></tr>
-          </thead>
           <tbody>
-            <% stats.forEach((s) => { %>
-              <tr>
-                <td><code><%= s.guild_id %></code></td>
-                <td><%= s.total %></td>
-                <td><span class="badge badge-open"><%= s.open %></span></td>
-                <td><span class="badge badge-closed"><%= s.closed %></span></td>
-                <td><%= s.avgRating ? Number(s.avgRating).toFixed(1) : '—' %></td>
-              </tr>
-            <% }) %>
+            <tr>
+              <td>API</td>
+              <td><span class="badge badge-operational"><%= metrics.apiStatus %></span></td>
+            </tr>
+            <tr>
+              <td>Database</td>
+              <td><span class="badge <%= metrics.dbStatus === 'connected' ? 'badge-operational' : 'badge-degraded' %>"><%= metrics.dbStatus %></span></td>
+            </tr>
+            <tr>
+              <td>Uptime</td>
+              <td><%= metrics.uptimeFormatted %></td>
+            </tr>
+            <tr>
+              <td>Memory</td>
+              <td><%= metrics.memoryUsedMB %> MB / <%= metrics.memoryTotalMB %> MB</td>
+            </tr>
+            <tr>
+              <td>CPU cores</td>
+              <td><%= metrics.cpuCount %></td>
+            </tr>
           </tbody>
         </table>
       <% } else { %>
-        <div class="empty">No guilds configured yet.</div>
+        <div class="empty">Metrics unavailable.</div>
       <% } %>
     </section>
 
     <section class="card">
-      <h3>Recent closures</h3>
-      <% if (recent.length) { %>
-        <table>
-          <thead>
-            <tr><th>Ticket</th><th>Guild</th><th>User</th><th>Category</th><th>Closed</th><th>Rating</th></tr>
-          </thead>
-          <tbody>
-            <% recent.forEach((r) => { %>
-              <tr>
-                <td>#<%= r.id %></td>
-                <td><code><%= r.guild_id %></code></td>
-                <td><%= r.user_tag %></td>
-                <td><%= r.category %></td>
-                <td><%= new Date(r.closed_at).toLocaleString() %></td>
-                <td><%= r.rating !== null ? r.rating : '—' %></td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      <% } else { %>
-        <div class="empty">No recent closures.</div>
-      <% } %>
+      <h3>About</h3>
+      <p>EasySupport is a self-hosted Discord ticketing bot. The website and the bot run in a single process on one host, sharing a MySQL database.</p>
+      <p class="muted" style="font-size: 0.85rem;">
+        Status page is public. Only an admin can change the system status or post announcements.
+      </p>
     </section>
   </div>
 
