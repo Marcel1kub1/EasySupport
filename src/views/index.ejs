@@ -1,36 +1,42 @@
 <section class="hero">
-  <h1>EasySupport</h1>
-  <p>Private support tickets, staff workflows, transcripts and ratings — driven by one config file. Self-hosted on your server with a public status page.</p>
-  <div class="cta">
-    <h2>Get the bot now</h2>
-    <p>Deploy EasySupport on your own server in minutes. All source is open and the website you're on runs alongside the bot on a single host.</p>
-    <a class="btn btn-primary" href="<%= repoUrl %>" target="_blank" rel="noopener">View on GitHub →</a>
+  <h1>Support tickets, built into your Discord server.</h1>
+  <p class="lead">EasySupport turns any Discord server into a help desk. Members open private tickets from a button panel; staff claim, escalate and close them with one click. Self-hosted on your own server alongside the bot, sharing a single database.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="<%= repoUrl %>" target="_blank" rel="noopener">View on GitHub</a>
   </div>
 </section>
 
 <section class="features">
   <div class="card">
-    <h3><span class="emoji">🎫</span> One-click tickets</h3>
-    <p>/panel posts a button per category; members get a private channel instantly with intake questions.</p>
+    <h3>One-click ticket creation</h3>
+    <p>/panel posts a button per category. Members pick a topic, answer optional intake questions, and get a private channel instantly.</p>
   </div>
   <div class="card">
-    <h3><span class="emoji">🧩</span> Everything in one panel</h3>
-    <p>Art, status, intake answers and all status buttons live in a single message per ticket.</p>
+    <h3>Staff workflow panel</h3>
+    <p>Every status &mdash; claim, pending, escalate, close &mdash; is a button on the ticket panel. Changes are atomic, so two staff can&rsquo;t claim the same ticket at once.</p>
   </div>
   <div class="card">
-    <h3><span class="emoji">🎨</span> Generated category art</h3>
-    <p>Every ticket channel and the public panel get a unique banner rendered with @resvg/resvg-js.</p>
+    <h3>Transcripts and ratings</h3>
+    <p>On closure, users receive TXT and HTML transcripts plus a 1&ndash;5 star rating DM. Staff see closure stats per month.</p>
   </div>
   <div class="card">
-    <h3><span class="emoji">🧭</span> Config-driven statuses</h3>
-    <p>Every status in src/categories.js becomes a control-panel button — claim, pending, escalate, close.</p>
-  </div>
-  <div class="card">
-    <h3><span class="emoji">📄</span> Transcripts &amp; ratings</h3>
-    <p>TXT + HTML transcripts on closure plus a 1–5 star rating DM to the member.</p>
-  </div>
-  <div class="card">
-    <h3><span class="emoji">🗄️</span> MySQL storage</h3>
-    <p>Bot and website share a single MySQL database on one host — no separate bot process needed.</p>
+    <h3>MySQL storage</h3>
+    <p>Bot and website share a single MySQL database on one host. No separate bot process or extra infrastructure.</p>
   </div>
 </section>
+
+<style>
+  .hero { padding: 72px 0 48px; text-align: left; }
+  .hero h1 { font-size: 2.75rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 16px; }
+  .hero .lead { color: var(--muted); font-size: 1.1rem; max-width: 620px; margin-bottom: 26px; line-height: 1.7; }
+  .hero-actions { display: flex; gap: 12px; }
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 50px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .card h3 { font-size: 1.05rem; margin-bottom: 10px; color: var(--text); }
+  .card p { color: var(--muted); font-size: 0.92rem; line-height: 1.6; }
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 2rem; }
+    .hero-actions { flex-direction: column; align-items: stretch; }
+    .hero-actions .btn { justify-content: center; }
+  }
+</style>

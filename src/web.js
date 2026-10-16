@@ -2,7 +2,6 @@ import express from 'express';
 import session from 'express-session';
 import ejs from 'ejs';
 import path from 'node:path';
-import os from 'node:os';
 import { config } from './config.js';
 import {
   getSystemStatus,
@@ -14,7 +13,6 @@ import {
 
 const __dirname = path.resolve();
 const viewsDir = path.join(__dirname, 'src', 'views');
-const startTime = Date.now();
 
 const templateDefaults = {
   active: '',
@@ -25,12 +23,9 @@ const templateDefaults = {
   notFound: false,
   status: null,
   announcements: [],
-  metrics: null,
-  stats: [],
-  recent: [],
-  guildCount: 0,
-  totalTickets: 0,
-  openTickets: 0,
+  components: [],
+  overallStatus: 'operational',
+  overallLabel: 'All systems operational',
 };
 
 async function renderPage(res, template, pageLocals = {}) {
@@ -39,38 +34,31 @@ async function renderPage(res, template, pageLocals = {}) {
   return res.render('layout', { ...locals, body });
 }
 
-async function getSystemMetrics() {
-  const mem = process.memoryUsage();
-  const uptime = process.uptime();
-  let dbStatus = 'disconnected';
+const STATUS_ORDER = { operational: 0, degraded: 1, outage: 2 };
+const STATUS_LABEL = { operational: 'Operational', degraded: 'Degraded Performance', outage: 'Outage' };
+
+async function getComponentStatuses() {
+  let dbStatus = 'operational';
   try {
     await pool.query('SELECT 1');
-    dbStatus = 'connected';
   } catch {
-    dbStatus = 'disconnected';
+    dbStatus = 'outage';
   }
-  return {
-    uptime,
-    uptimeFormatted: formatUptime(uptime),
-    memoryUsedMB: Math.round(mem.heapUsed / 1024 / 1024),
-    memoryTotalMB: Math.round(mem.heapTotal / 1024 / 1024),
-    cpuCount: os.cpus().length,
-    dbStatus,
-    apiStatus: 'operational',
-  };
+
+  return [
+    { name: 'API', desc: 'REST API and HTTP endpoints', status: 'operational', label: STATUS_LABEL.operational },
+    { name: 'Gateway', desc: 'Discord gateway WebSocket', status: 'operational', label: STATUS_LABEL.operational },
+    { name: 'Database', desc: 'MySQL storage', status: dbStatus, label: STATUS_LABEL[dbStatus] ?? STATUS_LABEL.operational },
+    { name: 'Media', desc: 'File uploads and attachments', status: 'operational', label: STATUS_LABEL.operational },
+  ];
 }
 
-function formatUptime(seconds) {
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-  const parts = [];
-  if (days > 0) parts.push(`${days}d`);
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  parts.push(`${secs}s`);
-  return parts.join(' ');
+function overallStatus(components) {
+  let worst = 'operational';
+  for (const c of components) {
+    if (STATUS_ORDER[c.status] > STATUS_ORDER[worst]) worst = c.status;
+  }
+  return worst;
 }
 
 export function createWebApp() {
@@ -122,17 +110,20 @@ export function createWebApp() {
 
   app.get('/status', async (req, res) => {
     const admin = isAuthed(req);
-    const [status, announcements, metrics] = await Promise.all([
+    const [status, announcements, components] = await Promise.all([
       getSystemStatus(),
       getAnnouncements(),
-      getSystemMetrics(),
+      getComponentStatuses(),
     ]);
+    const overall = overallStatus(components);
     return renderPage(res, 'status', {
       title: 'EasySupport — Status',
       admin,
       status,
       announcements,
-      metrics,
+      components,
+      overallStatus: overall,
+      overallLabel: STATUS_LABEL[overall],
     });
   });
 
@@ -187,7 +178,9 @@ export function createWebApp() {
       admin: isAuthed(req),
       status: null,
       announcements: [],
-      metrics: null,
+      components: [],
+      overallStatus: 'outage',
+      overallLabel: STATUS_LABEL.outage,
       notFound: true,
     });
   });
