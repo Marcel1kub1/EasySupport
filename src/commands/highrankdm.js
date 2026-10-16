@@ -18,14 +18,14 @@ export default {
     .setName('highrankdm')
     .setDescription('Send a direct message to a user or notify all members of a role (Management only).')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .addStringOption((o) =>
+      o.setName('message').setDescription('The message to send').setRequired(true),
+    )
     .addUserOption((o) =>
       o.setName('user').setDescription('The user to DM').setRequired(false),
     )
     .addRoleOption((o) =>
       o.setName('role').setDescription('The role whose members to notify').setRequired(false),
-    )
-    .addStringOption((o) =>
-      o.setName('message').setDescription('The message to send').setRequired(true),
     ),
   async execute(interaction, client) {
     if (!interaction.guild) {
