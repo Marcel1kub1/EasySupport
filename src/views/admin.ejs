@@ -19,6 +19,27 @@
     <a class="button button--quiet" href="/status">View public status <span aria-hidden="true">↗</span></a>
   </header>
 
+  <% if (statusUpdated) { %>
+    <aside class="status-notice" role="status" aria-live="polite">
+      <button class="status-notice__dismiss" type="button" data-dismiss-notice aria-label="Dismiss status update notification">×</button>
+      <div class="status-notice__header">
+        <span class="status-notice__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="m5 12 4.5 4.5L19 7" />
+          </svg>
+        </span>
+        <div>
+          <h2>Status updated</h2>
+          <p><%= currentStatus %></p>
+        </div>
+      </div>
+      <div class="status-notice__actions">
+        <a href="#recent-announcements-heading">History</a>
+        <a href="/status">View live status</a>
+      </div>
+    </aside>
+  <% } %>
+
   <section class="admin-section" aria-labelledby="system-status-heading">
     <div class="section-heading">
       <h2 id="system-status-heading">Current system status</h2>

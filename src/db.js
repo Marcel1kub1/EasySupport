@@ -372,6 +372,29 @@ export async function setSystemStatus(statusText) {
   `, [statusText]);
 }
 
+export async function setSystemStatusWithAnnouncement(statusText, createdBy) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    try {
+      await connection.execute(`
+        INSERT INTO system_status (id, status_text, updated_at) VALUES (1, ?, NOW())
+        ON DUPLICATE KEY UPDATE status_text = VALUES(status_text), updated_at = NOW()
+      `, [statusText]);
+      await connection.execute(
+        'INSERT INTO announcements (title, content, created_by) VALUES (?, ?, ?)',
+        ['System status updated', statusText, createdBy]
+      );
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    }
+  } finally {
+    connection.release();
+  }
+}
+
 export async function getAnnouncements() {
   return query('SELECT * FROM announcements ORDER BY created_at DESC LIMIT 10');
 }

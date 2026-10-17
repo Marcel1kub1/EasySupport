@@ -5,7 +5,7 @@ import path from 'node:path';
 import { config } from './config.js';
 import {
   getSystemStatus,
-  setSystemStatus,
+  setSystemStatusWithAnnouncement,
   getAnnouncements,
   createAnnouncement,
   pool,
@@ -197,16 +197,17 @@ export function createWebApp() {
       status,
       announcements,
       hardcoded: HARDCODED_ANNOUNCEMENTS,
+      statusUpdated: req.query.updated === 'status',
     });
   });
 
   app.post('/admin/status', requireAdmin, async (req, res) => {
-    const { status_text } = req.body;
-    if (!status_text || !status_text.trim()) {
+    const statusText = typeof req.body.status_text === 'string' ? req.body.status_text.trim() : '';
+    if (!statusText || statusText.length > 255) {
       return res.redirect('/admin');
     }
-    await setSystemStatus(status_text.trim());
-    res.redirect('/admin');
+    await setSystemStatusWithAnnouncement(statusText, req.session.adminUser ?? 'admin');
+    res.redirect('/admin?updated=status');
   });
 
   app.post('/admin/announce', requireAdmin, async (req, res) => {

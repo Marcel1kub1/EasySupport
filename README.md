@@ -129,6 +129,7 @@ src/
 ├── web.js                   public site, status page, and admin routes
 ├── views/                   EJS templates rendered as HTML pages
 ├── public/site.css          shared responsive website styling
+├── public/site.js           dismissible admin notices
 ├── commands/setup.js        /setup — per-guild configuration
 ├── commands/panel.js        /panel — post the ticket panel
 └── events/
