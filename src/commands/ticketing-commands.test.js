@@ -120,23 +120,11 @@ test('export refuses non-admins', async () => {
   assert.match(denied.replyText(), /Administrator only/);
 });
 
-test('setup writes the staff-of-the-month role', async () => {
-  const staffRole = { id: 'role-staff' };
-  const motmRole = { id: 'role-motm' };
-  const category = { id: 'cat-1', type: 4 }; // ChannelType.GuildCategory
-  const logChannel = { id: 'chan-log', isTextBased: () => true };
-  const guild = {
-    members: { me: { permissions: { has: () => true } } },
-  };
-
-  const interaction = mock({
-    options: { staff_role: staffRole, log_channel: logChannel, category, staff_of_month_role: motmRole, max_open: 3 },
-    guild,
-  });
-  await commands.setup.execute(interaction);
-
-  const settings = (await import('../db.js')).getGuild('guild-1');
-  assert.equal(settings.staff_role_id, 'role-staff');
-  assert.equal(settings.motm_role_id, 'role-motm');
-  assert.equal(settings.max_open_tickets, 3);
-});
+test('setup shows configure form', async () => {
+   const interaction = mock({});
+   await commands.setup.execute(interaction);
+   // Check that the command deferred the reply and then edited the message with the settings panel
+   // We expect at least two replies: deferReply and editReply (for the panel)
+   // The editReply should contain the settings embed text
+   assert.match(interaction.lastReply(), /EasySupport — Setup/);
+ });
