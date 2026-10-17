@@ -37,79 +37,49 @@
 
   <section class="announcements" style="margin-bottom: 40px;">
     <div class="section-title">Status announcements</div>
-    <div class="announcements-hardcoded" style="display: flex; flex-direction: column; gap: 12px; max-width: 600px;">
-      <div class="announce card announce--info">
-        <div class="announce-row" style="display: flex; align-items: center; gap: 12px;">
-          <div class="announce-icon" style="width: 24px; height: 24px; border-radius: 8px; background: rgba(88, 101, 242, 0.15); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0;">🟢</div>
-          <div class="announce-body">
-            <div class="announce-title" style="font-weight: 800; color: var(--accent); margin-bottom: 2px; font-size: 0.9rem;">System status</div>
-            <div class="announce-content" style="color: var(--text); font-size: 0.9rem; white-space: pre-wrap; line-height: 1.5;">All systems operational. Gateway, database, and API endpoints are healthy.</div>
+    <% if (announcements && announcements.length) { %>
+      <div class="announcements-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+        <% announcements.forEach((a) => { %>
+          <div class="announce-card card" style="position: relative; overflow: hidden;">
+            <div class="announce-icon" style="width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; <% if (a.title.toLowerCase().includes('operational') || a.title.toLowerCase().includes('all systems')) { %>background: rgba(88, 101, 242, 0.15); color: var(--accent);<% } else if (a.title.toLowerCase().includes('maintenance') || a.title.toLowerCase().includes('scheduled')) { %>background: rgba(245, 158, 11, 0.15); color: var(--warn);<% } else if (a.title.toLowerCase().includes('feature') || a.title.toLowerCase().includes('new feature')) { %>background: rgba(122, 105, 249, 0.15); color: #7A69F9;<% } else { %>background: rgba(239, 68, 68, 0.15); color: var(--err);<% } %>">
+              <% if (a.title.toLowerCase().includes('operational') || a.title.toLowerCase().includes('all systems')) { %>🟢<% } else if (a.title.toLowerCase().includes('maintenance') || a.title.toLowerCase().includes('scheduled')) { %>⚠️<% } else if (a.title.toLowerCase().includes('feature') || a.title.toLowerCase().includes('new feature')) { %>✨<% } else { %>🔴<% } %>
+            </div>
+            <div class="announce-body" style="flex: 1; min-width: 0; padding-left: 12px;">
+              <div class="announce-title" style="font-weight: 800; color: var(--text); margin-bottom: 4px; font-size: 0.95rem;"><%= a.title %></div>
+              <div class="announce-content" style="color: var(--muted); font-size: 0.9rem; white-space: pre-wrap; line-height: 1.5;"><%= a.content %></div>
+            </div>
           </div>
-        </div>
+        <% }) %>
       </div>
-      <div class="announce card announce--warn">
-        <div class="announce-row" style="display: flex; align-items: center; gap: 12px;">
-          <div class="announce-icon" style="width: 24px; height: 24px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); color: var(--warn); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0;">⚠️</div>
-          <div class="announce-body">
-            <div class="announce-title" style="font-weight: 800; color: var(--warn); margin-bottom: 2px; font-size: 0.9rem;">Scheduled maintenance</div>
-            <div class="announce-content" style="color: var(--text); font-size: 0.9rem; white-space: pre-wrap; line-height: 1.5;">MySQL maintenance window tonight 02:00–04:00 UTC. Brief blips possible during failover.</div>
-          </div>
-        </div>
-      </div>
-      <div class="announce card announce--feature">
-        <div class="announce-row" style="display: flex; align-items: center; gap: 12px;">
-          <div class="announce-icon" style="width: 24px; height: 24px; border-radius: 8px; background: rgba(122, 105, 249, 0.15); color: #7A69F9; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0;">✨</div>
-          <div class="announce-body">
-            <div class="announce-title" style="font-weight: 800; color: #7A69F9; margin-bottom: 2px; font-size: 0.9rem;">New feature</div>
-            <div class="announce-content" style="color: var(--text); font-size: 0.9rem; white-space: pre-wrap; line-height: 1.5;">High-rank DM module is now live. Use /setup to configure per-guild module toggles.</div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <% } else { %>
+      <p style="color: var(--muted); text-align: center; font-size: 0.9rem;">No announcements.</p>
+    <% } %>
   </section>
-<% } %>
 
-<style>
-  .status-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 34px; flex-wrap: wrap; }
-  .overall { display: flex; align-items: center; gap: 10px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-  .dot--operational { background: var(--ok); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.25); }
-  .dot--degraded { background: var(--warn); box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.25); }
-  .dot--outage { background: var(--err); box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.25); }
-  .dot--maintenance { background: #94a3b8; box-shadow: 0 0 0 5px rgba(100, 116, 139, 0.25); }
-  .status-form { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-  .component-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
-  .component-card { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; }
-  .component-name { color: var(--text); font-size: 0.95rem; font-weight: 700; }
-  .component-desc { color: var(--muted); font-size: 0.82rem; display: block; margin-top: 2px; }
-  .announce { padding: 14px 18px; margin-bottom: 12px; position: relative; overflow: hidden; }
-  .announce::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    border-radius: 0 4px 4px 0;
-  }
-  .announce--info::before { background: var(--accent); }
-  .announce--warn::before { background: var(--warn); }
-  .announce--feature::before { background: #7A69F9; }
-  .announce-row { display: flex; align-items: center; gap: 12px; }
-  .announce-icon {
-    width: 24px; height: 24px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.9rem; flex-shrink: 0;
-  }
-  .announce-body { flex: 1; min-width: 0; }
-  .announce-title { font-weight: 800; margin-bottom: 2px; font-size: 0.9rem; }
-  .announce-content { color: var(--text); font-size: 0.9rem; white-space: pre-wrap; line-height: 1.5; opacity: 0.9; }
-  .announce--info .announce-title { color: var(--accent); }
-  .announce--warn .announce-title { color: var(--warn); }
-  .announce--feature .announce-title { color: #7A69F9; }
-  .not-found { text-align: center; padding: 80px 0; }
-  .not-found h1 { font-size: 2.2rem; margin-bottom: 10px; }
-  @media (max-width: 640px) {
-    .status-header { flex-direction: column; align-items: stretch; }
-    .status-form { margin-left: 0; margin-top: 14px; width: 100%; flex-direction: column; }
-    .status-form input { width: 100%; }
-  }
-</style>
+  <style>
+    .status-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 34px; flex-wrap: wrap; }
+    .overall { display: flex; align-items: center; gap: 10px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dot--operational { background: var(--ok); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.25); }
+    .dot--degraded { background: var(--warn); box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.25); }
+    .dot--outage { background: var(--err); box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.25); }
+    .dot--maintenance { background: #94a3b8; box-shadow: 0 0 0 5px rgba(100, 116, 139, 0.25); }
+    .component-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+    .component-card { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; }
+    .component-name { color: var(--text); font-size: 0.95rem; font-weight: 700; }
+    .component-desc { color: var(--muted); font-size: 0.82rem; display: block; margin-top: 2px; }
+    .announcements-grid { gap: 16px; }
+    .announce-card { border: 1px solid var(--border); background: var(--panel); border-radius: var(--radius); transition: transform 0.15s ease, box-shadow 0.2s; }
+    .announce-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+    .announce-icon { width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+    .announce-body { flex: 1; min-width: 0; padding-left: 12px; }
+    .announce-title { font-weight: 800; color: var(--text); margin-bottom: 4px; font-size: 0.95rem; }
+    .announce-content { color: var(--muted); font-size: 0.9rem; white-space: pre-wrap; line-height: 1.5; }
+    .not-found { text-align: center; padding: 80px 0; }
+    .not-found h1 { font-size: 2.2rem; margin-bottom: 10px; }
+    @media (max-width: 640px) {
+      .status-header { flex-direction: column; align-items: stretch; }
+      .announcements-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</section>
