@@ -1,102 +1,78 @@
 <% if (notFound) { %>
   <section class="not-found">
-    <h1 style="font-size: 2.2rem; margin-bottom: 10px;">404 &mdash; Not Found</h1>
-    <p style="color: var(--muted); margin-bottom: 24px; display: inline-block;">The page you&rsquo;re looking for doesn&rsquo;t exist.</p>
-    <a href="/" class="btn btn-outline">Back to home</a>
+    <p class="section-kicker">Page not found</p>
+    <h1>That page isn’t here.</h1>
+    <p>Try heading back to the EasySupport home page.</p>
+    <a href="/" class="button button--primary">Back to home</a>
   </section>
 <% } else { %>
-  <section class="status-header">
-    <div class="status-stack">
-      <h1 style="font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; margin: 0;">EasySupport Status</h1>
-      <div class="overall">
-        <span class="dot dot--<%= overallStatus %>"></span>
-        <span style="color: var(--muted); font-weight: 600; font-size: 0.95rem;"><%= overallLabel %></span>
-      </div>
-    </div>
-    <% if (admin) { %>
-      <div class="admin-note" style="color: var(--muted); font-size: 0.85rem; font-weight: 600; margin-left: auto;">
-        Manage status and announcements → <a href="/admin" style="color: var(--accent); text-decoration: underline;">Admin page</a>
-      </div>
-    <% } %>
-  </section>
-
-  <section class="components" style="margin-bottom: 40px;">
-    <div class="section-title">Components</div>
-    <div class="component-grid">
-      <% components.forEach((c) => { %>
-        <div class="component-card card">
-          <div class="component-info">
-            <span class="component-name" style="color: var(--text); font-size: 0.95rem; font-weight: 700;"><%= c.name %></span>
-            <span class="component-desc" style="color: var(--muted); font-size: 0.82rem; display: block; margin-top: 2px;"><%= c.desc %></span>
-          </div>
-          <span class="badge badge--<%= c.status %>"><%= c.label %></span>
+  <section class="status-page" aria-labelledby="status-heading">
+    <header class="page-heading status-heading">
+      <div>
+        <p class="section-kicker">Service information</p>
+        <h1 id="status-heading">System status</h1>
+        <div class="overall-status">
+          <span class="status-light status-light--<%= overallStatus %>" aria-hidden="true"></span>
+          <span><%= overallLabel %></span>
         </div>
-      <% }) %>
-    </div>
-  </section>
+      </div>
+      <% if (admin) { %>
+        <a class="text-link" href="/admin">Manage status and updates <span aria-hidden="true">↗</span></a>
+      <% } %>
+    </header>
 
-  <section class="announcements" style="margin-bottom: 40px;">
-    <div class="section-title">Status announcements</div>
-    <% 
-      function getAnnouncementStyle(title) {
-        var titleLower = title.toLowerCase();
-        if (titleLower.includes('operational') || titleLower.includes('all systems')) {
-          return { bgColor: 'rgba(88, 101, 242, 0.15)', textColor: 'var(--accent)', emoji: '🟢' };
-        } else if (titleLower.includes('maintenance') || titleLower.includes('scheduled')) {
-          return { bgColor: 'rgba(245, 158, 11, 0.15)', textColor: 'var(--warn)', emoji: '⚠️' };
-        } else if (titleLower.includes('feature') || titleLower.includes('new feature')) {
-          return { bgColor: 'rgba(122, 105, 249, 0.15)', textColor: '#7A69F9', emoji: '✨' };
-        } else {
-          return { bgColor: 'rgba(239, 68, 68, 0.15)', textColor: 'var(--err)', emoji: '🔴' };
-        }
-      }
-    %>
-    <% if (announcements && announcements.length) { %>
-      <div class="announcements-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
-        <% announcements.forEach((a) => { %>
-          <% 
-            var style = getAnnouncementStyle(a.title);
-          %>
-          <div class="announce-card card" style="position: relative; overflow: hidden;">
-            <div class="announce-icon" style="width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; background-color: <%= style.bgColor %>; color: <%= style.textColor %>;">
-              <%= style.emoji %>
+    <section class="status-section" aria-labelledby="components-heading">
+      <div class="section-heading">
+        <h2 id="components-heading">Service components</h2>
+        <p>Current health of the services behind EasySupport.</p>
+      </div>
+      <div class="component-list">
+        <% components.forEach((component) => { %>
+          <article class="component-row">
+            <div>
+              <h3><%= component.name %></h3>
+              <p><%= component.desc %></p>
             </div>
-            <div class="announce-body" style="flex: 1; min-width: 0; padding-left: 12px;">
-              <div class="announce-title" style="font-weight: 800; color: var(--text); margin-bottom: 4px; font-size: 0.95rem;"><%= a.title %></div>
-              <div class="announce-content" style="color: var(--muted); font-size: 0.9rem; white-space: pre-wrap; line-height: 1.5;"><%= a.content %></div>
-            </div>
-          </div>
+            <span class="component-state component-state--<%= component.status %>">
+              <span class="status-light status-light--<%= component.status %>" aria-hidden="true"></span>
+              <%= component.label %>
+            </span>
+          </article>
         <% }) %>
       </div>
-    <% } else { %>
-      <p style="color: var(--muted); text-align: center; font-size: 0.9rem;">No announcements.</p>
-    <% } %>
-  </section>
+    </section>
 
-  <style>
-    .status-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 34px; flex-wrap: wrap; }
-    .overall { display: flex; align-items: center; gap: 10px; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-    .dot--operational { background: var(--ok); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.25); }
-    .dot--degraded { background: var(--warn); box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.25); }
-    .dot--outage { background: var(--err); box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.25); }
-    .dot--maintenance { background: #94a3b8; box-shadow: 0 0 0 5px rgba(100, 116, 139, 0.25); }
-    .component-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
-    .component-card { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; }
-    .component-name { color: var(--text); font-size: 0.95rem; font-weight: 700; }
-    .component-desc { color: var(--muted); font-size: 0.82rem; display: block; margin-top: 2px; }
-    .announcements-grid { gap: 16px; }
-    .announce-card { border: 1px solid var(--border); background: var(--panel); border-radius: var(--radius); transition: transform 0.15s ease, box-shadow 0.2s; }
-    .announce-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
-    .announce-icon { width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
-    .announce-body { flex: 1; min-width: 0; padding-left: 12px; }
-    .announce-title { font-weight: 800; color: var(--text); margin-bottom: 4px; font-size: 0.95rem; }
-    .announce-content { color: var(--muted); font-size: 0.9rem; white-space: pre-wrap; line-height: 1.5; }
-    .not-found { text-align: center; padding: 80px 0; }
-    .not-found h1 { font-size: 2.2rem; margin-bottom: 10px; }
-    @media (max-width: 640px) {
-      .status-header { flex-direction: column; align-items: stretch; }
-      .announcements-grid { grid-template-columns: 1fr; }
-    }
-  </style>
-</section>
+    <section class="status-section" aria-labelledby="updates-heading">
+      <div class="section-heading">
+        <h2 id="updates-heading">Status updates</h2>
+        <p>Notices from the EasySupport team.</p>
+      </div>
+      <% if (announcements && announcements.length) { %>
+        <div class="announcement-list">
+          <% announcements.forEach((announcement) => { %>
+            <%
+              var titleLower = announcement.title.toLowerCase();
+              var announcementTone = 'incident';
+              if (titleLower.includes('operational') || titleLower.includes('all systems')) {
+                announcementTone = 'operational';
+              } else if (titleLower.includes('maintenance') || titleLower.includes('scheduled')) {
+                announcementTone = 'maintenance';
+              } else if (titleLower.includes('feature')) {
+                announcementTone = 'feature';
+              }
+            %>
+            <article class="announcement announcement--<%= announcementTone %>">
+              <span class="announcement-mark" aria-hidden="true"></span>
+              <div>
+                <h3><%= announcement.title %></h3>
+                <p><%= announcement.content %></p>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p class="empty-state">There are no status updates right now.</p>
+      <% } %>
+    </section>
+  </section>
+<% } %>

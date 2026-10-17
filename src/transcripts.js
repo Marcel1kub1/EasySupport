@@ -9,8 +9,8 @@ export function buildTranscriptText(ticket, messages) {
     `Opened by: ${ticket.user_tag} (${ticket.user_id})`,
     `Opened at: ${ticket.opened_at}`,
     `Closed at: ${ticket.closed_at ?? 'n/a'}`,
-    `Closed by staff: ${ticket.claimed_by ?? 'unclaimed'}`,
-    `Reason: ${ticket.close_reason ?? 'none given'}`,
+    `Closed by staff: ${ticket.claimed_by ?? 'Staff has not claimed this ticket.'}`,
+    `Reason: ${ticket.close_reason ?? 'Staff has not given a reason for the closure of this ticket.'}`,
     '-'.repeat(48),
   ];
   for (const m of messages) {

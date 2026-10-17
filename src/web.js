@@ -28,6 +28,13 @@ const templateDefaults = {
   overallLabel: 'All systems operational',
 };
 
+async function renderPage(res, view, locals = {}) {
+  const pageLocals = { ...templateDefaults, ...locals };
+  const body = await ejs.renderFile(path.join(viewsDir, `${view}.ejs`), pageLocals);
+  const html = await ejs.renderFile(path.join(viewsDir, 'layout.ejs'), { ...pageLocals, body });
+  return res.send(html);
+}
+
 const STATUS_ORDER = { operational: 0, degraded: 1, outage: 2 };
 const STATUS_LABEL = {
   operational: 'Operational',
@@ -93,6 +100,8 @@ export function createWebApp() {
   app.set('views', viewsDir);
   app.set('view engine', 'ejs');
 
+  app.use(express.static(path.join(__dirname, 'src', 'public')));
+  app.use('/assets', express.static(path.join(__dirname, 'assets')));
   app.use(express.urlencoded({ extended: false }));
   app.use(express.json());
 
@@ -202,9 +211,16 @@ export function createWebApp() {
 
   app.post('/admin/announce', requireAdmin, async (req, res) => {
     const { key } = req.body;
-    const template = HARDCODED_ANNOUNCEMENTS.find((t) => t.key === key);
-    if (!template) return res.redirect('/admin');
-    await createAnnouncement(template.title, template.content, req.session.adminUser ?? 'admin');
+    if (key) {
+      const template = HARDCODED_ANNOUNCEMENTS.find((announcement) => announcement.key === key);
+      if (!template) return res.redirect('/admin');
+      await createAnnouncement(template.title, template.content, req.session.adminUser ?? 'admin');
+    } else {
+      const title = typeof req.body.title === 'string' ? req.body.title.trim() : '';
+      const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
+      if (!title || title.length > 255 || !content) return res.redirect('/admin');
+      await createAnnouncement(title, content, req.session.adminUser ?? 'admin');
+    }
     res.redirect('/admin');
   });
 

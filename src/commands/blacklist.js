@@ -4,12 +4,12 @@ import { addToBlacklist, removeFromBlacklist, isBlacklisted } from '../db.js';
 export default {
   data: new SlashCommandBuilder()
     .setName('blacklist')
-    .setDescription('Block or unblock members from opening tickets')
+    .setDescription('Blacklist or unblacklist members from opening tickets')
     .setDefaultMemberPermissions(0x8) // Administrator
     .addSubcommand((sub) =>
       sub
         .setName('add')
-        .setDescription('Block a member from opening tickets')
+        .setDescription('Blacklist a member from opening tickets')
         .addUserOption((o) => o.setName('member').setDescription('Who').setRequired(true))
     )
     .addSubcommand((sub) =>
@@ -21,7 +21,7 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName('check')
-        .setDescription('Check whether a member is blocked')
+        .setDescription('Check whether a member is blacklisted')
         .addUserOption((o) => o.setName('member').setDescription('Who').setRequired(true))
     ),
   async execute(interaction) {

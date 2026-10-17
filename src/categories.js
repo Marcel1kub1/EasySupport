@@ -53,7 +53,11 @@ export const CATEGORIES = {
     emoji: '🚨',
     description: 'Report rule-breaking behaviour',
     staffRole: '🖥️ Moderation Team',
-    questions: ['Who are you reporting?', 'What happened?'],
+    questions: [
+      { label: 'which user are you reporting', style: 'short', required: true },
+      {label: 'Why and for what are you reporting him', style: 'paragraph', required: true},
+      {label: 'do you have valid proof', style: 'short', required: true },
+    ],
   },
 
   appeals: {
@@ -63,7 +67,7 @@ export const CATEGORIES = {
     staffRole: '🖥️ Moderation Team',
     questions: [
       { label: 'Your username or user ID', style: 'short', required: true },
-      'Why should the sanction be lifted?',
+      {label: 'Why should the sanction be lifted?', style: 'paragraph', required: true},
     ],
   },
 };
@@ -86,7 +90,7 @@ export const CATEGORIES = {
  */
 export const TICKET_STATUSES = {
   open: {
-    label: 'Waiting for staff',
+    label: 'Waiting for an staff member to claim the ticket',
     emoji: '🟡',
   },
 
@@ -96,19 +100,19 @@ export const TICKET_STATUSES = {
   },
 
   claimed: {
-    label: 'Claimed by',
+    label: 'Ticket has been claimed by an staff member',
     emoji: '🟢',
     claimable: true,
   },
 
   escalated: {
-    label: 'Escalated to management',
+    label: 'Escalated to HR',
     emoji: '🔺',
     staffRole: '꧁👑 Support Lead ꧂', // high-rank team: access + one ping on escalation
   },
 
   closed: {
-    label: 'Closed',
+    label: 'Ticket has been closed',
     emoji: '🔒',
     terminal: true,
   },

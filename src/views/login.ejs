@@ -1,35 +1,22 @@
-<section class="login">
-  <div class="login-card card">
-    <h2 style="margin-bottom: 6px; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em;">Admin login</h2>
-    <% if (error) { %>
-      <div class="flash flash--error" style="margin-bottom: 20px;"><%= error %></div>
-    <% } %>
+<section class="login-page">
+  <div class="login-intro">
+    <p class="section-kicker">EasySupport administration</p>
+    <h1>Manage service updates.</h1>
+    <p>The status page is public. Sign in to change the current status or publish an update.</p>
+  </div>
+  <div class="login-panel">
+    <h2>Admin sign in</h2>
     <form method="post" action="/admin/login">
       <div class="form-group">
         <label for="user">Username</label>
-        <input id="user" name="user" required autofocus>
+        <input id="user" name="user" autocomplete="username" required autofocus>
       </div>
       <div class="form-group">
         <label for="pass">Password</label>
-        <input id="pass" name="pass" type="password" required>
+        <input id="pass" name="pass" type="password" autocomplete="current-password" required>
       </div>
-      <button class="btn btn-primary" style="width: 100%;">Sign in</button>
+      <button class="button button--primary" type="submit">Sign in</button>
     </form>
-    <p class="muted" style="margin-top: 18px; font-size: 0.85rem; text-align: center;">
-      Only an admin can change the system status or post announcements. The status page itself is public.
-    </p>
+    <p class="login-note">Your credentials are used only to access the admin area.</p>
   </div>
 </section>
-
-<style>
-  .login { display: flex; align-items: center; justify-content: center; min-height: 60vh; padding: 40px 0; }
-  .login-card { width: 100%; max-width: 400px; padding: 32px 28px; }
-  .login h2 { margin-bottom: 6px; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; }
-  .form-group { margin-bottom: 16px; }
-  .form-group label { display: block; color: var(--muted); font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; letter-spacing: 0.02em; }
-  .form-group input { width: 100%; background: #050708; border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 14px; color: var(--text); font-size: 0.95rem; }
-  .form-group input:focus { outline: none; border-color: var(--accent); }
-  @media (max-width: 480px) {
-    .login-card { padding: 24px 20px; }
-  }
-</style>

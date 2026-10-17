@@ -24,7 +24,7 @@ export default {
   async execute(interaction) {
     const settings = await getGuild(interaction.guildId);
     if (!settings?.staff_role_id) {
-      return interaction.reply({ content: 'Run `/setup` before posting a panel.', flags: MessageFlags.Ephemeral });
+      return interaction.reply({ content: 'This bot has not been set up please do /setup if you are the owner', flags: MessageFlags.Ephemeral });
     }
 
     const target = interaction.options.getChannel('channel') ?? interaction.channel;

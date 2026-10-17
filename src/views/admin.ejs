@@ -1,151 +1,97 @@
-<section class="admin">
-  <div class="admin-header">
-    <h1 style="font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; margin: 0;">Admin</h1>
-    <a href="/admin/logout" class="btn btn-danger btn-sm">Logout</a>
-  </div>
-
-  <section class="admin-card card" style="margin-bottom: 32px;">
-    <div class="section-title">System status</div>
-    <% 
-      var statusBadgeClass = 'operational';
-      if (status?.status_text) {
-        var statusLower = status.status_text.toLowerCase();
-        if (statusLower.includes('outage')) {
-          statusBadgeClass = 'outage';
-        } else if (statusLower.includes('degrad')) {
-          statusBadgeClass = 'degraded';
-        }
-      }
-    %>
-    <div class="status-display" style="background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; text-align: center;">
-      <span class="badge badge--<%= statusBadgeClass %>">
-        <%= status?.status_text ?? 'All systems operational' %>
-      </span>
+<%
+  var statusTone = 'operational';
+  var currentStatus = status?.status_text ?? 'All systems operational';
+  var statusLower = currentStatus.toLowerCase();
+  if (statusLower.includes('outage')) {
+    statusTone = 'outage';
+  } else if (statusLower.includes('degrad')) {
+    statusTone = 'degraded';
+  } else if (statusLower.includes('maintenance')) {
+    statusTone = 'maintenance';
+  }
+%>
+<section class="admin-page">
+  <header class="page-heading admin-heading">
+    <div>
+      <p class="section-kicker">EasySupport administration</p>
+      <h1>Manage updates</h1>
     </div>
-    <form method="post" action="/admin/status" class="status-form" style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-      <input name="status_text" placeholder="New status message" required style="background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; color: var(--text); font-size: 0.95rem; flex: 1; min-width: 0;">
-      <button class="btn btn-primary btn-sm" style="padding: 12px 24px; font-size: 0.95rem;">Update status</button>
+    <a class="button button--quiet" href="/status">View public status <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <section class="admin-section" aria-labelledby="system-status-heading">
+    <div class="section-heading">
+      <h2 id="system-status-heading">Current system status</h2>
+      <p>This message appears on the public status page.</p>
+    </div>
+    <div class="current-status">
+      <span class="status-light status-light--<%= statusTone %>" aria-hidden="true"></span>
+      <p><%= currentStatus %></p>
+    </div>
+    <form method="post" action="/admin/status" class="status-form">
+      <label class="visually-hidden" for="status-text">New status message</label>
+      <input id="status-text" name="status_text" maxlength="255" placeholder="Enter a status message" required>
+      <button class="button button--primary" type="submit">Update status</button>
     </form>
   </section>
 
-  <section class="admin-card card" style="margin-bottom: 32px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-      <div class="section-title">Post announcement</div>
-      <span class="badge" style="font-size: 0.75rem; opacity: 0.7;">Hardcoded — one click</span>
+  <section class="admin-section" aria-labelledby="quick-updates-heading">
+    <div class="section-heading">
+      <h2 id="quick-updates-heading">Quick announcements</h2>
+      <p>Publish a prepared update to the public status page.</p>
     </div>
-    <div class="announce-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
-      <% 
-        function getAnnouncementStyle(type) {
-          if (type === 'info') {
-            return { bgColor: 'rgba(88, 101, 242, 0.15)', textColor: 'var(--accent)', emoji: '🟢' };
-          } else if (type === 'warn') {
-            return { bgColor: 'rgba(245, 158, 11, 0.15)', textColor: 'var(--warn)', emoji: '⚠️' };
-          } else if (type === 'feature') {
-            return { bgColor: 'rgba(122, 105, 249, 0.15)', textColor: '#7A69F9', emoji: '✨' };
-          } else {
-            return { bgColor: 'rgba(239, 68, 68, 0.15)', textColor: 'var(--err)', emoji: '🔴' };
-          }
-        }
-      %>
-      <% hardcoded.forEach((a) => { %>
-        <% 
-          var style = getAnnouncementStyle(a.type);
-        %>
-        <form method="post" action="/admin/announce" class="announce-btn card" style="display: flex; flex-direction: column; align-items: start; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); transition: transform 0.15s ease, border-color 0.2s, background-color 0.2s; cursor: pointer;">
-          <input type="hidden" name="key" value="<%= a.key %>">
-          <div class="announce-icon" style="width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; background-color: <%= style.bgColor %>; color: <%= style.textColor %>;">
-            <%= style.emoji %>
+    <div class="quick-update-list">
+      <% hardcoded.forEach((announcement) => { %>
+        <form method="post" action="/admin/announce" class="quick-update">
+          <input type="hidden" name="key" value="<%= announcement.key %>">
+          <div>
+            <h3><%= announcement.title %></h3>
+            <p><%= announcement.content %></p>
           </div>
-          <div style="font-weight: 800; color: var(--text); font-size: 0.95rem;"><%= a.title %></div>
-          <div style="color: var(--muted); font-size: 0.82rem; white-space: pre-wrap; margin-top: 4px;"><%= a.content %></div>
-          <button class="btn btn-primary btn-sm" style="align-self: flex-end; padding: 8px 16px; font-size: 0.85rem;">Post</button>
+          <button class="button button--quiet" type="submit">Publish</button>
         </form>
       <% }) %>
     </div>
   </section>
 
-  <section class="admin-card card" style="margin-bottom: 32px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-      <div class="section-title">Custom announcement</div>
+  <section class="admin-section" aria-labelledby="custom-update-heading">
+    <div class="section-heading">
+      <h2 id="custom-update-heading">Write an announcement</h2>
+      <p>Share a short update with everyone using the public status page.</p>
     </div>
-    <form method="post" action="/admin/announce" class="custom-announce-form" style="display: flex; flex-direction: column; gap: 12px;">
-      <input type="text" name="title" placeholder="Title (optional)" style="background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; color: var(--text); font-size: 0.95rem;">
-      <textarea name="content" placeholder="Announcement content" rows="4" style="background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; color: var(--text); font-size: 0.95rem; resize: vertical;"></textarea>
-      <button class="btn btn-primary" style="padding: 12px 24px; font-size: 0.95rem; align-self: flex-end;">Post announcement</button>
+    <form method="post" action="/admin/announce" class="custom-announce-form">
+      <div class="form-group">
+        <label for="announcement-title">Title</label>
+        <input id="announcement-title" name="title" maxlength="255" placeholder="A short, clear headline" required>
+      </div>
+      <div class="form-group">
+        <label for="announcement-content">Message</label>
+        <textarea id="announcement-content" name="content" rows="5" placeholder="What should visitors know?" required></textarea>
+      </div>
+      <button class="button button--primary" type="submit">Publish announcement</button>
     </form>
   </section>
 
   <% if (announcements && announcements.length) { %>
-    <section class="admin-card card">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-        <div class="section-title">Recent announcements</div>
-        <span class="badge" style="font-size: 0.75rem; opacity: 0.7;">Showing latest 10</span>
+    <section class="admin-section" aria-labelledby="recent-announcements-heading">
+      <div class="section-heading">
+        <h2 id="recent-announcements-heading">Recent announcements</h2>
+        <p>Latest updates on the public status page.</p>
       </div>
-      <div class="announcements-list" style="display: flex; flex-direction: column; gap: 12px;">
-        <% 
-          function getAnnouncementStyleFromTitle(title) {
-            var titleLower = title.toLowerCase();
-            if (titleLower.includes('operational') || titleLower.includes('all systems')) {
-              return { bgColor: 'rgba(88, 101, 242, 0.15)', textColor: 'var(--accent)', emoji: '🟢' };
-            } else if (titleLower.includes('maintenance') || titleLower.includes('scheduled')) {
-              return { bgColor: 'rgba(245, 158, 11, 0.15)', textColor: 'var(--warn)', emoji: '⚠️' };
-            } else if (titleLower.includes('feature') || titleLower.includes('new feature')) {
-              return { bgColor: 'rgba(122, 105, 249, 0.15)', textColor: '#7A69F9', emoji: '✨' };
-            } else {
-              return { bgColor: 'rgba(239, 68, 68, 0.15)', textColor: 'var(--err)', emoji: '🔴' };
-            }
-          }
-        %>
-        <% announcements.forEach((a) => { %>
-          <% 
-            var style = getAnnouncementStyleFromTitle(a.title);
-          %>
-          <div class="announce-list card" style="position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius);">
-            <div class="announce-icon" style="width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; background-color: <%= style.bgColor %>; color: <%= style.textColor %>; margin-right: 12px;">
-              <%= style.emoji %>
-            </div>
-            <div class="announce-content" style="flex: 1; min-width: 0;">
-              <div class="announce-title" style="font-weight: 800; color: var(--text); margin-bottom: 4px; font-size: 0.95rem;"><%= a.title %></div>
-              <div class="announce-body" style="color: var(--muted); font-size: 0.9rem; white-space: pre-wrap; line-height: 1.5;"><%= a.content %></div>
-              <div class="announce-meta" style="color: var(--muted); font-size: 0.75rem; margin-top: 8px; display: flex; justify-content: space-between; flex-wrap: wrap;">
-                <span><%= a.created_by ?? 'admin' %></span>
-                <span><%= new Date(a.created_at).toLocaleString() %></span>
+      <div class="announcement-list">
+        <% announcements.forEach((announcement) => { %>
+          <article class="announcement announcement--admin">
+            <div>
+              <h3><%= announcement.title %></h3>
+              <p><%= announcement.content %></p>
+              <div class="announcement-meta">
+                <span>Posted by <%= announcement.created_by ?? 'admin' %></span>
+                <time datetime="<%= new Date(announcement.created_at).toISOString() %>"><%= new Date(announcement.created_at).toLocaleString() %></time>
               </div>
             </div>
-          </div>
+          </article>
         <% }) %>
       </div>
     </section>
   <% } %>
-
-  <style>
-    .admin { max-width: 900px; }
-    .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; }
-    .admin-card { border: 1px solid var(--border); background: var(--panel); border-radius: var(--radius); }
-    .section-title { font-size: 0.85rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 14px; }
-    .status-display { margin-bottom: 20px; }
-    .status-form { gap: 10px; }
-    .status-form input { flex: 1; min-width: 0; }
-    .announce-btn:hover { transform: translateY(-2px); border-color: var(--accent); background: rgba(88, 101, 242, 0.05); }
-    .custom-announce-form { background: var(--panel); padding: 24px; border: 1px solid var(--border); border-radius: var(--radius); }
-    .custom-announce-form input, .custom-announce-form textarea { width: 100%; box-sizing: border-box; }
-    .announcements-list { gap: 12px; }
-    .announce-list { display: flex; align-items: start; gap: 12px; }
-    .announce-icon { flex-shrink: 0; }
-    .announce-content { flex: 1; min-width: 0; }
-    .announce-title { font-weight: 800; color: var(--text); margin-bottom: 4px; font-size: 0.95rem; }
-    .announce-body { color: var(--muted); font-size: 0.9rem; white-space: pre-wrap; line-height: 1.5; }
-    .announce-meta { color: var(--muted); font-size: 0.75rem; }
-    .badge--operational { background: rgba(16, 185, 129, 0.12); color: var(--ok); border: 1px solid rgba(16, 185, 129, 0.25); }
-    .badge--degraded { background: rgba(245, 158, 11, 0.12); color: var(--warn); border: 1px solid rgba(245, 158, 11, 0.25); }
-    .badge--outage { background: rgba(239, 68, 68, 0.12); color: var(--err); border: 1px solid rgba(239, 68, 68, 0.25); }
-    .badge--maintenance { background: rgba(100, 116, 139, 0.12); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.25); }
-    @media (max-width: 640px) {
-      .admin { padding: 0 16px; }
-      .announce-grid { grid-template-columns: 1fr; }
-      .announcements-list { gap: 8px; }
-      .announce-list { flex-direction: column; align-items: stretch; }
-      .announce-icon { align-self: flex-start; margin-bottom: 8px; }
-    }
-  </style>
 </section>

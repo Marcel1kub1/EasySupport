@@ -1,125 +1,88 @@
+<%
+  var statusTone = 'operational';
+  var currentStatus = status?.status_text ?? 'All systems operational';
+  var statusLower = currentStatus.toLowerCase();
+  if (statusLower.includes('outage')) {
+    statusTone = 'outage';
+  } else if (statusLower.includes('degrad')) {
+    statusTone = 'degraded';
+  } else if (statusLower.includes('maintenance')) {
+    statusTone = 'maintenance';
+  }
+%>
 <section class="home">
-  <div class="marquee-wrap">
-    <div class="marquee-track">
-      <span>EasySupport</span><span class="sep">·</span><span>Discord ticketing</span><span class="sep">·</span><span>Self-hosted</span><span class="sep">·</span><span>MySQL storage</span><span class="sep">·</span><span>One panel</span><span class="sep">·</span><span>EasySupport</span><span class="sep">·</span><span>Discord ticketing</span><span class="sep">·</span><span>Self-hosted</span><span class="sep">·</span><span>MySQL storage</span><span class="sep">·</span><span>One panel</span>
-    </div>
-  </div>
-
-  <div class="canvas">
-    <div class="blob blob--1"></div>
-    <div class="blob blob--2"></div>
-    <div class="blob blob--3"></div>
-  </div>
-
   <div class="hero">
-    <div class="flex items-center gap-2" style="margin-bottom: 8px;">
-      <span class="inline-flex h-6 items-center rounded-full bg-panel border border-border px-2.5 text-[0.7rem] text-muted font-medium tracking-wider">Public status</span>
-      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>
+    <div class="hero-copy">
+      <p class="hero-status">
+        <span class="status-light status-light--<%= statusTone %>" aria-hidden="true"></span>
+        <span><%= currentStatus %></span>
+        <a href="/status">Service status</a>
+      </p>
+      <h1>Support, in one place.</h1>
+      <p class="hero-description">
+        Private tickets, clear staff workflows, and useful transcripts — all from one self-hosted Discord bot.
+      </p>
+      <div class="hero-actions">
+        <a class="button button--primary" href="<%= repoUrl %>" target="_blank" rel="noopener noreferrer">
+          Explore the project <span aria-hidden="true">↗</span>
+        </a>
+        <a class="button button--quiet" href="/status">Check system status</a>
+      </div>
+      <p class="hero-note">Open source · Runs alongside your Discord bot</p>
     </div>
-    <h1 class="text-[3.2rem] lg:text-[4.6rem] font-extrabold tracking-tight leading-[1.02] text-text mb-4">
-      Ticketing, <span class="text-transparent bg-clip-text bg-gradient-to-r from-accent to-accent-2">rebuilt.</span>
-    </h1>
-    <p class="text-lg text-muted leading-relaxed max-w-[46ch] mb-8">
-      Private support tickets, staff workflows, transcripts and ratings &mdash; driven by one config file.
-      Self-hosted on your server alongside the bot, sharing a single database.
-    </p>
-    <div class="flex flex-col sm:flex-row gap-4">
-      <a
-        href="<%= repoUrl %>"
-        target="_blank"
-        rel="noopener"
-        class="tiny-btn"
-      >
-        <div class="glow-wrap">
-          <div class="gradient-blur"></div>
-          <div class="border-glow"><span></span></div>
-        </div>
-        <div class="content">
-          <div class="icon-wrap">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M11.5268 2.29489C11.5706 2.20635 11.6383 2.13183 11.7223 2.07972C11.8062 2.02761 11.903 2 12.0018 2C12.1006 2 12.1974 2.02761 12.2813 2.07972C12.3653 2.13183 12.433 2.20635 12.4768 2.29489L14.7868 6.97389C14.939 7.28186 15.1636 7.5483 15.4414 7.75035C15.7192 7.95239 16.0419 8.08401 16.3818 8.13389L21.5478 8.88989C21.6457 8.90408 21.7376 8.94537 21.8133 9.00909C21.8889 9.07282 21.9452 9.15644 21.9758 9.2505C22.0064 9.34456 22.0101 9.4453 21.9864 9.54133C21.9627 9.63736 21.9126 9.72485 21.8418 9.79389L18.1058 13.4319C17.8594 13.672 17.6751 13.9684 17.5686 14.2955C17.4622 14.6227 17.4369 14.9708 17.4948 15.3099L18.3768 20.4499C18.3941 20.5477 18.3835 20.6485 18.3463 20.7406C18.3091 20.8327 18.2467 20.9125 18.1663 20.9709C18.086 21.0293 17.9908 21.0639 17.8917 21.0708C17.7926 21.0777 17.6935 21.0566 17.6058 21.0099L12.9878 18.5819C12.6835 18.4221 12.345 18.3386 12.0013 18.3386C11.6576 18.3386 11.3191 18.4221 11.0148 18.5819L6.3978 21.0099C6.31013 21.0563 6.2112 21.0772 6.11225 21.0701C6.0133 21.0631 5.91832 21.0285 5.83809 20.9701C5.75787 20.9118 5.69563 20.8321 5.65846 20.7401C5.62128 20.6482 5.61066 20.5476 5.6278 20.4499L6.5088 15.3109C6.567 14.9716 6.54178 14.6233 6.43534 14.2959C6.32889 13.9686 6.14441 13.672 5.8978 13.4319L2.1618 9.79489C2.09039 9.72593 2.03979 9.63829 2.01576 9.54197C1.99173 9.44565 1.99524 9.34451 2.02588 9.25008C2.05652 9.15566 2.11307 9.07174 2.18908 9.00788C2.26509 8.94402 2.3575 8.90279 2.4558 8.88889L7.6208 8.13389C7.96106 8.08439 8.28419 7.95295 8.56238 7.75088C8.84058 7.54881 9.0655 7.28216 9.2178 6.97389L11.5268 2.29489Z" fill="#fff" stroke-linecap="round" stroke-linejoin="round"></path>
-              <defs>
-                <linearGradient id="paint0" x1="-0.5" y1="9" x2="15.5" y2="-1.5" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#7A69F9"></stop>
-                  <stop offset="0.575" stop-color="#F26378"></stop>
-                  <stop offset="1" stop-color="#F5833F"></stop>
-                </linearGradient>
-                <linearGradient id="paint1" x1="-0.5" y1="9" x2="15.5" y2="-1.5" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#7A69F9"></stop>
-                  <stop offset="0.575" stop-color="#F26378"></stop>
-                  <stop offset="1" stop-color="#F5833F"></stop>
-                </linearGradient>
-              </defs>
-            </svg>
-            <span class="shine"></span>
-          </div>
-          <span class="label">Star on Github</span>
-        </div>
-      </a>
-      <a
-        href="/status"
-        class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-panel border border-border text-text font-semibold text-sm hover:bg-panel-hover transition-colors duration-200"
-      >
-        View GitHub
-      </a>
-    </div>
+    <figure class="hero-visual">
+      <img src="/assets/panel.png" alt="EasySupport ticket panel in Discord, showing support categories members can choose from">
+      <figcaption>One panel. A clear way to ask for help.</figcaption>
+    </figure>
   </div>
 
-  <section class="features" style="border-top: 1px solid var(--border);">
-    <div class="section-title">What it does</div>
-    <div class="feature-grid">
-      <div class="feature card">
-        <div class="feature-dot"></div>
-        <h3 style="font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); margin-bottom: 8px;">One-click tickets</h3>
-        <p style="color: var(--muted); font-size: 0.9rem; line-height: 1.65; margin: 0;">/panel posts a button per category; members get a private channel instantly with intake questions.</p>
-      </div>
-      <div class="feature card">
-        <div class="feature-dot"></div>
-        <h3 style="font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); margin-bottom: 8px;">Staff workflow</h3>
-        <p style="color: var(--muted); font-size: 0.9rem; line-height: 1.65; margin: 0;">Claim, pending, escalate, close &mdash; every status is a button on the ticket panel. Changes are atomic.</p>
-      </div>
-      <div class="feature card">
-        <div class="feature-dot"></div>
-        <h3 style="font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); margin-bottom: 8px;">Transcripts &amp; ratings</h3>
-        <p style="color: var(--muted); font-size: 0.9rem; line-height: 1.65; margin: 0;">TXT + HTML transcripts on closure plus a 1&ndash;5 star rating DM to the member.</p>
-      </div>
-      <div class="feature card">
-        <div class="feature-dot"></div>
-        <h3 style="font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); margin-bottom: 8px;">MySQL storage</h3>
-        <p style="color: var(--muted); font-size: 0.9rem; line-height: 1.65; margin: 0;">Bot and website share a single MySQL database on one host &mdash; no separate process needed.</p>
-      </div>
+  <section class="workflow-section" aria-labelledby="workflow-heading">
+    <div class="workflow-copy">
+      <p class="section-kicker">Built around the conversation</p>
+      <h2 id="workflow-heading">From request to resolution.</h2>
+      <p>
+        Give every request a private place, keep staff on the same page, and leave a useful record when the work is done.
+      </p>
+      <a class="text-link" href="<%= repoUrl %>" target="_blank" rel="noopener noreferrer">See the source on GitHub <span aria-hidden="true">↗</span></a>
+    </div>
+    <figure class="workflow-visual">
+      <img src="/assets/ticket.png" alt="An EasySupport ticket showing its status controls, intake answers, and conversation">
+      <figcaption>Staff actions and ticket context stay together.</figcaption>
+    </figure>
+  </section>
+
+  <section class="capabilities" aria-labelledby="capabilities-heading">
+    <div class="capabilities-heading">
+      <p class="section-kicker">The essentials, connected</p>
+      <h2 id="capabilities-heading">Stay on top of support.</h2>
+    </div>
+    <div class="capability-list">
+      <article class="capability">
+        <h3>Tickets in one click</h3>
+        <p>Publish a panel with a button for each category. Members answer intake questions before a private channel is created.</p>
+      </article>
+      <article class="capability">
+        <h3>Staff workflows</h3>
+        <p>Claim, update, escalate, and close tickets using configurable status controls. Every action is recorded in your log channel.</p>
+      </article>
+      <article class="capability">
+        <h3>Useful endings</h3>
+        <p>Save TXT and HTML transcripts when tickets close, then invite members to rate the support they received.</p>
+      </article>
+      <article class="capability">
+        <h3>Your server, your data</h3>
+        <p>Run the bot and website together on your own server with a shared MySQL database and a single configuration flow.</p>
+      </article>
     </div>
   </section>
-</section>
 
-<style>
-  .home { position: relative; overflow: hidden; }
-  .marquee-wrap { width: 100%; overflow: hidden; border-bottom: 1px solid var(--border); background: var(--bg); }
-  .marquee-track { display: inline-block; white-space: nowrap; animation: marquee 22s linear infinite; padding: 10px 0; }
-  .marquee-track span { display: inline-block; margin: 0 20px; color: var(--muted); font-size: 0.85rem; font-weight: 700; letter-spacing: 0.08em; }
-  .marquee-track .sep { color: var(--border); font-weight: 400; }
-  @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-  .canvas { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-  .blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(44px);
-    opacity: 0.35;
-    animation: drift 14s ease-in-out infinite alternate;
-  }
-  .blob--1 { top: 8%; left: 6%; width: 380px; height: 380px; background: var(--accent); animation-delay: 0s; }
-  .blob--2 { bottom: 12%; right: 10%; width: 460px; height: 460px; background: #ec4899; animation-delay: -4s; }
-  .blob--3 { top: 40%; left: 55%; width: 340px; height: 340px; background: #22c55e; animation-delay: -8s; }
-  @keyframes drift { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(45px, -70px) scale(1.18); } }
-  .hero { position: relative; z-index: 1; padding: 100px 0 60px; text-align: left; max-width: 720px; }
-  .features { position: relative; z-index: 1; padding: 60px 0 100px; }
-  .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-  .feature { position: relative; padding-left: 30px; padding: 20px; }
-  .feature-dot { position: absolute; left: 0; top: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.18); }
-  @media (max-width: 640px) {
-    .hero { padding: 80px 0 40px; }
-    .hero h1 { font-size: 2.8rem; }
-    .feature-grid { grid-template-columns: 1fr; }
-    .features { padding: 40px 0 80px; }
-  }
-</style>
+  <section class="closing-callout" aria-labelledby="closing-heading">
+    <div>
+      <p class="section-kicker">Open source and self-hosted</p>
+      <h2 id="closing-heading">Better support, simply.</h2>
+    </div>
+    <a class="button button--light" href="<%= repoUrl %>" target="_blank" rel="noopener noreferrer">
+      Get started on GitHub <span aria-hidden="true">↗</span>
+    </a>
+  </section>
+</section>

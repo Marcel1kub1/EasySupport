@@ -31,8 +31,8 @@ function settingsEmbed(guild, settings) {
     .setColor(0x4a3b32)
     .setTitle('EasySupport — Setup')
     .setDescription(
-      'Welcome to EasySupport setup. Choose how you would like to configure ticketing for this server.\n\n' +
-        '• **Quick Setup** — creates sensible defaults in one click.\n' +
+      'Welcome to the EasySupport setup. Here you can choose how you would like to configure the bot for your server\n\n' +
+        '• **Quick Setup** — creates sensible defaults in one click.(automatic roles creation coming soon)\n' +
         '• **Configure** — pick the log channel, ticket category and roles from dropdowns, then submit.\n' +
         '• Toggle modules and view current settings below.',
     )
@@ -43,7 +43,7 @@ function settingsEmbed(guild, settings) {
         inline: true,
       },
       {
-        name: 'Log channel',
+        name: 'Logging',
         value: settings?.log_channel_id ? `<#${settings.log_channel_id}>` : 'not set',
         inline: true,
       },
@@ -88,7 +88,7 @@ function configureEmbed(guild, session) {
         inline: true,
       },
       {
-        name: 'Log channel',
+        name: 'Logging',
         value: session.logChannelId ? `<#${session.logChannelId}>` : 'not set',
         inline: true,
       },
@@ -98,12 +98,12 @@ function configureEmbed(guild, session) {
         inline: true,
       },
       {
-        name: 'Management role',
+        name: 'Management/HR role',
         value: session.managementRoleId ? `<@&${session.managementRoleId}>` : 'not set',
         inline: true,
       },
     )
-    .setFooter({ text: 'No IDs or mentions to type — select, submit, done.' });
+    .setFooter({ text: 'No IDs or mentions to type — just select, submit, done.' });
 
   return embed;
 }
@@ -129,11 +129,11 @@ function panelButtons(settings) {
     new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId('setup:toggle:ticket')
-        .setLabel(`Ticket module: ${moduleBadge(ticketEnabled)}`)
+        .setLabel(`Ticket/Support module: ${moduleBadge(ticketEnabled)}`)
         .setStyle(ticketEnabled ? ButtonStyle.Success : ButtonStyle.Danger),
       new ButtonBuilder()
         .setCustomId('setup:toggle:highrankdm')
-        .setLabel(`HighRankDM module: ${moduleBadge(hrEnabled)}`)
+        .setLabel(`High Rank Personal Message module: ${moduleBadge(hrEnabled)}`)
         .setStyle(hrEnabled ? ButtonStyle.Success : ButtonStyle.Danger),
     ),
   ];
