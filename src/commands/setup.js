@@ -355,7 +355,6 @@ async function openConfigureForm(interaction) {
     }
 
     if (component.isRoleSelectMenu() || component.isChannelSelectMenu()) {
-      await component.deferUpdate();
       const saved = configureSessions.get(interaction.user.id) ?? {};
       const value = component.values[0] ?? null;
       if (component.customId === 'setup:role:staff') saved.staffRoleId = value;

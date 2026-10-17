@@ -6,8 +6,19 @@
 
   <section class="admin-card card" style="margin-bottom: 32px;">
     <div class="section-title">System status</div>
+    <% 
+      let statusBadgeClass = 'operational';
+      if (status?.status_text) {
+        const statusLower = status.status_text.toLowerCase();
+        if (statusLower.includes('outage')) {
+          statusBadgeClass = 'outage';
+        } else if (statusLower.includes('degrad')) {
+          statusBadgeClass = 'degraded';
+        }
+      }
+    %>
     <div class="status-display" style="background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; text-align: center;">
-      <span class="badge badge--<%= (status?.status_text ?? '').toLowerCase().includes('outage') ? 'outage' : (status?.status_text ?? '').toLowerCase().includes('degrad') ? 'degraded' : 'operational' %>" style="font-size: 1.2rem; font-weight: 600; margin-bottom: 12px; display: inline-block;">
+      <span class="badge badge--<%= statusBadgeClass %>">
         <%= status?.status_text ?? 'All systems operational' %>
       </span>
     </div>
@@ -24,10 +35,30 @@
     </div>
     <div class="announce-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
       <% hardcoded.forEach((a) => { %>
+        <% 
+          let bgColor, textColor, emoji;
+          if (a.type === 'info') {
+            bgColor = 'rgba(88, 101, 242, 0.15)';
+            textColor = 'var(--accent)';
+            emoji = '🟢';
+          } else if (a.type === 'warn') {
+            bgColor = 'rgba(245, 158, 11, 0.15)';
+            textColor = 'var(--warn)';
+            emoji = '⚠️';
+          } else if (a.type === 'feature') {
+            bgColor = 'rgba(122, 105, 249, 0.15)';
+            textColor = '#7A69F9';
+            emoji = '✨';
+          } else {
+            bgColor = 'rgba(239, 68, 68, 0.15)';
+            textColor = 'var(--err)';
+            emoji = '🔴';
+          }
+        %>
         <form method="post" action="/admin/announce" class="announce-btn card" style="display: flex; flex-direction: column; align-items: start; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); transition: transform 0.15s ease, border-color 0.2s, background-color 0.2s; cursor: pointer;">
           <input type="hidden" name="key" value="<%= a.key %>">
-          <div class="announce-icon" style="width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; margin-bottom: 8px; <% if (a.type === 'info') { %>background: rgba(88, 101, 242, 0.15); color: var(--accent);<% } else if (a.type === 'warn') { %>background: rgba(245, 158, 11, 0.15); color: var(--warn);<% } else if (a.type === 'feature') { %>background: rgba(122, 105, 249, 0.15); color: #7A69F9;<% } else { %>background: rgba(239, 68, 68, 0.15); color: var(--err);<% } %>">
-            <% if (a.type === 'info') { %>🟢<% } else if (a.type === 'warn') { %>⚠️<% } else if (a.type === 'feature') { %>✨<% } else { %>🔴<% } %>
+          <div class="announce-icon" style="width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; margin-bottom: 8px; background-color: <%= bgColor %>; color: <%= textColor %>;">
+            <%= emoji %>
           </div>
           <div style="font-weight: 800; color: var(--text); font-size: 0.95rem;"><%= a.title %></div>
           <div style="color: var(--muted); font-size: 0.82rem; white-space: pre-wrap; margin-top: 4px;"><%= a.content %></div>
@@ -56,9 +87,30 @@
       </div>
       <div class="announcements-list" style="display: flex; flex-direction: column; gap: 12px;">
         <% announcements.forEach((a) => { %>
+          <% 
+            let bgColor, textColor, emoji;
+            const titleLower = a.title.toLowerCase();
+            if (titleLower.includes('operational') || titleLower.includes('all systems')) {
+              bgColor = 'rgba(88, 101, 242, 0.15)';
+              textColor = 'var(--accent)';
+              emoji = '🟢';
+            } else if (titleLower.includes('maintenance') || titleLower.includes('scheduled')) {
+              bgColor = 'rgba(245, 158, 11, 0.15)';
+              textColor = 'var(--warn)';
+              emoji = '⚠️';
+            } else if (titleLower.includes('feature') || titleLower.includes('new feature')) {
+              bgColor = 'rgba(122, 105, 249, 0.15)';
+              textColor = '#7A69F9';
+              emoji = '✨';
+            } else {
+              bgColor = 'rgba(239, 68, 68, 0.15)';
+              textColor = 'var(--err)';
+              emoji = '🔴';
+            }
+          %>
           <div class="announce-list card" style="position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius);">
-            <div class="announce-icon" style="width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; margin-right: 12px; <% if (a.title.toLowerCase().includes('operational') || a.title.toLowerCase().includes('all systems')) { %>background: rgba(88, 101, 242, 0.15); color: var(--accent);<% } else if (a.title.toLowerCase().includes('maintenance') || a.title.toLowerCase().includes('scheduled')) { %>background: rgba(245, 158, 11, 0.15); color: var(--warn);<% } else if (a.title.toLowerCase().includes('feature') || a.title.toLowerCase().includes('new feature')) { %>background: rgba(122, 105, 249, 0.15); color: #7A69F9;<% } else { %>background: rgba(239, 68, 68, 0.15); color: var(--err);<% } %>">
-              <% if (a.title.toLowerCase().includes('operational') || a.title.toLowerCase().includes('all systems')) { %>🟢<% } else if (a.title.toLowerCase().includes('maintenance') || a.title.toLowerCase().includes('scheduled')) { %>⚠️<% } else if (a.title.toLowerCase().includes('feature') || a.title.toLowerCase().includes('new feature')) { %>✨<% } else { %>🔴<% } %>
+            <div class="announce-icon" style="width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; background-color: <%= bgColor %>; color: <%= textColor %>; margin-right: 12px;">
+              <%= emoji %>
             </div>
             <div class="announce-content" style="flex: 1; min-width: 0;">
               <div class="announce-title" style="font-weight: 800; color: var(--text); margin-bottom: 4px; font-size: 0.95rem;"><%= a.title %></div>

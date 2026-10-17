@@ -7,6 +7,7 @@ import {
   getSystemStatus,
   setSystemStatus,
   getAnnouncements,
+  createAnnouncement,
   pool,
 } from './db.js';
 
@@ -26,12 +27,6 @@ const templateDefaults = {
   overallStatus: 'operational',
   overallLabel: 'All systems operational',
 };
-
-async function renderPage(res, template, pageLocals = {}) {
-  const locals = { ...templateDefaults, ...pageLocals, active: pageLocals.active ?? '' };
-  const body = await ejs.renderFile(path.join(viewsDir, `${template}.ejs`), locals);
-  return res.render('layout', { ...locals, body });
-}
 
 const STATUS_ORDER = { operational: 0, degraded: 1, outage: 2 };
 const STATUS_LABEL = {

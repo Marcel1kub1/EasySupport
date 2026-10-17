@@ -40,9 +40,30 @@
     <% if (announcements && announcements.length) { %>
       <div class="announcements-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
         <% announcements.forEach((a) => { %>
+          <% 
+            let bgColor, textColor, emoji;
+            const titleLower = a.title.toLowerCase();
+            if (titleLower.includes('operational') || titleLower.includes('all systems')) {
+              bgColor = 'rgba(88, 101, 242, 0.15)';
+              textColor = 'var(--accent)';
+              emoji = '🟢';
+            } else if (titleLower.includes('maintenance') || titleLower.includes('scheduled')) {
+              bgColor = 'rgba(245, 158, 11, 0.15)';
+              textColor = 'var(--warn)';
+              emoji = '⚠️';
+            } else if (titleLower.includes('feature') || titleLower.includes('new feature')) {
+              bgColor = 'rgba(122, 105, 249, 0.15)';
+              textColor = '#7A69F9';
+              emoji = '✨';
+            } else {
+              bgColor = 'rgba(239, 68, 68, 0.15)';
+              textColor = 'var(--err)';
+              emoji = '🔴';
+            }
+          %>
           <div class="announce-card card" style="position: relative; overflow: hidden;">
-            <div class="announce-icon" style="width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; <% if (a.title.toLowerCase().includes('operational') || a.title.toLowerCase().includes('all systems')) { %>background: rgba(88, 101, 242, 0.15); color: var(--accent);<% } else if (a.title.toLowerCase().includes('maintenance') || a.title.toLowerCase().includes('scheduled')) { %>background: rgba(245, 158, 11, 0.15); color: var(--warn);<% } else if (a.title.toLowerCase().includes('feature') || a.title.toLowerCase().includes('new feature')) { %>background: rgba(122, 105, 249, 0.15); color: #7A69F9;<% } else { %>background: rgba(239, 68, 68, 0.15); color: var(--err);<% } %>">
-              <% if (a.title.toLowerCase().includes('operational') || a.title.toLowerCase().includes('all systems')) { %>🟢<% } else if (a.title.toLowerCase().includes('maintenance') || a.title.toLowerCase().includes('scheduled')) { %>⚠️<% } else if (a.title.toLowerCase().includes('feature') || a.title.toLowerCase().includes('new feature')) { %>✨<% } else { %>🔴<% } %>
+            <div class="announce-icon" style="width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; background-color: <%= bgColor %>; color: <%= textColor %>;">
+              <%= emoji %>
             </div>
             <div class="announce-body" style="flex: 1; min-width: 0; padding-left: 12px;">
               <div class="announce-title" style="font-weight: 800; color: var(--text); margin-bottom: 4px; font-size: 0.95rem;"><%= a.title %></div>
