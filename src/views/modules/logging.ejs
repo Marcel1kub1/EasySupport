@@ -1,0 +1,76 @@
+<section class="module-settings">
+  <header class="page-heading">
+    <div>
+      <p class="section-kicker">Logging</p>
+      <h1>Logging settings</h1>
+      <p>Configure which events are logged and where they are sent.</p>
+    </div>
+    <a href="/dashboard" class="button button--quiet">← Back to dashboard</a>
+  </header>
+
+  <form method="post" action="/admin/modules/logging" class="settings-form">
+    <div class="settings-grid">
+      <% 
+      const settings = [
+        { key: 'log_channel', label: 'Log Channel', type: 'channel', desc: 'Default channel for all logs' },
+        { key: 'log_message_delete', label: 'Message Delete', type: 'toggle', desc: 'Log deleted messages' },
+        { key: 'log_message_edit', label: 'Message Edit', type: 'toggle', desc: 'Log edited messages' },
+        { key: 'log_member_join', label: 'Member Join', type: 'toggle', desc: 'Log when members join' },
+        { key: 'log_member_leave', label: 'Member Leave', type: 'toggle', desc: 'Log when members leave' },
+        { key: 'log_member_ban', label: 'Member Ban', type: 'toggle', desc: 'Log member bans' },
+        { key: 'log_member_unban', label: 'Member Unban', type: 'toggle', desc: 'Log member unbans' },
+        { key: 'log_role_create', label: 'Role Create', type: 'toggle', desc: 'Log role creation' },
+        { key: 'log_role_delete', label: 'Role Delete', type: 'toggle', desc: 'Log role deletion' },
+        { key: 'log_channel_create', label: 'Channel Create', type: 'toggle', desc: 'Log channel creation' },
+        { key: 'log_channel_delete', label: 'Channel Delete', type: 'toggle', desc: 'Log channel deletion' },
+        { key: 'log_voice_join', label: 'Voice Join', type: 'toggle', desc: 'Log voice channel joins' },
+        { key: 'log_voice_leave', label: 'Voice Leave', type: 'toggle', desc: 'Log voice channel leaves' },
+        { key: 'log_nickname_change', label: 'Nickname Change', type: 'toggle', desc: 'Log nickname changes' },
+        { key: 'log_avatar_change', label: 'Avatar Change', type: 'toggle', desc: 'Log avatar changes' },
+      ];
+      settings.forEach((s) => { %>
+        <div class="setting-field">
+          <label class="setting-label"><%= s.label %></label>
+          <p class="setting-desc"><%= s.desc %></p>
+          <% if (s.type === 'toggle') { %>
+            <div class="toggle">
+              <input type="checkbox" id="<%= s.key %>" name="<%= s.key %>" value="true" <%= settings[s.key] === 'true' || settings[s.key] === true ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </div>
+          <% } else if (s.type === 'channel') { %>
+            <input type="text" id="<%= s.key %>" name="<%= s.key %>" placeholder="Channel ID" value="<%= settings[s.key] || '' %>">
+            <span class="field-hint">Enter the channel ID</span>
+          <% } else { %>
+            <input type="text" id="<%= s.key %>" name="<%= s.key %>" value="<%= settings[s.key] || '' %>">
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="button button--primary">Save logging settings</button>
+    </div>
+  </form>
+</section>
+
+<style>
+.module-settings { max-width: 900px; margin: 0 auto; padding: 24px; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+.page-heading > div { flex: 1; }
+.section-kicker { color: var(--muted); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+.page-heading h1 { font-size: 28px; color: var(--ink); margin-bottom: 4px; letter-spacing: -0.04em; }
+.page-heading p { color: var(--muted); font-size: 15px; }
+.settings-form { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 32px; }
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+.setting-field { display: flex; flex-direction: column; gap: 8px; }
+.setting-label { font-size: 14px; font-weight: 700; color: var(--ink); }
+.setting-desc { font-size: 12px; color: var(--muted); margin: 0; }
+.toggle { position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: var(--ink); }
+.toggle input { opacity: 0; width: 0; height: 0; pointer-events: none; }
+.toggle-slider { width: 44px; height: 24px; border-radius: 12px; background: var(--surface-raised); border: 2px solid var(--line); transition: all 160ms ease; }
+.toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+input[type="text"] { width: 100%; padding: 10px 14px; background: var(--surface-quiet); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: 14px; }
+input[type="text"]:focus { outline: none; border-color: var(--accent); }
+.field-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.form-actions { margin-top: 32px; display: flex; justify-content: flex-end; }
+@media (max-width: 640px) { .module-settings { padding: 16px; } .settings-form { padding: 20px; } .settings-grid { grid-template-columns: 1fr; } .page-heading { flex-direction: column; align-items: flex-start; gap: 16px; } }
+</style>

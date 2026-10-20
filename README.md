@@ -23,6 +23,8 @@
   <img src="https://img.shields.io/badge/node-%3E%3D22.5-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js &gt;= 22.5">
   <img src="https://img.shields.io/badge/discord.js-v14-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="discord.js v14">
   <img src="https://img.shields.io/badge/storage-SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite storage">
+  <img src="https://img.shields.io/badge/storage-MySQL-00758F?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL storage">
+  <img src="https://img.shields.io/badge/dashboard-Express%20%2B%20EJS-4A3B32?style=for-the-badge" alt="Web dashboard">
   <img src="https://img.shields.io/badge/no%20compile%20step-prebuilt%20binaries-blue?style=for-the-badge" alt="no compile step">
   <img src="https://img.shields.io/badge/maintained-yes-green?style=for-the-badge" alt="maintained">
   <a href="https://github.com/Marcel1kub1/EasySupport/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge" alt="PRs welcome"></a>
@@ -45,8 +47,57 @@
 - 📄 **Transcripts** — a TXT + HTML transcript is generated when a ticket closes
 - ⭐ **Rating prompt** — members rate the support 1–5 by DM after close
 - 📝 **Audit log** — every action is logged to your log channel
-- 🗄️ **SQLite, zero native deps** — `node:sqlite` ships with Node, so `npm install` downloads nothing to compile
+- 🗄️ **MySQL storage** — all data stored in MySQL via `mysql2/promise`, with automatic migrations on boot
 - ⚙️ **One-file config** — roles by name (`'Moderation Team'`) or by ID, everything else is optional
+
+### 🛡️ Moderation
+- `/moderation warn` — warn a user with reason
+- `/moderation mute` — timeout a user for a duration
+- `/moderation ban` — ban a user
+- `/moderation warnings` — view warnings for a user
+
+### 🔒 Anti-Nuke
+- `/anti_nuke` — configure raid protection, anti-spam, anti-invite, anti-link
+- Threshold-based detection with configurable punishment
+
+### 🤖 Automod
+- `/automod` — word filter, link filter, mention spam, caps filter
+- Customizable blocked words, allowed domains, punishment actions
+
+### 📈 Leveling
+- `/leveling` — check rank, view leaderboard, add XP
+- XP per message with cooldown, level-up announcements, role rewards
+
+### 💰 Economy
+- `/economy` — check balance, pay users, set balance
+- Daily rewards, work commands, currency customization
+
+### 🎁 Giveaways
+- `/giveaways` — create, list, and end giveaways
+- Timed draws, multiple winners, automatic results
+
+### ⭐ Vouches
+- `/vouches` — give or view vouches for users
+- Vouch leaderboard, cooldowns, anonymous vouch option
+
+### 👋 Welcome / Goodbye / Boost
+- `/welcome_goodbye_boost` — configure welcome, goodbye, and boost messages
+- Custom channels, messages, and boost role rewards
+
+### 📝 Logging
+- `/logging` — configure log channels for 15 event types
+- Message delete/edit, member join/leave/ban, role/channel changes, voice, nickname, avatar
+
+### 🌐 Web Dashboard
+- **Browser-based management** — configure all 107 settings from a polished dashboard
+- **Role-based permissions** — granular command access control per role via a matrix UI
+- **Module overview** — one-click access to each feature module at `/dashboard`
+- **Settings persistence** — all changes saved to MySQL in real-time
+
+### 👥 Role-Based Command Permissions
+- Configure which roles can run which commands via `/admin/roles`
+- Admins with `Administrator` permission always bypass checks
+- Default fallback to Discord's native permission system when no role config exists
 
 ## 🖼️ Preview
 
@@ -142,7 +193,7 @@ assets/
 ```
 ## 🖥️ Hosting on a server
 
-The template writes its database to `data/tickets.db`, generated panel art to
+The template writes its database to MySQL (configured via `.env`), generated panel art to
 `data/art/`, downloaded emoji SVGs to `data/emoji/` and transcripts to
 `transcripts/`. For production:
 
@@ -157,9 +208,7 @@ The template writes its database to `data/tickets.db`, generated panel art to
   EnvironmentFile=/opt/ticketbot/.env
   ```
 
-- Back up `data/` and `transcripts/` on a schedule (cron + restic/borg).
-- When you outgrow SQLite, swap the statements in `src/db.js` for PostgreSQL —
-  the schema is already relational (see DESIGN.md §2.3).
+- Back up your MySQL database on a schedule (cron + mysqldump/automated backups).
 - Keep `.env` out of git (it's in `.gitignore`) and never commit the token.
 
 ## 🧪 Tests

@@ -6,7 +6,7 @@ import { config } from './config.js';
 import { loadModules } from './loader.js';
 import { createWebApp } from './web.js';
 import { deployCommands } from '../deploy-commands.js';
-import { connect, initialize, pool } from './db.js';
+import { connect, initialize, migrate, pool } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -52,6 +52,8 @@ async function boot() {
     console.log('[db] Connected to MySQL.');
     await initialize();
     console.log('[db] Schema initialized.');
+    await migrate();
+    console.log('[db] Migrations applied.');
 
     // Sync slash commands with Discord: register current ones and prune any
     // stale commands left over from older builds (both scopes).
@@ -67,7 +69,7 @@ async function boot() {
   }
 
   // Start the public website (homepage + status + admin) alongside the bot.
-  const app = createWebApp();
+  const app = createWebApp(client);
   const server = app.listen(config.port, () => {
     console.log(`[web] Listening on http://localhost:${config.port}`);
   });

@@ -1,0 +1,71 @@
+<section class="module-settings">
+  <header class="page-heading">
+    <div>
+      <p class="section-kicker">Welcome / Goodbye / Boost</p>
+      <h1>Welcome/Goodbye/Boost settings</h1>
+      <p>Configure custom greetings, boost messages, and channels.</p>
+    </div>
+    <a href="/dashboard" class="button button--quiet">← Back to dashboard</a>
+  </header>
+
+  <form method="post" action="/admin/modules/welcome_goodbye_boost" class="settings-form">
+    <div class="settings-grid">
+      <% 
+      const settings = [
+        { key: 'welcome_enabled', label: 'Welcome Messages', type: 'toggle', desc: 'Send welcome messages when members join' },
+        { key: 'welcome_channel', label: 'Welcome Channel', type: 'channel', desc: 'Channel for welcome messages' },
+        { key: 'welcome_message', label: 'Welcome Message', type: 'text', desc: 'Custom welcome message template' },
+        { key: 'goodbye_enabled', label: 'Goodbye Messages', type: 'toggle', desc: 'Send goodbye messages when members leave' },
+        { key: 'goodbye_channel', label: 'Goodbye Channel', type: 'channel', desc: 'Channel for goodbye messages' },
+        { key: 'goodbye_message', label: 'Goodbye Message', type: 'text', desc: 'Custom goodbye message template' },
+        { key: 'boost_enabled', label: 'Boost Messages', type: 'toggle', desc: 'Send messages when members boost' },
+        { key: 'boost_channel', label: 'Boost Channel', type: 'channel', desc: 'Channel for boost messages' },
+        { key: 'boost_message', label: 'Boost Message', type: 'text', desc: 'Custom boost message template' },
+        { key: 'boost_role', label: 'Boost Role', type: 'role', desc: 'Role given to boosters' },
+      ];
+      settings.forEach((s) => { %>
+        <div class="setting-field">
+          <label class="setting-label"><%= s.label %></label>
+          <p class="setting-desc"><%= s.desc %></p>
+          <% if (s.type === 'toggle') { %>
+            <div class="toggle">
+              <input type="checkbox" id="<%= s.key %>" name="<%= s.key %>" value="true" <%= settings[s.key] === 'true' || settings[s.key] === true ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </div>
+          <% } else if (s.type === 'channel' || s.type === 'role') { %>
+            <input type="text" id="<%= s.key %>" name="<%= s.key %>" placeholder="ID or mention" value="<%= settings[s.key] || '' %>">
+            <span class="field-hint">Enter the <%= s.type %> ID</span>
+          <% } else { %>
+            <input type="text" id="<%= s.key %>" name="<%= s.key %>" value="<%= settings[s.key] || '' %>">
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="button button--primary">Save welcome/goodbye/boost settings</button>
+    </div>
+  </form>
+</section>
+
+<style>
+.module-settings { max-width: 900px; margin: 0 auto; padding: 24px; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+.page-heading > div { flex: 1; }
+.section-kicker { color: var(--muted); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+.page-heading h1 { font-size: 28px; color: var(--ink); margin-bottom: 4px; letter-spacing: -0.04em; }
+.page-heading p { color: var(--muted); font-size: 15px; }
+.settings-form { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 32px; }
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+.setting-field { display: flex; flex-direction: column; gap: 8px; }
+.setting-label { font-size: 14px; font-weight: 700; color: var(--ink); }
+.setting-desc { font-size: 12px; color: var(--muted); margin: 0; }
+.toggle { position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: var(--ink); }
+.toggle input { opacity: 0; width: 0; height: 0; pointer-events: none; }
+.toggle-slider { width: 44px; height: 24px; border-radius: 12px; background: var(--surface-raised); border: 2px solid var(--line); transition: all 160ms ease; }
+.toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+input[type="text"] { width: 100%; padding: 10px 14px; background: var(--surface-quiet); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: 14px; }
+input[type="text"]:focus { outline: none; border-color: var(--accent); }
+.field-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.form-actions { margin-top: 32px; display: flex; justify-content: flex-end; }
+@media (max-width: 640px) { .module-settings { padding: 16px; } .settings-form { padding: 20px; } .settings-grid { grid-template-columns: 1fr; } .page-heading { flex-direction: column; align-items: flex-start; gap: 16px; } }
+</style>

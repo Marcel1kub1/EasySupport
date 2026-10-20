@@ -17,7 +17,7 @@ import {
   isModuleEnabled,
 } from '../db.js';
 
-const MODULES = ['ticket', 'highrankdm'];
+const MODULES = ['ticket', 'highrankdm', 'moderation', 'anti_nuke', 'automod', 'leveling', 'economy', 'giveaways', 'vouches', 'welcome_goodbye_boost', 'logging'];
 
 /** In-progress configure form state, keyed by user id. */
 const configureSessions = new Map();
@@ -65,6 +65,51 @@ function settingsEmbed(guild, settings) {
       {
         name: 'HighRankDM module',
         value: moduleBadge(isModuleEnabledSync(settings, 'highrankdm')),
+        inline: true,
+      },
+      {
+        name: 'Moderation module',
+        value: moduleBadge(isModuleEnabledSync(settings, 'moderation')),
+        inline: true,
+      },
+      {
+        name: 'Anti-Nuke module',
+        value: moduleBadge(isModuleEnabledSync(settings, 'anti_nuke')),
+        inline: true,
+      },
+      {
+        name: 'AutoMod module',
+        value: moduleBadge(isModuleEnabledSync(settings, 'automod')),
+        inline: true,
+      },
+      {
+        name: 'Leveling module',
+        value: moduleBadge(isModuleEnabledSync(settings, 'leveling')),
+        inline: true,
+      },
+      {
+        name: 'Economy module',
+        value: moduleBadge(isModuleEnabledSync(settings, 'economy')),
+        inline: true,
+      },
+      {
+        name: 'Giveaways module',
+        value: moduleBadge(isModuleEnabledSync(settings, 'giveaways')),
+        inline: true,
+      },
+      {
+        name: 'Vouches module',
+        value: moduleBadge(isModuleEnabledSync(settings, 'vouches')),
+        inline: true,
+      },
+      {
+        name: 'Welcome/Goodbye/Boost module',
+        value: moduleBadge(isModuleEnabledSync(settings, 'welcome_goodbye_boost')),
+        inline: true,
+      },
+      {
+        name: 'Logging module',
+        value: moduleBadge(isModuleEnabledSync(settings, 'logging')),
         inline: true,
       },
     )
@@ -118,24 +163,24 @@ function isModuleEnabledSync(settings, module) {
 }
 
 function panelButtons(settings) {
-  const ticketEnabled = isModuleEnabledSync(settings, 'ticket');
-  const hrEnabled = isModuleEnabledSync(settings, 'highrankdm');
-
+  const rows = [];
+  for (const module of MODULES) {
+    const enabled = isModuleEnabledSync(settings, module);
+    rows.push(
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`setup:toggle:${module}`)
+          .setLabel(`${module} module: ${moduleBadge(enabled)}`)
+          .setStyle(enabled ? ButtonStyle.Success : ButtonStyle.Danger),
+      ),
+    );
+  }
   return [
     new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('setup:quick').setLabel('Quick Setup').setStyle(ButtonStyle.Success).setEmoji('⚡'),
       new ButtonBuilder().setCustomId('setup:configure').setLabel('Configure').setStyle(ButtonStyle.Primary).setEmoji('🔧'),
     ),
-    new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('setup:toggle:ticket')
-        .setLabel(`Ticket/Support module: ${moduleBadge(ticketEnabled)}`)
-        .setStyle(ticketEnabled ? ButtonStyle.Success : ButtonStyle.Danger),
-      new ButtonBuilder()
-        .setCustomId('setup:toggle:highrankdm')
-        .setLabel(`High Rank Personal Message module: ${moduleBadge(hrEnabled)}`)
-        .setStyle(hrEnabled ? ButtonStyle.Success : ButtonStyle.Danger),
-    ),
+    ...rows,
   ];
 }
 
@@ -185,26 +230,14 @@ export default {
         return;
       }
 
-      if (button.customId === 'setup:toggle:ticket') {
+      if (button.customId.startsWith('setup:toggle:')) {
+        const module = button.customId.split(':')[2];
         const currentModules = current?.enabled_modules ? JSON.parse(current.enabled_modules) : [...MODULES];
-        const next = !currentModules.includes('ticket');
-        await setModuleEnabled(interaction.guildId, 'ticket', next);
+        const next = !currentModules.includes(module);
+        await setModuleEnabled(interaction.guildId, module, next);
         const updated = await getGuild(interaction.guildId);
         await button.editReply({
-          content: `Ticket module ${next ? 'enabled' : 'disabled'}.`,
-          embeds: [settingsEmbed(interaction.guild, updated)],
-          components: panelButtons(updated),
-        });
-        return;
-      }
-
-      if (button.customId === 'setup:toggle:highrankdm') {
-        const currentModules = current?.enabled_modules ? JSON.parse(current.enabled_modules) : [...MODULES];
-        const next = !currentModules.includes('highrankdm');
-        await setModuleEnabled(interaction.guildId, 'highrankdm', next);
-        const updated = await getGuild(interaction.guildId);
-        await button.editReply({
-          content: `HighRankDM module ${next ? 'enabled' : 'disabled'}.`,
+          content: `${module} module ${next ? 'enabled' : 'disabled'}.`,
           embeds: [settingsEmbed(interaction.guild, updated)],
           components: panelButtons(updated),
         });

@@ -9,40 +9,140 @@
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
-  <header class="site-header">
-    <nav class="navbar" aria-label="Main navigation">
-      <a class="brand" href="/" aria-label="EasySupport home">
-        <span class="brand-mark" aria-hidden="true">E</span>
-        <span>EasySupport</span>
-      </a>
-      <div class="nav-links">
-        <a href="/" <%= active === 'home' ? 'aria-current="page"' : '' %>>Home</a>
-        <a href="/status" <%= active === 'status' ? 'aria-current="page"' : '' %>>Status</a>
-        <% if (admin) { %>
-          <a href="/admin" <%= active === 'admin' ? 'aria-current="page"' : '' %>>Admin</a>
-          <a class="nav-action" href="/admin/logout">Sign out</a>
-        <% } else { %>
-          <a class="nav-action" href="/admin/login">Admin</a>
-        <% } %>
+
+  <% if (active === 'dashboard' || active?.startsWith('module') || active === 'roles') { %>
+    <div class="dashboard-shell">
+      <aside class="dashboard-sidebar">
+        <div class="sidebar-brand">
+          <a href="/dashboard" class="sidebar-brand-link">
+            <span class="sidebar-brand-mark" aria-hidden="true">E</span>
+            <span class="sidebar-brand-name">EasySupport</span>
+          </a>
+          <div class="sidebar-divider"></div>
+          <p class="sidebar-guild"><%= guildName || 'Server' %></p>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Dashboard navigation">
+          <a href="/dashboard" class="sidebar-nav-item <%= active === 'dashboard' ? 'is-active' : '' %>">
+            <span class="sidebar-nav-icon" aria-hidden="true">📊</span>
+            <span class="sidebar-nav-label">Dashboard</span>
+          </a>
+          <div class="sidebar-nav-section">
+            <p class="sidebar-nav-section-label">Modules</p>
+            <a href="/admin/modules/tickets" class="sidebar-nav-item <%= active === 'module-tickets' ? 'is-active' : '' %>">
+              <span class="sidebar-nav-icon" aria-hidden="true">🎫</span>
+              <span class="sidebar-nav-label">Tickets</span>
+            </a>
+            <a href="/admin/modules/moderation" class="sidebar-nav-item <%= active === 'module-moderation' ? 'is-active' : '' %>">
+              <span class="sidebar-nav-icon" aria-hidden="true">🛡️</span>
+              <span class="sidebar-nav-label">Moderation</span>
+            </a>
+            <a href="/admin/modules/anti_nuke" class="sidebar-nav-item <%= active === 'module-anti_nuke' ? 'is-active' : '' %>">
+              <span class="sidebar-nav-icon" aria-hidden="true">🔒</span>
+              <span class="sidebar-nav-label">Anti-Nuke</span>
+            </a>
+            <a href="/admin/modules/automod" class="sidebar-nav-item <%= active === 'module-automod' ? 'is-active' : '' %>">
+              <span class="sidebar-nav-icon" aria-hidden="true">🤖</span>
+              <span class="sidebar-nav-label">Automod</span>
+            </a>
+            <a href="/admin/modules/leveling" class="sidebar-nav-item <%= active === 'module-leveling' ? 'is-active' : '' %>">
+              <span class="sidebar-nav-icon" aria-hidden="true">📈</span>
+              <span class="sidebar-nav-label">Leveling</span>
+            </a>
+            <a href="/admin/modules/economy" class="sidebar-nav-item <%= active === 'module-economy' ? 'is-active' : '' %>">
+              <span class="sidebar-nav-icon" aria-hidden="true">💰</span>
+              <span class="sidebar-nav-label">Economy</span>
+            </a>
+            <a href="/admin/modules/giveaways" class="sidebar-nav-item <%= active === 'module-giveaways' ? 'is-active' : '' %>">
+              <span class="sidebar-nav-icon" aria-hidden="true">🎁</span>
+              <span class="sidebar-nav-label">Giveaways</span>
+            </a>
+            <a href="/admin/modules/vouches" class="sidebar-nav-item <%= active === 'module-vouches' ? 'is-active' : '' %>">
+              <span class="sidebar-nav-icon" aria-hidden="true">⭐</span>
+              <span class="sidebar-nav-label">Vouches</span>
+            </a>
+            <a href="/admin/modules/welcome_goodbye_boost" class="sidebar-nav-item <%= active === 'module-welcome_goodbye_boost' ? 'is-active' : '' %>">
+              <span class="sidebar-nav-icon" aria-hidden="true">👋</span>
+              <span class="sidebar-nav-label">Welcome/Goodbye</span>
+            </a>
+            <a href="/admin/modules/logging" class="sidebar-nav-item <%= active === 'module-logging' ? 'is-active' : '' %>">
+              <span class="sidebar-nav-icon" aria-hidden="true">📝</span>
+              <span class="sidebar-nav-label">Logging</span>
+            </a>
+          </div>
+          <div class="sidebar-nav-section">
+            <p class="sidebar-nav-section-label">Access</p>
+            <a href="/admin/roles" class="sidebar-nav-item <%= active === 'roles' ? 'is-active' : '' %>">
+              <span class="sidebar-nav-icon" aria-hidden="true">👥</span>
+              <span class="sidebar-nav-label">Role Permissions</span>
+            </a>
+          </div>
+        </nav>
+
+        <div class="sidebar-footer">
+          <a href="/admin/logout" class="sidebar-nav-item sidebar-nav-item--logout">
+            <span class="sidebar-nav-icon" aria-hidden="true">🚪</span>
+            <span class="sidebar-nav-label">Sign out</span>
+          </a>
+        </div>
+      </aside>
+
+      <div class="dashboard-main">
+        <header class="dashboard-header">
+          <div class="dashboard-header-content">
+            <h1 class="dashboard-title"><%= title %></h1>
+            <p class="dashboard-subtitle">Configure your server settings</p>
+          </div>
+          <a href="/" class="dashboard-view-site">View site <span aria-hidden="true">↗</span></a>
+        </header>
+
+        <main id="main-content" class="dashboard-content">
+          <% if (message) { %>
+            <div class="flash flash--success" role="status"><%= message %></div>
+          <% } %>
+          <% if (error) { %>
+            <div class="flash flash--error" role="alert"><%= error %></div>
+          <% } %>
+          <%- body %>
+        </main>
       </div>
-    </nav>
-  </header>
+    </div>
+  <% } else { %>
+    <header class="site-header">
+      <nav class="navbar" aria-label="Main navigation">
+        <a class="brand" href="/" aria-label="EasySupport home">
+          <span class="brand-mark" aria-hidden="true">E</span>
+          <span>EasySupport</span>
+        </a>
+        <div class="nav-links">
+          <a href="/" <%= active === 'home' ? 'aria-current="page"' : '' %>>Home</a>
+          <a href="/status" <%= active === 'status' ? 'aria-current="page"' : '' %>>Status</a>
+          <% if (admin) { %>
+            <a href="/admin" <%= active === 'admin' ? 'aria-current="page"' : '' %>>Admin</a>
+            <a class="nav-action" href="/admin/logout">Sign out</a>
+          <% } else { %>
+            <a class="nav-action" href="/admin/login">Admin</a>
+          <% } %>
+        </div>
+      </nav>
+    </header>
 
-  <main id="main-content" class="site-main<%= active === 'home' ? ' site-main--home' : '' %>">
-    <% if (message) { %>
-      <div class="flash" role="status"><%= message %></div>
-    <% } %>
-    <% if (error) { %>
-      <div class="flash flash--error" role="alert"><%= error %></div>
-    <% } %>
-    <%- body %>
-  </main>
+    <main id="main-content" class="site-main<%= active === 'home' ? ' site-main--home' : '' %>">
+      <% if (message) { %>
+        <div class="flash" role="status"><%= message %></div>
+      <% } %>
+      <% if (error) { %>
+        <div class="flash flash--error" role="alert"><%= error %></div>
+      <% } %>
+      <%- body %>
+    </main>
 
-  <footer class="site-footer">
-    <a class="footer-brand" href="/">EasySupport</a>
-    <p>Self-hosted Discord ticketing, made easier to manage.</p>
-    <a href="<%= repoUrl || 'https://github.com/Marcel1kub1/EasySupport' %>" target="_blank" rel="noopener noreferrer">View on GitHub <span aria-hidden="true">↗</span></a>
-  </footer>
+    <footer class="site-footer">
+      <a class="footer-brand" href="/">EasySupport</a>
+      <p>Self-hosted Discord ticketing, made easier to manage.</p>
+      <a href="<%= repoUrl || 'https://github.com/Marcel1kub1/EasySupport' %>" target="_blank" rel="noopener noreferrer">View on GitHub <span aria-hidden="true">↗</span></a>
+    </footer>
+  <% } %>
   <script src="/site.js" defer></script>
 </body>
 </html>

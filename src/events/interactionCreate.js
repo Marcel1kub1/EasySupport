@@ -20,6 +20,7 @@ import {
   getTicketMessages,
   isBlacklisted,
   isModuleEnabled,
+  getRolePermission,
   nextTicketNumber,
   rateTicket,
   setPanelMessageId,
@@ -39,6 +40,15 @@ const COMMAND_MODULES = {
   blacklist: 'ticket',
   export: 'ticket',
   highrankdm: 'highrankdm',
+  moderation: 'moderation',
+  anti_nuke: 'anti_nuke',
+  automod: 'automod',
+  leveling: 'leveling',
+  economy: 'economy',
+  giveaways: 'giveaways',
+  vouches: 'vouches',
+  welcome_goodbye_boost: 'welcome_goodbye_boost',
+  logging: 'logging',
 };
 
 /*
@@ -73,6 +83,17 @@ async function acknowledge(interaction) {
   }
 }
 
+/** Role-permission middleware: admins bypass; any role with allowed=false denies. */
+async function checkRolePermission(guildId, member, commandName) {
+  if (member.permissions.has(PermissionFlagsBits.Administrator)) return true;
+  const roles = member.roles.cache;
+  for (const [roleId] of roles) {
+    const allowed = await getRolePermission(guildId, roleId, commandName);
+    if (allowed === false) return false;
+  }
+  return true;
+}
+
 export default {
   name: 'interactionCreate',
   async execute(interaction, client) {
@@ -86,6 +107,10 @@ export default {
           const commandModule = COMMAND_MODULES[interaction.commandName];
           if (commandModule && !(await isModuleEnabled(interaction.guildId, commandModule))) {
             return interaction.reply({ content: 'This command is disabled for this server.', flags: MessageFlags.Ephemeral });
+          }
+          const hasPerm = await checkRolePermission(interaction.guildId, interaction.member, interaction.commandName);
+          if (!hasPerm) {
+            return interaction.reply({ content: 'You do not have permission to use this command.', flags: MessageFlags.Ephemeral });
           }
           await command.execute(interaction, client);
         }

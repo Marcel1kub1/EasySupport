@@ -1,0 +1,77 @@
+<section class="module-settings">
+  <header class="page-heading">
+    <div>
+      <p class="section-kicker">Vouches</p>
+      <h1>Vouches settings</h1>
+      <p>Configure user reputation, vouch counts, and leaderboard.</p>
+    </div>
+    <a href="/dashboard" class="button button--quiet">← Back to dashboard</a>
+  </header>
+
+  <form method="post" action="/admin/modules/vouches" class="settings-form">
+    <div class="settings-grid">
+      <% 
+      const settings = [
+        { key: 'vouches_channel', label: 'Vouches Channel', type: 'channel', desc: 'Channel where vouches are posted' },
+        { key: 'vouches_enabled', label: 'Vouches Enabled', type: 'toggle', desc: 'Allow users to give/receive vouches' },
+        { key: 'vouch_cooldown', label: 'Vouch Cooldown', type: 'number', desc: 'Hours between vouches for the same user', unit: 'hr' },
+        { key: 'max_vouches_per_user', label: 'Max Vouches Per User', type: 'number', desc: 'Maximum vouches a user can receive' },
+        { key: 'vouch_leaderboard', label: 'Vouch Leaderboard', type: 'toggle', desc: 'Enable the vouch leaderboard command' },
+        { key: 'anonymous_vouches', label: 'Anonymous Vouches', type: 'toggle', desc: 'Hide who gave each vouch' },
+        { key: 'vouch_rewards', label: 'Vouch Rewards', type: 'text', desc: 'Vouch count:Role ID pairs for rewards' },
+      ];
+      settings.forEach((s) => { %>
+        <div class="setting-field">
+          <label class="setting-label"><%= s.label %></label>
+          <p class="setting-desc"><%= s.desc %></p>
+          <% if (s.type === 'toggle') { %>
+            <div class="toggle">
+              <input type="checkbox" id="<%= s.key %>" name="<%= s.key %>" value="true" <%= settings[s.key] === 'true' || settings[s.key] === true ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </div>
+          <% } else if (s.type === 'number') { %>
+            <div class="input-group">
+              <input type="number" id="<%= s.key %>" name="<%= s.key %>" value="<%= settings[s.key] || '' %>" min="0">
+              <span class="input-suffix"><%= s.unit || '' %></span>
+            </div>
+          <% } else if (s.type === 'channel' || s.type === 'role') { %>
+            <input type="text" id="<%= s.key %>" name="<%= s.key %>" placeholder="ID or mention" value="<%= settings[s.key] || '' %>">
+            <span class="field-hint">Enter the <%= s.type %> ID</span>
+          <% } else { %>
+            <input type="text" id="<%= s.key %>" name="<%= s.key %>" value="<%= settings[s.key] || '' %>">
+            <span class="field-hint">Comma-separated values</span>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="button button--primary">Save vouch settings</button>
+    </div>
+  </form>
+</section>
+
+<style>
+.module-settings { max-width: 900px; margin: 0 auto; padding: 24px; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+.page-heading > div { flex: 1; }
+.section-kicker { color: var(--muted); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+.page-heading h1 { font-size: 28px; color: var(--ink); margin-bottom: 4px; letter-spacing: -0.04em; }
+.page-heading p { color: var(--muted); font-size: 15px; }
+.settings-form { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 32px; }
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+.setting-field { display: flex; flex-direction: column; gap: 8px; }
+.setting-label { font-size: 14px; font-weight: 700; color: var(--ink); }
+.setting-desc { font-size: 12px; color: var(--muted); margin: 0; }
+.toggle { position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: var(--ink); }
+.toggle input { opacity: 0; width: 0; height: 0; pointer-events: none; }
+.toggle-slider { width: 44px; height: 24px; border-radius: 12px; background: var(--surface-raised); border: 2px solid var(--line); transition: all 160ms ease; }
+.toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+.input-group { display: flex; align-items: center; gap: 8px; }
+.input-group input { flex: 1; }
+.input-suffix { font-size: 13px; color: var(--muted); font-weight: 600; }
+input[type="text"], input[type="number"] { width: 100%; padding: 10px 14px; background: var(--surface-quiet); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: 14px; }
+input[type="text"]:focus, input[type="number"]:focus { outline: none; border-color: var(--accent); }
+.field-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.form-actions { margin-top: 32px; display: flex; justify-content: flex-end; }
+@media (max-width: 640px) { .module-settings { padding: 16px; } .settings-form { padding: 20px; } .settings-grid { grid-template-columns: 1fr; } .page-heading { flex-direction: column; align-items: flex-start; gap: 16px; } }
+</style>

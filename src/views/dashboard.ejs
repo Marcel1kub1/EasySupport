@@ -1,0 +1,129 @@
+<section class="dashboard-overview">
+  <header class="page-heading">
+    <div>
+      <p class="section-kicker">Dashboard</p>
+      <h1>Module overview</h1>
+      <p>Manage all EasySupport features from one place.</p>
+    </div>
+  </header>
+
+  <div class="module-grid">
+    <% const modules = [
+      { key: 'tickets', icon: '🎫', title: 'Tickets', desc: 'Panels, categories, claiming, and transcripts.', count: 10 },
+      { key: 'moderation', icon: '🛡️', title: 'Moderation', desc: 'Ban, kick, warn, timeout, and case history.', count: 9 },
+      { key: 'anti_nuke', icon: '🔒', title: 'Anti-Nuke', desc: 'Raid protection, anti-spam, anti-invite, anti-link.', count: 10 },
+      { key: 'automod', icon: '🤖', title: 'Automod', desc: 'Word filters, link filters, mention spam, caps.', count: 10 },
+      { key: 'leveling', icon: '📈', title: 'Leveling', desc: 'XP tracking, level rewards, leaderboards.', count: 10 },
+      { key: 'economy', icon: '💰', title: 'Economy', desc: 'Balances, daily rewards, shop, transactions.', count: 10 },
+      { key: 'giveaways', icon: '🎁', title: 'Giveaways', desc: 'Timed draws, multiple winners, rerolls.', count: 7 },
+      { key: 'vouches', icon: '⭐', title: 'Vouches', desc: 'User reputation, vouch counts, leaderboard.', count: 7 },
+      { key: 'welcome_goodbye_boost', icon: '👋', title: 'Welcome/Goodbye', desc: 'Custom greetings, boost messages, channels.', count: 10 },
+      { key: 'logging', icon: '📝', title: 'Logging', desc: 'Event tracking, log channels, audit trail.', count: 15 },
+    ] %>
+    <% modules.forEach((mod) => { %>
+      <a href="/admin/modules/<%= mod.key %>" class="module-card">
+        <div class="module-card__icon"><%= mod.icon %></div>
+        <div class="module-card__body">
+          <h3><%= mod.title %></h3>
+          <p><%= mod.desc %></p>
+          <span class="module-card__count"><%= mod.count %> settings</span>
+        </div>
+        <span class="module-card__arrow">→</span>
+      </a>
+    <% }) %>
+  </div>
+</section>
+
+<style>
+.dashboard-overview {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.page-heading {
+  margin-bottom: 32px;
+}
+.section-kicker {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+.page-heading h1 {
+  font-size: 32px;
+  color: var(--ink);
+  margin-bottom: 8px;
+  letter-spacing: -0.04em;
+}
+.page-heading p {
+  color: var(--muted);
+  font-size: 16px;
+}
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+.module-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.module-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.4);
+  transform: translateY(-2px);
+}
+.module-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--surface-raised);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.module-card__body {
+  flex: 1;
+}
+.module-card__body h3 {
+  font-size: 18px;
+  color: var(--ink);
+  margin: 0 0 6px 0;
+  font-weight: 700;
+}
+.module-card__body p {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 0 10px 0;
+  line-height: 1.4;
+}
+.module-card__count {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 700;
+}
+.module-card__arrow {
+  font-size: 18px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .dashboard-overview {
+    padding: 16px;
+  }
+  .module-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

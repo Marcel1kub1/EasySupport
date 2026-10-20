@@ -31,6 +31,6 @@ desktop.ini
 # Mockup intermediates (regenerated with the README previews)
 assets/panel.svg
 assets/ticket.svg
-
+.agents/
 # SvelteKit build output
 
