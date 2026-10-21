@@ -9,6 +9,9 @@ node_modules/
 # Runtime data (SQLite database, generated transcripts)
 data/
 transcripts/
+!src/data/
+!src/data/releases.json
+!src/data/releases.md
 
 # Logs
 *.log
@@ -33,4 +36,3 @@ assets/panel.svg
 assets/ticket.svg
 .agents/
 # SvelteKit build output
-

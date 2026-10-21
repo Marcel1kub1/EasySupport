@@ -91,13 +91,28 @@
 ### 🌐 Web Dashboard
 - **Guild-based management** — sign in with Discord and configure servers where you have Manage Server access
 - **Module settings** — configure channels, categories, roles, and feature options for each guild
+- **Module and command search** — filter the guild’s module list by feature name, description, or command
+- **Searchable Discord role controls** — select one role or manage role lists using real guild roles
 - **Staff role permissions** — grant or deny command access for the roles in each guild
 - **Settings persistence** — all changes saved to MySQL in real-time
+- **Local release notes** — show changelog entries included with the installed self-hosted version
 
 ### 👥 Role-Based Command Permissions
 - Configure which staff roles can run each command from the guild dashboard
 - Admins with `Administrator` permission always bypass checks
 - Default fallback to Discord's native permission system when no role config exists
+
+### 📰 Local release notes
+
+Release notes are generated locally from Git history; the project does not send code to an AI service or use a hosted update API. The generator groups commit subjects using `scripts/release-notes.rules.json`, lists changed paths, and includes slash-command definitions when their command files changed. These are factual, editable notes—not AI-written summaries.
+
+Before generating notes, set `package.json` to the release version and commit or tag the changes. Then provide the previous release ref and matching version:
+
+```bash
+npm run release:notes -- --from v2.2.0 --version 2.3.0
+```
+
+Review and edit `src/data/releases.json` and `src/data/releases.md`, then include them with the repository update. The dashboard shows the feed after a self-hosted instance receives that update and restarts. It cannot notify an offline instance about a remote push before the instance installs the change. Read and dismiss state is stored in that browser only; no Discord message is sent.
 
 ## 🖼️ Preview
 

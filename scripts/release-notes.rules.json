@@ -1,0 +1,15 @@
+{
+  "prefixes": {
+    "feat": "New",
+    "fix": "Fixed",
+    "perf": "Improved",
+    "refactor": "Changed",
+    "docs": "Documentation",
+    "test": "Quality",
+    "build": "Maintenance",
+    "ci": "Maintenance",
+    "chore": "Maintenance"
+  },
+  "breakingCategory": "Breaking changes",
+  "otherCategory": "Other"
+}

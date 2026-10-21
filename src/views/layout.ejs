@@ -3,206 +3,142 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#100c14">
+  <meta name="theme-color" content="#141419">
+  <meta name="description" content="Configure EasySupport modules, roles, and staff workflows for your Discord guild.">
+  <link rel="icon" type="image/png" href="/assets/logo.png">
+  <link rel="preload" href="/assets/fonts/cabinet-grotesk-bold.woff2" as="font" type="font/woff2" crossorigin>
   <title><%= title %></title>
   <link rel="stylesheet" href="/site.css">
 </head>
-<body>
+<body class="<%= active === 'home' ? 'public-page' : '' %>">
   <a class="skip-link" href="#main-content">Skip to content</a>
 
-  <% if (active === 'dashboard' || active?.startsWith('module') || active === 'roles') { %>
-    <div class="dashboard-shell">
-      <aside class="dashboard-sidebar">
-        <div class="sidebar-brand">
-          <a href="<%= guildId ? `/dashboard/${guildId}` : '/dashboard' %>" class="sidebar-brand-link">
-            <span class="sidebar-brand-mark" aria-hidden="true">E</span>
-            <span class="sidebar-brand-name">EasySupport</span>
-          </a>
-          <div class="sidebar-divider"></div>
-          <% if (user) { %>
-            <div class="sidebar-user">
-              <% if (user.avatar) { %>
-                <img class="sidebar-user__avatar" src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png" alt="">
-              <% } else { %>
-                <span class="sidebar-user__avatar sidebar-user__avatar--initial" aria-hidden="true"><%= (user.globalName ?? user.username).slice(0, 1) %></span>
-              <% } %>
-              <div class="sidebar-user__info">
-                <p class="sidebar-user__name"><%= user.globalName ?? user.username %></p>
-                <p class="sidebar-user__tag">@<%= user.username %></p>
-              </div>
-            </div>
-            <div class="sidebar-divider"></div>
-          <% } %>
-          <p class="sidebar-guild"><%= guildName || 'Server' %></p>
-          <% if (guilds && guilds.length > 1 && guildId) { %>
-            <label class="sidebar-guild-switch">
-              <span>Current guild</span>
-              <select aria-label="Switch guild" onchange="if (this.value) window.location.href = '/dashboard/' + encodeURIComponent(this.value)">
-                <% guilds.forEach((guild) => { %>
-                  <option value="<%= guild.id %>" <%= guild.id === guildId ? 'selected' : '' %>><%= guild.name %></option>
-                <% }) %>
-              </select>
-            </label>
-          <% } %>
-        </div>
+  <% if (active === 'dashboard' || active?.startsWith('module') || active === 'roles' || active === 'updates') { %>
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Guild dashboard">
+        <a class="app-brand" href="<%= guildId ? `/dashboard/${guildId}` : '/dashboard' %>">
+          <img src="/assets/logo.png" width="36" height="36" alt="">
+          <span>EasySupport</span>
+        </a>
 
-        <nav class="sidebar-nav" aria-label="Dashboard navigation">
-          <a href="<%= guildId ? `/dashboard/${guildId}` : '/dashboard' %>" class="sidebar-nav-item <%= active === 'dashboard' ? 'is-active' : '' %>">
-            <span class="sidebar-nav-icon" aria-hidden="true">📊</span>
-            <span class="sidebar-nav-label">Dashboard</span>
+        <% if (user) { %>
+          <div class="sidebar-account">
+            <% if (user.avatar) { %>
+              <img class="sidebar-account__avatar" src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png?size=96" alt="">
+            <% } else { %>
+              <span class="sidebar-account__avatar sidebar-account__avatar--initial" aria-hidden="true"><%= (user.globalName ?? user.username).slice(0, 1) %></span>
+            <% } %>
+            <div class="sidebar-account__copy">
+              <span class="sidebar-account__label">Signed in as</span>
+              <strong><%= user.globalName ?? user.username %></strong>
+            </div>
+            <a class="sidebar-account__logout" href="/logout" aria-label="Sign out">Sign out</a>
+          </div>
+        <% } %>
+
+        <% if (guildId && guilds && guilds.length > 1) { %>
+          <label class="guild-switcher">
+            <span>Active guild</span>
+            <select data-guild-switch aria-label="Switch guild">
+              <% guilds.forEach((guild) => { %>
+                <option value="<%= guild.id %>" <%= guild.id === guildId ? 'selected' : '' %>><%= guild.name %></option>
+              <% }) %>
+            </select>
+          </label>
+        <% } %>
+
+        <nav class="sidebar-nav" aria-label="Guild settings">
+          <p class="sidebar-nav__label">Workspace</p>
+          <a class="sidebar-link <%= active === 'dashboard' ? 'is-active' : '' %>" href="<%= guildId ? `/dashboard/${guildId}` : '/dashboard' %>">
+            <span class="sidebar-link__mark" aria-hidden="true">OV</span>
+            <span>Overview</span>
           </a>
+
           <% if (guildId && botInGuild) { %>
-          <div class="sidebar-nav-section">
-            <p class="sidebar-nav-section-label">Modules</p>
-            <% if (guildId) { %>
-              <a href="/admin/modules/<%= guildId %>/tickets" class="sidebar-nav-item <%= active === 'module-tickets' ? 'is-active' : '' %>">
-            <% } else { %>
-              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-tickets' ? 'is-active' : '' %>">
-            <% } %>
-              <span class="sidebar-nav-icon" aria-hidden="true">🎫</span>
-              <span class="sidebar-nav-label">Tickets</span>
+            <p class="sidebar-nav__label sidebar-nav__label--spaced">Modules</p>
+            <% modules.forEach((module) => { %>
+              <a class="sidebar-link <%= active === `module-${module.key}` ? 'is-active' : '' %>" href="/admin/modules/<%= guildId %>/<%= module.key %>">
+                <span class="sidebar-link__mark" aria-hidden="true"><%= module.short %></span>
+                <span><%= module.title %></span>
+              </a>
+            <% }) %>
+
+            <p class="sidebar-nav__label sidebar-nav__label--spaced">Access & updates</p>
+            <a class="sidebar-link <%= active === 'roles' ? 'is-active' : '' %>" href="/admin/<%= guildId %>/roles">
+              <span class="sidebar-link__mark" aria-hidden="true">SR</span>
+              <span>Staff permissions</span>
             </a>
-            <% if (guildId) { %>
-              <a href="/admin/modules/<%= guildId %>/moderation" class="sidebar-nav-item <%= active === 'module-moderation' ? 'is-active' : '' %>">
-            <% } else { %>
-              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-moderation' ? 'is-active' : '' %>">
-            <% } %>
-              <span class="sidebar-nav-icon" aria-hidden="true">🛡️</span>
-              <span class="sidebar-nav-label">Moderation</span>
+            <a class="sidebar-link <%= active === 'updates' ? 'is-active' : '' %>" href="/dashboard/<%= guildId %>/updates">
+              <span class="sidebar-link__mark" aria-hidden="true">UP</span>
+              <span>What’s new</span>
+              <% if (latestRelease) { %><span class="sidebar-link__badge" data-release-indicator data-guild-id="<%= guildId %>" data-release-id="<%= latestRelease.version %>">New</span><% } %>
             </a>
-            <% if (guildId) { %>
-              <a href="/admin/modules/<%= guildId %>/anti_nuke" class="sidebar-nav-item <%= active === 'module-anti_nuke' ? 'is-active' : '' %>">
-            <% } else { %>
-              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-anti_nuke' ? 'is-active' : '' %>">
-            <% } %>
-              <span class="sidebar-nav-icon" aria-hidden="true">🔒</span>
-              <span class="sidebar-nav-label">Anti-Nuke</span>
-            </a>
-            <% if (guildId) { %>
-              <a href="/admin/modules/<%= guildId %>/automod" class="sidebar-nav-item <%= active === 'module-automod' ? 'is-active' : '' %>">
-            <% } else { %>
-              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-automod' ? 'is-active' : '' %>">
-            <% } %>
-              <span class="sidebar-nav-icon" aria-hidden="true">🤖</span>
-              <span class="sidebar-nav-label">Automod</span>
-            </a>
-            <% if (guildId) { %>
-              <a href="/admin/modules/<%= guildId %>/leveling" class="sidebar-nav-item <%= active === 'module-leveling' ? 'is-active' : '' %>">
-            <% } else { %>
-              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-leveling' ? 'is-active' : '' %>">
-            <% } %>
-              <span class="sidebar-nav-icon" aria-hidden="true">📈</span>
-              <span class="sidebar-nav-label">Leveling</span>
-            </a>
-            <% if (guildId) { %>
-              <a href="/admin/modules/<%= guildId %>/economy" class="sidebar-nav-item <%= active === 'module-economy' ? 'is-active' : '' %>">
-            <% } else { %>
-              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-economy' ? 'is-active' : '' %>">
-            <% } %>
-              <span class="sidebar-nav-icon" aria-hidden="true">💰</span>
-              <span class="sidebar-nav-label">Economy</span>
-            </a>
-            <% if (guildId) { %>
-              <a href="/admin/modules/<%= guildId %>/giveaways" class="sidebar-nav-item <%= active === 'module-giveaways' ? 'is-active' : '' %>">
-            <% } else { %>
-              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-giveaways' ? 'is-active' : '' %>">
-            <% } %>
-              <span class="sidebar-nav-icon" aria-hidden="true">🎁</span>
-              <span class="sidebar-nav-label">Giveaways</span>
-            </a>
-            <% if (guildId) { %>
-              <a href="/admin/modules/<%= guildId %>/vouches" class="sidebar-nav-item <%= active === 'module-vouches' ? 'is-active' : '' %>">
-            <% } else { %>
-              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-vouches' ? 'is-active' : '' %>">
-            <% } %>
-              <span class="sidebar-nav-icon" aria-hidden="true">⭐</span>
-              <span class="sidebar-nav-label">Vouches</span>
-            </a>
-            <% if (guildId) { %>
-              <a href="/admin/modules/<%= guildId %>/welcome_goodbye_boost" class="sidebar-nav-item <%= active === 'module-welcome_goodbye_boost' ? 'is-active' : '' %>">
-            <% } else { %>
-              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-welcome_goodbye_boost' ? 'is-active' : '' %>">
-            <% } %>
-              <span class="sidebar-nav-icon" aria-hidden="true">👋</span>
-              <span class="sidebar-nav-label">Welcome/Goodbye</span>
-            </a>
-            <% if (guildId) { %>
-              <a href="/admin/modules/<%= guildId %>/logging" class="sidebar-nav-item <%= active === 'module-logging' ? 'is-active' : '' %>">
-            <% } else { %>
-              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-logging' ? 'is-active' : '' %>">
-            <% } %>
-              <span class="sidebar-nav-icon" aria-hidden="true">📝</span>
-              <span class="sidebar-nav-label">Logging</span>
-            </a>
-          </div>
-          <div class="sidebar-nav-section">
-            <p class="sidebar-nav-section-label">Staff</p>
-            <a href="<%= guildId ? `/admin/${guildId}/roles` : '/dashboard' %>" class="sidebar-nav-item <%= active === 'roles' ? 'is-active' : '' %>">
-              <span class="sidebar-nav-icon" aria-hidden="true">👥</span>
-              <span class="sidebar-nav-label">Staff roles</span>
-            </a>
-          </div>
           <% } %>
         </nav>
 
-        <div class="sidebar-footer">
-          <a href="/logout" class="sidebar-nav-item sidebar-nav-item--logout">
-            <span class="sidebar-nav-icon" aria-hidden="true">🚪</span>
-            <span class="sidebar-nav-label">Sign out</span>
+        <div class="sidebar-bottom">
+          <a class="sidebar-link sidebar-link--quiet" href="/" target="_blank" rel="noopener noreferrer">
+            <span class="sidebar-link__mark" aria-hidden="true">↗</span>
+            <span>View public site</span>
           </a>
+          <p>Self-hosted support tools for Discord.</p>
         </div>
       </aside>
 
-      <div class="dashboard-main">
-        <header class="dashboard-header">
-          <div class="dashboard-header-content">
-            <p class="dashboard-title"><%= title %></p>
-            <p class="dashboard-subtitle"><%= guildName ? `Manage ${guildName} from one place` : 'Configure your Discord guild' %></p>
+      <div class="app-main">
+        <header class="app-topbar">
+          <div class="app-topbar__context">
+            <span class="app-topbar__guild"><%= guildName || 'Guild dashboard' %></span>
+            <span class="app-topbar__divider" aria-hidden="true">/</span>
+            <span class="app-topbar__page"><%= title.replace('EasySupport — ', '') %></span>
           </div>
-          <a href="/" class="dashboard-view-site">EasySupport home <span aria-hidden="true">↗</span></a>
+          <div class="app-topbar__actions">
+            <% if (guildId && botInGuild) { %>
+              <a class="topbar-link" href="/dashboard/<%= guildId %>/updates">Release notes<% if (latestRelease) { %><span class="topbar-link__dot" data-release-indicator data-guild-id="<%= guildId %>" data-release-id="<%= latestRelease.version %>" aria-label="Updates available"></span><% } %></a>
+            <% } %>
+            <a class="topbar-link" href="<%= repoUrl %>" target="_blank" rel="noopener noreferrer">Source <span aria-hidden="true">↗</span></a>
+          </div>
         </header>
 
-        <main id="main-content" class="dashboard-content">
-          <% if (message) { %>
-            <div class="flash flash--success" role="status"><%= message %></div>
-          <% } %>
-          <% if (error) { %>
-            <div class="flash flash--error" role="alert"><%= error %></div>
-          <% } %>
+        <main id="main-content" class="workspace">
+          <% if (message) { %><div class="flash flash--success" role="status"><%= message %></div><% } %>
+          <% if (error) { %><div class="flash flash--error" role="alert"><%= error %></div><% } %>
           <%- body %>
         </main>
       </div>
     </div>
   <% } else { %>
-    <header class="site-header">
-      <nav class="navbar" aria-label="Main navigation">
-        <a class="brand" href="/" aria-label="EasySupport home">
-          <span class="brand-mark" aria-hidden="true">E</span>
+    <header class="public-header">
+      <nav class="public-nav" aria-label="Main navigation">
+        <a class="public-brand" href="/" aria-label="EasySupport home">
+          <img src="/assets/logo.png" width="34" height="34" alt="">
           <span>EasySupport</span>
         </a>
-        <div class="nav-links">
-          <a href="/" <%= active === 'home' ? 'aria-current="page"' : '' %>>Home</a>
-          <a class="nav-action" href="<%= signedIn ? '/dashboard' : '/login' %>"><%= signedIn ? 'Open guild dashboard' : 'Guild dashboard' %></a>
+        <div class="public-nav__links">
+          <a href="/" <%= active === 'home' ? 'aria-current="page"' : '' %>>Product</a>
+          <a href="<%= signedIn ? '/dashboard' : '/login' %>" class="button button--small button--primary"><%= signedIn ? 'Open dashboard' : 'Connect Discord' %><span aria-hidden="true">↗</span></a>
         </div>
       </nav>
     </header>
 
-    <main id="main-content" class="site-main<%= active === 'home' ? ' site-main--home' : '' %>">
-      <% if (message) { %>
-        <div class="flash" role="status"><%= message %></div>
-      <% } %>
-      <% if (error) { %>
-        <div class="flash flash--error" role="alert"><%= error %></div>
-      <% } %>
+    <main id="main-content" class="public-main<%= active === 'home' ? ' public-main--home' : '' %>">
+      <% if (message) { %><div class="flash flash--success" role="status"><%= message %></div><% } %>
+      <% if (error) { %><div class="flash flash--error" role="alert"><%= error %></div><% } %>
       <%- body %>
     </main>
 
-    <footer class="site-footer">
-      <a class="footer-brand" href="/">EasySupport</a>
-      <p>Self-hosted Discord ticketing, made easier to manage.</p>
-      <a href="<%= repoUrl || 'https://github.com/Marcel1kub1/EasySupport' %>" target="_blank" rel="noopener noreferrer">View on GitHub <span aria-hidden="true">↗</span></a>
+    <footer class="public-footer">
+      <a class="public-footer__brand" href="/">
+        <img src="/assets/logo.png" width="28" height="28" alt="">
+        <span>EasySupport</span>
+      </a>
+      <p>Self-hosted support, thoughtfully managed.</p>
+      <a href="<%= repoUrl %>" target="_blank" rel="noopener noreferrer">View source <span aria-hidden="true">↗</span></a>
     </footer>
   <% } %>
+
+  <script src="/vendor/gsap/gsap.min.js" defer></script>
+  <script src="/vendor/gsap/ScrollTrigger.min.js" defer></script>
   <script src="/site.js" defer></script>
 </body>
 </html>

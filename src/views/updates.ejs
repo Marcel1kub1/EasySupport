@@ -1,0 +1,52 @@
+<section class="updates-page">
+  <header class="page-intro" data-reveal>
+    <p class="eyebrow">Release feed · <%= guildName %></p>
+    <h1>What’s new.</h1>
+    <p>Updates shipped with the version installed on this self-hosted instance.</p>
+  </header>
+
+  <% if (releases.length === 0) { %>
+    <div class="updates-empty" data-reveal>
+      <span class="updates-empty__rule" aria-hidden="true"></span>
+      <h2>No release notes have been published here yet.</h2>
+      <p>When a maintainer includes a generated release feed with an update, its notes will appear on this page after the instance restarts.</p>
+      <a class="text-link" href="/dashboard/<%= guildId %>">Back to overview <span aria-hidden="true">↗</span></a>
+    </div>
+  <% } else { %>
+    <div class="release-list">
+      <% releases.forEach((release, index) => { %>
+        <article class="release-card" data-release-card data-release-id="<%= release.version %>" data-guild-id="<%= guildId %>" data-reveal>
+          <header class="release-card__header">
+            <div>
+              <p class="eyebrow"><%= release.version %><% if (index === 0) { %> · Latest<% } %></p>
+              <h2><%= release.title %></h2>
+            </div>
+            <time datetime="<%= release.date %>"><%= release.date %></time>
+          </header>
+          <p class="release-card__summary"><%= release.summary %></p>
+          <% Object.entries(release.changes).forEach(([category, entries]) => { if (entries.length) { %>
+            <section class="release-card__group">
+              <h3><%= category %></h3>
+              <ul><% entries.forEach((entry) => { %><li><%= entry %></li><% }) %></ul>
+            </section>
+          <% } }) %>
+          <% if (release.commands.length) { %>
+            <section class="release-card__group">
+              <h3>Command updates</h3>
+              <ul><% release.commands.forEach((command) => { %><li><code>/<%= command.name %></code> — <%= command.description %></li><% }) %></ul>
+            </section>
+          <% } %>
+          <% if (release.files.length) { %>
+            <details class="release-card__files">
+              <summary>Changed files <span><%= release.files.length %></span></summary>
+              <ul><% release.files.forEach((file) => { %><li><code><%= file %></code></li><% }) %></ul>
+            </details>
+          <% } %>
+          <% if (index === 0) { %>
+            <button class="release-read-button" type="button" data-mark-release>Mark as read</button>
+          <% } %>
+        </article>
+      <% }) %>
+    </div>
+  <% } %>
+</section>

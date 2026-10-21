@@ -1,133 +1,137 @@
 <% if (noGuilds) { %>
-<section class="guild-empty">
-  <div class="guild-empty__mark" aria-hidden="true">E</div>
-  <h1>Bring your guild into focus.</h1>
-  <p>EasySupport can only show servers where you have Manage Server access. Add the bot to a guild you manage, then come back to configure its modules and staff roles.</p>
-  <a
-    href="https://discord.com/api/oauth2/authorize?client_id=<%= config.clientId ?? '' %>&permissions=8&scope=bot%20applications.commands"
-    class="button button--primary"
-    target="_blank"
-    rel="noopener noreferrer"
-  >Add EasySupport to a server <span aria-hidden="true">↗</span></a>
-</section>
-<% } else if (!guildId) { %>
-<section class="guild-picker">
-  <header class="guild-page-heading">
-    <h1>Choose a guild</h1>
-    <p>Open a server to configure its modules and staff roles.</p>
-  </header>
-  <div class="guild-picker__list">
-    <% guilds.forEach((guild) => { %>
-    <a class="guild-picker__item" href="/dashboard/<%= guild.id %>">
-      <span class="guild-picker__avatar">
-        <% if (guild.icon) { %>
-          <img src="https://cdn.discordapp.com/icons/<%= guild.id %>/<%= guild.icon %>.png?size=96" alt="">
-        <% } else { %>
-          <%= guild.name.slice(0, 1) %>
-        <% } %>
-      </span>
-      <span class="guild-picker__name"><%= guild.name %></span>
-      <span class="guild-picker__permission"><%= guild.owner ? 'Owner' : 'Manage Server' %></span>
-      <span class="guild-picker__arrow" aria-hidden="true">↗</span>
+  <section class="empty-workspace" data-reveal>
+    <div class="empty-workspace__eyebrow">Guild access</div>
+    <h1>Connect a server you manage.</h1>
+    <p>EasySupport can configure modules and staff permissions for Discord servers where you have Manage Server access. Add the bot to a guild you manage, then return here.</p>
+    <a href="https://discord.com/api/oauth2/authorize?client_id=<%= config.clientId ?? '' %>&permissions=8&scope=bot%20applications.commands" class="button button--primary" target="_blank" rel="noopener noreferrer">
+      Add EasySupport to a server <span aria-hidden="true">↗</span>
     </a>
-    <% }) %>
-  </div>
-</section>
-<% } else if (!botInGuild) { %>
-<section class="guild-empty">
-  <div class="guild-empty__mark" aria-hidden="true">E</div>
-  <h1>Add EasySupport to <%= guildName %>.</h1>
-  <p>Once the bot joins this guild, you can configure its modules and assign staff roles here.</p>
-  <a
-    href="https://discord.com/api/oauth2/authorize?client_id=<%= config.clientId ?? '' %>&permissions=8&scope=bot%20applications.commands&guild_id=<%= guildId %>&disable_guild_select=true"
-    class="button button--primary"
-    target="_blank"
-    rel="noopener noreferrer"
-  >Add EasySupport to this guild <span aria-hidden="true">↗</span></a>
-</section>
-<% } else { %>
-<%
-  const modules = [
-    { key: 'tickets', icon: '▤', title: 'Tickets', desc: 'Panels, staff access, transcripts and intake.' },
-    { key: 'moderation', icon: '⬡', title: 'Moderation', desc: 'Staff tools, warnings and action logs.' },
-    { key: 'anti_nuke', icon: '◈', title: 'Anti-Nuke', desc: 'Protect channels, roles and members.' },
-    { key: 'automod', icon: '⌁', title: 'Automod', desc: 'Filter spam, links, words and excess mentions.' },
-    { key: 'leveling', icon: '▥', title: 'Leveling', desc: 'XP, level announcements and role rewards.' },
-    { key: 'economy', icon: '◉', title: 'Economy', desc: 'Currency, daily rewards and member shops.' },
-    { key: 'giveaways', icon: '✳', title: 'Giveaways', desc: 'Entry channels, durations and winner counts.' },
-    { key: 'vouches', icon: '✦', title: 'Vouches', desc: 'Reputation channels, cooldowns and rewards.' },
-    { key: 'welcome_goodbye_boost', icon: '↗', title: 'Welcome & boosts', desc: 'Member greetings, farewells and boosts.' },
-    { key: 'logging', icon: '▧', title: 'Logging', desc: 'Choose the events and channels to record.' },
-  ];
-%>
-<section class="guild-overview">
-  <header class="guild-welcome">
-    <div class="guild-welcome__identity">
-      <% if (guildIcon) { %>
-        <img class="guild-welcome__avatar" src="<%= guildIcon %>" alt="">
-      <% } else { %>
-        <span class="guild-welcome__avatar guild-welcome__avatar--initial"><%= guildName.slice(0, 1) %></span>
-      <% } %>
-      <div>
-        <p class="guild-welcome__eyebrow">Guild dashboard</p>
-        <h1><%= guildName %></h1>
-        <p>Everything your community needs, configured in one place.</p>
-      </div>
-    </div>
-  </header>
-
-  <div class="guild-metrics" aria-label="Guild overview">
-    <div class="guild-metric">
-      <span class="guild-metric__label">Members</span>
-      <strong><%= memberCount ?? '—' %></strong>
-      <span class="guild-metric__note">In this Discord guild</span>
-    </div>
-    <div class="guild-metric">
-      <span class="guild-metric__label">Text channels</span>
-      <strong><%= channelCount %></strong>
-      <span class="guild-metric__note">Available for module setup</span>
-    </div>
-    <div class="guild-metric">
-      <span class="guild-metric__label">Server roles</span>
-      <strong><%= roleCount %></strong>
-      <span class="guild-metric__note">Choose roles for staff access</span>
-    </div>
-    <div class="guild-metric guild-metric--accent">
-      <span class="guild-metric__label">Modules</span>
-      <strong><%= modules.length %></strong>
-      <span class="guild-metric__note">Ready to configure</span>
-    </div>
-  </div>
-
-  <section class="guild-modules" aria-labelledby="modules-heading">
-    <header class="guild-section-heading">
-      <div>
-        <h2 id="modules-heading">Guild modules</h2>
-        <p>Choose a module to tune its settings for this server.</p>
-      </div>
-      <a class="guild-section-link" href="/admin/<%= guildId %>/roles">Configure staff roles <span aria-hidden="true">↗</span></a>
+  </section>
+<% } else if (!guildId) { %>
+  <section class="guild-picker" data-reveal>
+    <header class="page-intro">
+      <p class="eyebrow">Your workspace</p>
+      <h1>Choose a guild.</h1>
+      <p>Open a server to configure its modules and staff access.</p>
     </header>
-    <div class="guild-module-list">
-      <% modules.forEach((mod) => { %>
-        <a class="guild-module" href="/admin/modules/<%= guildId %>/<%= mod.key %>">
-          <span class="guild-module__icon" aria-hidden="true"><%= mod.icon %></span>
-          <span class="guild-module__copy">
-            <strong><%= mod.title %></strong>
-            <span><%= mod.desc %></span>
+    <div class="guild-list">
+      <% guilds.forEach((guild) => { %>
+        <a class="guild-list__item" href="/dashboard/<%= guild.id %>">
+          <span class="guild-list__avatar">
+            <% if (guild.icon) { %>
+              <img src="https://cdn.discordapp.com/icons/<%= guild.id %>/<%= guild.icon %>.png?size=96" alt="">
+            <% } else { %>
+              <%= guild.name.slice(0, 1) %>
+            <% } %>
           </span>
-          <span class="guild-module__action">Configure <span aria-hidden="true">↗</span></span>
+          <span class="guild-list__copy"><strong><%= guild.name %></strong><span><%= guild.owner ? 'Guild owner' : 'Manage Server access' %></span></span>
+          <span class="guild-list__arrow" aria-hidden="true">↗</span>
         </a>
       <% }) %>
     </div>
   </section>
-
-  <section class="guild-staff-callout" aria-labelledby="staff-heading">
-    <div class="guild-staff-callout__mark" aria-hidden="true">✦</div>
-    <div>
-      <h2 id="staff-heading">Give staff the right access.</h2>
-      <p>Assign command permissions to the roles your team already uses in Discord.</p>
-    </div>
-    <a class="button button--quiet" href="/admin/<%= guildId %>/roles">Manage role permissions <span aria-hidden="true">↗</span></a>
+<% } else if (!botInGuild) { %>
+  <section class="empty-workspace" data-reveal>
+    <div class="empty-workspace__eyebrow">One more step</div>
+    <h1>Add EasySupport to <%= guildName %>.</h1>
+    <p>Once the bot joins this guild, your module settings and staff permissions will be available here.</p>
+    <a href="https://discord.com/api/oauth2/authorize?client_id=<%= config.clientId ?? '' %>&permissions=8&scope=bot%20applications.commands&guild_id=<%= guildId %>&disable_guild_select=true" class="button button--primary" target="_blank" rel="noopener noreferrer">
+      Add EasySupport to this guild <span aria-hidden="true">↗</span>
+    </a>
   </section>
-</section>
+<% } else { %>
+  <section class="guild-overview">
+    <header class="overview-heading" data-reveal>
+      <div class="overview-heading__identity">
+        <% if (guildIcon) { %>
+          <img class="overview-heading__avatar" src="<%= guildIcon %>" alt="">
+        <% } else { %>
+          <span class="overview-heading__avatar overview-heading__avatar--initial" aria-hidden="true"><%= guildName.slice(0, 1) %></span>
+        <% } %>
+        <div class="overview-heading__copy">
+          <p class="eyebrow">Guild overview</p>
+          <h1><%= guildName %></h1>
+          <p>Configure the support tools your community uses.</p>
+        </div>
+      </div>
+      <a class="button button--quiet overview-heading__roles" href="/admin/<%= guildId %>/roles">Staff permissions <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <% if (latestRelease) { %>
+      <aside class="release-notice" data-release-notice data-release-id="<%= latestRelease.version %>" data-guild-id="<%= guildId %>" data-reveal>
+        <span class="release-notice__signal" aria-hidden="true"></span>
+        <div class="release-notice__copy">
+          <p class="eyebrow">A new release is ready</p>
+          <strong><%= latestRelease.title %></strong>
+          <span><%= latestRelease.summary %></span>
+        </div>
+        <a class="release-notice__link" href="/dashboard/<%= guildId %>/updates">Read the notes <span aria-hidden="true">↗</span></a>
+        <button class="release-notice__dismiss" type="button" data-dismiss-release aria-label="Dismiss update notice">×</button>
+      </aside>
+    <% } %>
+
+    <div class="overview-metrics" aria-label="Guild overview" data-reveal>
+      <div class="metric">
+        <span class="metric__label">Members</span>
+        <strong><%= memberCount ?? '—' %></strong>
+        <span class="metric__note">Current guild</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">Text channels</span>
+        <strong><%= channelCount %></strong>
+        <span class="metric__note">Available for setup</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">Server roles</span>
+        <strong><%= roleCount %></strong>
+        <span class="metric__note">Available to assign</span>
+      </div>
+      <div class="metric metric--accent">
+        <span class="metric__label">Modules</span>
+        <strong><%= modules.length %></strong>
+        <span class="metric__note">Ready to configure</span>
+      </div>
+    </div>
+
+    <section class="module-section" aria-labelledby="modules-heading">
+      <header class="section-heading" data-reveal>
+        <div>
+          <p class="eyebrow">Guild configuration</p>
+          <h2 id="modules-heading">Modules</h2>
+          <p>Search features or commands, then open a module to tune its settings.</p>
+        </div>
+        <div class="module-search">
+          <label class="sr-only" for="module-search">Search modules and commands</label>
+          <span class="module-search__icon" aria-hidden="true"></span>
+          <input id="module-search" type="search" placeholder="Search modules and commands" autocomplete="off" data-module-search>
+          <kbd>/</kbd>
+        </div>
+      </header>
+
+      <p class="search-result-count" data-search-count aria-live="polite"><%= modules.length %> modules</p>
+      <div class="module-grid" data-module-grid>
+        <% modules.forEach((module, index) => { %>
+          <a class="module-card" href="/admin/modules/<%= guildId %>/<%= module.key %>" data-module-card data-search="<%= `${module.title} ${module.desc} ${module.command} ${module.search || ''}` %>" data-reveal>
+            <span class="module-card__index"><%= String(index + 1).padStart(2, '0') %></span>
+            <span class="module-card__body">
+              <strong><%= module.title %></strong>
+              <span><%= module.desc %></span>
+              <span class="module-card__command">/<%= module.command %></span>
+            </span>
+            <span class="module-card__arrow" aria-hidden="true">↗</span>
+          </a>
+        <% }) %>
+      </div>
+      <p class="search-empty" data-search-empty hidden>No modules or commands match that search.</p>
+    </section>
+
+    <section class="access-callout" data-reveal>
+      <div>
+        <p class="eyebrow">Staff access</p>
+        <h2>Put permissions in your team’s hands.</h2>
+        <p>Allow or deny individual commands for the real roles in this guild.</p>
+      </div>
+      <a class="button button--quiet" href="/admin/<%= guildId %>/roles">Configure staff roles <span aria-hidden="true">↗</span></a>
+    </section>
+  </section>
 <% } %>

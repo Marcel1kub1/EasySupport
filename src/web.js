@@ -2,6 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import ejs from 'ejs';
 import { ChannelType } from 'discord.js';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
 import {
@@ -14,6 +15,42 @@ import {
 
 const __dirname = path.resolve();
 const viewsDir = path.join(__dirname, 'src', 'views');
+const releaseDataPath = path.join(__dirname, 'src', 'data', 'releases.json');
+const releaseFeed = JSON.parse(readFileSync(releaseDataPath, 'utf8'));
+const modules = [
+  { key: 'tickets', short: 'TK', title: 'Tickets', desc: 'Panels, staff access, transcripts and intake.', command: 'panel', search: 'setup highrankdm' },
+  { key: 'moderation', short: 'MD', title: 'Moderation', desc: 'Staff tools, warnings and action logs.', command: 'moderation' },
+  { key: 'anti_nuke', short: 'AN', title: 'Anti-Nuke', desc: 'Protect channels, roles and members.', command: 'anti_nuke' },
+  { key: 'automod', short: 'AM', title: 'Automod', desc: 'Filter spam, links, words and excess mentions.', command: 'automod' },
+  { key: 'leveling', short: 'LV', title: 'Leveling', desc: 'XP, level announcements and role rewards.', command: 'leveling' },
+  { key: 'economy', short: 'EC', title: 'Economy', desc: 'Currency, daily rewards and member shops.', command: 'economy' },
+  { key: 'giveaways', short: 'GW', title: 'Giveaways', desc: 'Entry channels, durations and winner counts.', command: 'giveaways' },
+  { key: 'vouches', short: 'VC', title: 'Vouches', desc: 'Reputation channels, cooldowns and rewards.', command: 'vouches' },
+  { key: 'welcome_goodbye_boost', short: 'WB', title: 'Welcome & boosts', desc: 'Member greetings, farewells and boosts.', command: 'welcome_goodbye_boost' },
+  { key: 'logging', short: 'LG', title: 'Logging', desc: 'Choose the events and channels to record.', command: 'logging' },
+];
+
+function isReleaseEntry(release) {
+  return (
+    release &&
+    typeof release.version === 'string' &&
+    typeof release.title === 'string' &&
+    typeof release.date === 'string' &&
+    typeof release.summary === 'string' &&
+    release.changes &&
+    typeof release.changes === 'object' &&
+    !Array.isArray(release.changes) &&
+    Object.values(release.changes).every(Array.isArray) &&
+    Array.isArray(release.commands) &&
+    release.commands.every((command) => typeof command.name === 'string' && typeof command.description === 'string') &&
+    Array.isArray(release.files) &&
+    release.files.every((file) => typeof file === 'string')
+  );
+}
+
+if (!Array.isArray(releaseFeed.releases) || !releaseFeed.releases.every(isReleaseEntry)) {
+  throw new Error(`Invalid local release feed at ${releaseDataPath}`);
+}
 
 const templateDefaults = {
   active: '',
@@ -32,6 +69,9 @@ const templateDefaults = {
   memberCount: null,
   channelCount: 0,
   roleCount: 0,
+  modules,
+  releases: releaseFeed.releases,
+  latestRelease: releaseFeed.releases[0] ?? null,
   config,
 };
 
@@ -49,6 +89,7 @@ export function createWebApp(client) {
   app.set('view engine', 'ejs');
 
   app.use(express.static(path.join(__dirname, 'src', 'public')));
+  app.use('/vendor/gsap', express.static(path.join(__dirname, 'node_modules', 'gsap', 'dist'), { index: false }));
   app.use('/assets', express.static(path.join(__dirname, 'assets')));
   app.use(express.urlencoded({ extended: false }));
   app.use(express.json());
@@ -193,6 +234,24 @@ export function createWebApp(client) {
     }
     // Redirect to the first managed guild's dashboard
     return res.redirect(`/dashboard/${guilds[0].id}`);
+  });
+
+  app.get('/dashboard/:guildId/updates', requireAuth, requireGuildAccess, async (req, res) => {
+    const guildId = req.params.guildId;
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild) return res.redirect(`/dashboard/${guildId}`);
+
+    return renderPage(res, 'updates', {
+      title: 'EasySupport — What’s new',
+      active: 'updates',
+      guildId,
+      guildName: guild.name,
+      guilds: getUserGuilds(req),
+      user: req.session.discordUser,
+      botInGuild: true,
+      releases: releaseFeed.releases,
+      latestRelease: releaseFeed.releases[0] ?? null,
+    });
   });
 
   app.get('/dashboard/:guildId', requireAuth, requireGuildAccess, async (req, res) => {

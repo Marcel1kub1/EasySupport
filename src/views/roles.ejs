@@ -1,42 +1,54 @@
-<section class="admin-page">
-  <header class="page-heading admin-heading">
+<section class="permissions-page" data-guild-id="<%= guildId %>">
+  <header class="page-intro page-intro--row" data-reveal>
     <div>
-      <p class="section-kicker">Staff roles</p>
-      <h1>Command permissions</h1>
-      <p>Choose which commands each Discord role can use. Members with Discord Administrator permission always bypass these checks.</p>
+      <p class="eyebrow">Access control · <%= guildName %></p>
+      <h1>Staff permissions.</h1>
+      <p>Choose which commands each Discord role can use. Guild administrators always bypass these settings.</p>
     </div>
-    <a class="button button--quiet" href="/dashboard/<%= guildId %>">Back to guild <span aria-hidden="true">↗</span></a>
+    <a class="button button--quiet" href="/dashboard/<%= guildId %>">Back to overview <span aria-hidden="true">↗</span></a>
   </header>
 
   <% if (!roles || roles.length === 0) { %>
-    <div class="empty-state">
-      <p>No roles found in this guild.</p>
+    <div class="empty-panel" data-reveal>
+      <h2>No assignable roles were found.</h2>
+      <p>Create a role in Discord and return here to configure its command access.</p>
     </div>
   <% } else { %>
-    <div class="role-matrix">
+    <div class="permission-toolbar" data-reveal>
+      <div class="permission-toolbar__copy">
+        <strong><%= roles.length %> roles</strong>
+        <span><%= commands.length %> commands · changes save as you go</span>
+      </div>
+      <div class="module-search permission-search">
+        <label class="sr-only" for="permission-search">Search roles or commands</label>
+        <span class="module-search__icon" aria-hidden="true"></span>
+        <input id="permission-search" type="search" placeholder="Search roles or commands" autocomplete="off" data-permission-search>
+      </div>
+    </div>
+
+    <div class="role-matrix" data-role-matrix>
       <div class="role-matrix__table">
         <table class="matrix-table">
+          <caption class="sr-only">Staff role command permissions</caption>
           <thead>
             <tr>
-              <th class="matrix-cell--role">Role</th>
+              <th class="matrix-cell--role" scope="col">Guild role</th>
               <% commands.forEach((cmd) => { %>
-                <th class="matrix-cell--cmd" title="<%= cmd %>"><%= cmd %></th>
+                <th class="matrix-cell--cmd" scope="col" data-command-column="<%= cmd %>"><code>/<%= cmd %></code></th>
               <% }) %>
             </tr>
           </thead>
           <tbody>
             <% roles.forEach((role) => { %>
-              <tr>
-                <td class="matrix-cell--role">
-                  <span class="role-chip" style="background: rgba(<%= (role.color >> 16) & 255 %>, <%= (role.color >> 8) & 255 %>, <%= role.color & 255 %>, 0.15); color: #<%= role.color.toString(16).padStart(6, '0') %>;">
-                    <%= role.name %>
-                  </span>
-                </td>
+              <tr data-role-row data-role-name="<%= role.name %>">
+                <th class="matrix-cell--role" scope="row">
+                  <span class="role-chip" style="--role-color: #<%= role.color.toString(16).padStart(6, '0') %>"><%= role.name %></span>
+                </th>
                 <% commands.forEach((cmd) => { %>
-                  <td class="matrix-cell--perm">
-                    <label class="perm-toggle" data-role="<%= role.id %>" data-cmd="<%= cmd %>">
-                      <input type="checkbox" name="<%= cmd %>" value="<%= role.perms[cmd] ? 'true' : 'false' %>" <%= role.perms[cmd] ? 'checked' : '' %>>
-                      <span class="perm-toggle__thumb"></span>
+                  <td class="matrix-cell--perm" data-command-cell="<%= cmd %>">
+                    <label class="permission-toggle" data-role="<%= role.id %>" data-cmd="<%= cmd %>">
+                      <input type="checkbox" aria-label="Allow /<%= cmd %> for <%= role.name %>" <%= role.perms[cmd] ? 'checked' : '' %>>
+                      <span class="permission-toggle__track" aria-hidden="true"><span></span></span>
                     </label>
                   </td>
                 <% }) %>
@@ -45,187 +57,14 @@
           </tbody>
         </table>
       </div>
+      <p class="search-empty" data-permission-empty hidden>No matching roles or commands.</p>
     </div>
 
-    <div class="role-matrix__legend">
-      <p><strong>Checked</strong> = allowed · <strong>Unchecked</strong> = denied · <em>Unset</em> defaults to allowed</p>
+    <div class="permission-legend" id="role-permissions-help">
+      <span><i class="permission-legend__allowed" aria-hidden="true"></i> Allowed</span>
+      <span><i class="permission-legend__denied" aria-hidden="true"></i> Denied</span>
+      <p>Unchecked commands are denied to the selected role. Existing unset permissions default to allowed.</p>
+      <p class="sr-only" data-permission-status role="status" aria-live="polite"></p>
     </div>
   <% } %>
 </section>
-
-<style>
-.role-matrix {
-  margin-top: 40px;
-}
-
-.role-matrix__table {
-  overflow-x: auto;
-  margin-bottom: 24px;
-}
-
-.matrix-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  background: var(--surface);
-  border-radius: var(--radius);
-  overflow: hidden;
-  border: 1px solid var(--line);
-}
-
-.matrix-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: var(--surface-raised);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 14px 12px;
-  text-align: center;
-  border-bottom: 1px solid var(--line);
-}
-
-.matrix-table thead th:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 3;
-  background: var(--surface-raised);
-  border-right: 1px solid var(--line);
-  text-align: left;
-  padding-left: 18px;
-}
-
-.matrix-table tbody tr {
-  border-bottom: 1px solid var(--line);
-}
-
-.matrix-table tbody tr:last-child {
-  border-bottom: 0;
-}
-
-.matrix-table td {
-  padding: 14px 12px;
-  text-align: center;
-  vertical-align: middle;
-}
-
-.matrix-table td:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 3;
-  background: var(--surface);
-  border-right: 1px solid var(--line);
-  text-align: left;
-  padding-left: 18px;
-}
-
-.matrix-cell--role {
-  color: var(--ink);
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.role-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 700;
-  border: 1px solid currentColor;
-}
-
-.matrix-cell--perm {
-  padding: 14px 8px;
-}
-
-.perm-toggle {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 0;
-}
-
-.perm-toggle input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-}
-
-.perm-toggle__thumb {
-  width: 44px;
-  height: 24px;
-  border-radius: 12px;
-  background: var(--surface-raised);
-  border: 2px solid var(--line);
-  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
-}
-
-.perm-toggle input:checked + .perm-toggle__thumb {
-  background: var(--accent);
-  border-color: var(--accent);
-  transform: translateX(20px);
-}
-
-.role-matrix__legend {
-  margin-top: 16px;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-@media (max-width: 820px) {
-  .matrix-table thead th:not(:first-child),
-  .matrix-table td:not(:first-child) {
-    padding: 10px 6px;
-  }
-
-  .matrix-table thead th {
-    font-size: 10px;
-    padding: 10px 6px;
-  }
-
-  .perm-toggle__thumb {
-    width: 36px;
-    height: 20px;
-  }
-
-  .perm-toggle input:checked + .perm-toggle__thumb {
-    transform: translateX(16px);
-  }
-}
-</style>
-
-<script>
-document.querySelectorAll('.perm-toggle input').forEach((checkbox) => {
-  checkbox.addEventListener('change', (e) => {
-    const toggle = e.target.closest('.perm-toggle');
-    const roleId = toggle.dataset.role;
-    const cmd = toggle.dataset.cmd;
-    const allowed = e.target.checked ? 'true' : 'false';
-
-    fetch(`/admin/<%= guildId %>/roles/${roleId}/toggle`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `command_name=${encodeURIComponent(cmd)}&allowed=${encodeURIComponent(allowed)}`,
-    })
-      .then((res) => {
-        if (!res.ok) {
-          e.target.checked = !e.target.checked;
-          alert('Failed to update permission.');
-        }
-      })
-      .catch(() => {
-        e.target.checked = !e.target.checked;
-        alert('Failed to update permission.');
-      });
-  });
-});
-</script>
