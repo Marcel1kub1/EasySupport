@@ -31,6 +31,6 @@ export const config = {
   port: Number(process.env.PORT ?? '3000'),
   sessionSecret: process.env.SESSION_SECRET || 'easysupport-dev-secret-change-me',
   // Discord OAuth2 for multi-server dashboard
-  oauthRedirectUri: process.env.OAUTH_REDIRECT_URI ?? `http://localhost:${Number(process.env.PORT ?? '3000')}/auth/callback`,
+  oauthRedirectUri: required('OAUTH_REDIRECT_URI'),
   oauthScope: process.env.OAUTH_SCOPE ?? 'identify guilds',
 };

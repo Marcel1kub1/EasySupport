@@ -71,7 +71,7 @@ async function boot() {
   // Start the public site and guild dashboard alongside the bot.
   const app = createWebApp(client);
   const server = app.listen(config.port, () => {
-    console.log(`[web] Listening on http://localhost:${config.port}`);
+    console.log(`[web] Listening on port ${config.port}`);
   });
 
   // Graceful shutdown.
