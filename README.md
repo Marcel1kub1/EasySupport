@@ -112,7 +112,7 @@ The dashboard checks the public GitHub Releases API for published EasySupport re
 Maintainers can also generate factual draft notes locally from Git history; this does not send code to an AI service. The generator groups commit subjects using `scripts/release-notes.rules.json`, lists changed paths, and includes slash-command definitions when their command files changed. Set `package.json` to the release version and provide the previous release ref:
 
 ```bash
-npm run release:notes -- --from v2.2.0 --version 2.3.0
+npm run release:notes -- --from v2.3.0 --version 2.4.0
 ```
 
 Review and edit `src/data/releases.json` and `src/data/releases.md` before publishing if you want those local notes to serve as a fallback. GitHub release notes are visible to a running instance the next time someone opens the dashboard; an offline instance cannot display changes while it is offline. Read and dismiss state is stored in that browser only; no Discord message is sent.

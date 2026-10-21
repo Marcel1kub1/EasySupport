@@ -1,3 +1,37 @@
 {
-  "releases": []
+  "releases": [
+    {
+      "version": "2.3.0",
+      "title": "EasySupport 2.3.0 — Your guild, your dashboard",
+      "date": "2026-10-21",
+      "summary": "A complete guild dashboard replaces the old status-focused experience, bringing module setup, staff access, and update notes into one searchable, responsive workspace.",
+      "changes": {
+        "Highlights": [
+          "Introduced a Discord sign-in guild dashboard with guild-scoped access for server managers.",
+          "Added configuration pages for tickets, moderation, anti-nuke, automod, leveling, economy, giveaways, vouches, welcome and boosts, and logging.",
+          "Added per-guild staff role permissions for commands, with administrator bypass and Discord permission fallback."
+        ],
+        "Dashboard experience": [
+          "Redesigned the public site and dashboard with responsive layouts, bundled fonts and images, and motion effects.",
+          "Search modules and commands from the guild overview.",
+          "Find guilds, channels, categories, and roles through searchable selectors, including multi-select staff-role controls.",
+          "Navigate between the overview and settings without reloading the page, while preserving browser history and back navigation.",
+          "Added animated Save/Saved controls, save-status notifications, and an animated loading state when opening another guild."
+        ],
+        "Release updates": [
+          "Connected the dashboard release feed to published GitHub releases, with caching and a direct source link.",
+          "Added a local release-notes generator for maintainers to draft notes from Git history."
+        ],
+        "Reliability and maintenance": [
+          "Resolve static asset paths from the application location so assets load when the process starts outside the repository directory.",
+          "Use valid Discord CDN image sizes for guild icons and user avatars.",
+          "Read the OAuth callback URL from environment configuration.",
+          "Expanded test coverage and ensured database connections are closed after ticketing tests.",
+          "Moved guild and module setup into the dashboard instead of legacy command-driven setup panels."
+        ]
+      },
+      "commands": [],
+      "files": []
+    }
+  ]
 }
