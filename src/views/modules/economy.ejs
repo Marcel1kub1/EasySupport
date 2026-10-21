@@ -5,13 +5,13 @@
       <h1>Economy settings</h1>
       <p>Configure balances, daily rewards, shop, and transactions.</p>
     </div>
-    <a href="/dashboard" class="button button--quiet">← Back to dashboard</a>
+    <a href="/dashboard/<%= guildId %>" class="button button--quiet">← Back to guild</a>
   </header>
 
   <form method="post" action="/admin/modules/<%= guildId %>/economy" class="settings-form">
     <div class="settings-grid">
       <% 
-      const settings = [
+      const fields = [
         { key: 'economy_enabled', label: 'Economy Enabled', type: 'toggle', desc: 'Enable economy features for this server' },
         { key: 'daily_amount', label: 'Daily Amount', type: 'number', desc: 'Amount given by daily command' },
         { key: 'daily_cooldown', label: 'Daily Cooldown', type: 'number', desc: 'Hours between daily claims', unit: 'hr' },
@@ -23,9 +23,9 @@
         { key: 'currency_emoji', label: 'Currency Emoji', type: 'text', desc: 'Emoji used for the currency' },
         { key: 'starting_balance', label: 'Starting Balance', type: 'number', desc: 'Balance given to new users' },
       ];
-      settings.forEach((s) => { %>
+      fields.forEach((s) => { %>
         <div class="setting-field">
-          <label class="setting-label"><%= s.label %></label>
+          <label class="setting-label" for="<%= s.key %>"><%= s.label %></label>
           <p class="setting-desc"><%= s.desc %></p>
           <% if (s.type === 'toggle') { %>
             <div class="toggle">

@@ -1,274 +1,133 @@
 <% if (noGuilds) { %>
-<section class="dashboard-empty">
-  <header class="page-heading">
-    <div>
-      <p class="section-kicker">Dashboard</p>
-      <h1>No Servers Found</h1>
-      <p>You don't manage any Discord servers with EasySupport. Add EasySupport to a server and try again.</p>
-    </div>
-  </header>
-  <div class="empty-state">
-    <p>Invite EasySupport to your server to get started:</p>
-    <a
-      href="https://discord.com/api/oauth2/authorize?client_id=<%= config.clientId ?? '' %>&permissions=8&scope=bot%20applications.commands"
-      class="button button--primary"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Add EasySupport to Your Server
-    </a>
-  </div>
+<section class="guild-empty">
+  <div class="guild-empty__mark" aria-hidden="true">E</div>
+  <h1>Bring your guild into focus.</h1>
+  <p>EasySupport can only show servers where you have Manage Server access. Add the bot to a guild you manage, then come back to configure its modules and staff roles.</p>
+  <a
+    href="https://discord.com/api/oauth2/authorize?client_id=<%= config.clientId ?? '' %>&permissions=8&scope=bot%20applications.commands"
+    class="button button--primary"
+    target="_blank"
+    rel="noopener noreferrer"
+  >Add EasySupport to a server <span aria-hidden="true">↗</span></a>
 </section>
-
-<style>
-.dashboard-empty {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 48px 24px;
-  text-align: center;
-}
-.empty-state {
-  margin-top: 32px;
-  padding: 32px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-}
-.empty-state p {
-  color: var(--muted);
-  margin-bottom: 20px;
-  font-size: 16px;
-}
-</style>
 <% } else if (!guildId) { %>
-<section class="dashboard-servers">
-  <header class="page-heading">
-    <div>
-      <p class="section-kicker">Dashboard</p>
-      <h1>Select a Server</h1>
-      <p>Choose a server to configure its EasySupport settings.</p>
-    </div>
+<section class="guild-picker">
+  <header class="guild-page-heading">
+    <h1>Choose a guild</h1>
+    <p>Open a server to configure its modules and staff roles.</p>
   </header>
-
-  <div class="server-grid">
-    <% guilds.forEach((g) => { %>
-      <a href="/dashboard/<%= g.id %>" class="server-card">
-        <div class="server-card__icon">
-          <% if (g.icon) { %>
-            <img src="https://cdn.discordapp.com/icons/<%= g.id %>/<%= g.icon %>.png" alt="<%= g.name %>">
-          <% } else { %>
-            <span class="server-card__default">💬</span>
-          <% } %>
-        </div>
-        <div class="server-card__body">
-          <h3><%= g.name %></h3>
-          <p><%= g.owner ? 'Owner' : 'Manage Guild' %></p>
-        </div>
-        <span class="server-card__arrow">→</span>
-      </a>
+  <div class="guild-picker__list">
+    <% guilds.forEach((guild) => { %>
+    <a class="guild-picker__item" href="/dashboard/<%= guild.id %>">
+      <span class="guild-picker__avatar">
+        <% if (guild.icon) { %>
+          <img src="https://cdn.discordapp.com/icons/<%= guild.id %>/<%= guild.icon %>.png?size=96" alt="">
+        <% } else { %>
+          <%= guild.name.slice(0, 1) %>
+        <% } %>
+      </span>
+      <span class="guild-picker__name"><%= guild.name %></span>
+      <span class="guild-picker__permission"><%= guild.owner ? 'Owner' : 'Manage Server' %></span>
+      <span class="guild-picker__arrow" aria-hidden="true">↗</span>
+    </a>
     <% }) %>
   </div>
 </section>
-
-<style>
-.dashboard-servers {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 24px;
-}
-.server-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-}
-.server-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 24px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  text-decoration: none;
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
-}
-.server-card:hover {
-  border-color: var(--accent);
-  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.4);
-  transform: translateY(-2px);
-}
-.server-card__icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  background: var(--surface-raised);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-.server-card__icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.server-card__default {
-  font-size: 24px;
-}
-.server-card__body {
-  flex: 1;
-}
-.server-card__body h3 {
-  font-size: 18px;
-  color: var(--ink);
-  margin: 0 0 6px 0;
-  font-weight: 700;
-}
-.server-card__body p {
-  font-size: 14px;
-  color: var(--muted);
-  margin: 0;
-}
-.server-card__arrow {
-  font-size: 18px;
-  color: var(--muted);
-  flex-shrink: 0;
-}
-@media (max-width: 640px) {
-  .dashboard-servers { padding: 16px; }
-  .server-grid { grid-template-columns: 1fr; }
-}
-</style>
+<% } else if (!botInGuild) { %>
+<section class="guild-empty">
+  <div class="guild-empty__mark" aria-hidden="true">E</div>
+  <h1>Add EasySupport to <%= guildName %>.</h1>
+  <p>Once the bot joins this guild, you can configure its modules and assign staff roles here.</p>
+  <a
+    href="https://discord.com/api/oauth2/authorize?client_id=<%= config.clientId ?? '' %>&permissions=8&scope=bot%20applications.commands&guild_id=<%= guildId %>&disable_guild_select=true"
+    class="button button--primary"
+    target="_blank"
+    rel="noopener noreferrer"
+  >Add EasySupport to this guild <span aria-hidden="true">↗</span></a>
+</section>
 <% } else { %>
-<section class="dashboard-overview">
-  <header class="page-heading">
-    <div>
-      <p class="section-kicker">Dashboard — <%= guildName %></p>
-      <h1>Module overview</h1>
-      <p>Manage all EasySupport features for <%= guildName %>.</p>
+<%
+  const modules = [
+    { key: 'tickets', icon: '▤', title: 'Tickets', desc: 'Panels, staff access, transcripts and intake.' },
+    { key: 'moderation', icon: '⬡', title: 'Moderation', desc: 'Staff tools, warnings and action logs.' },
+    { key: 'anti_nuke', icon: '◈', title: 'Anti-Nuke', desc: 'Protect channels, roles and members.' },
+    { key: 'automod', icon: '⌁', title: 'Automod', desc: 'Filter spam, links, words and excess mentions.' },
+    { key: 'leveling', icon: '▥', title: 'Leveling', desc: 'XP, level announcements and role rewards.' },
+    { key: 'economy', icon: '◉', title: 'Economy', desc: 'Currency, daily rewards and member shops.' },
+    { key: 'giveaways', icon: '✳', title: 'Giveaways', desc: 'Entry channels, durations and winner counts.' },
+    { key: 'vouches', icon: '✦', title: 'Vouches', desc: 'Reputation channels, cooldowns and rewards.' },
+    { key: 'welcome_goodbye_boost', icon: '↗', title: 'Welcome & boosts', desc: 'Member greetings, farewells and boosts.' },
+    { key: 'logging', icon: '▧', title: 'Logging', desc: 'Choose the events and channels to record.' },
+  ];
+%>
+<section class="guild-overview">
+  <header class="guild-welcome">
+    <div class="guild-welcome__identity">
+      <% if (guildIcon) { %>
+        <img class="guild-welcome__avatar" src="<%= guildIcon %>" alt="">
+      <% } else { %>
+        <span class="guild-welcome__avatar guild-welcome__avatar--initial"><%= guildName.slice(0, 1) %></span>
+      <% } %>
+      <div>
+        <p class="guild-welcome__eyebrow">Guild dashboard</p>
+        <h1><%= guildName %></h1>
+        <p>Everything your community needs, configured in one place.</p>
+      </div>
     </div>
-    <a href="/dashboard" class="button button--quiet">← Change server</a>
   </header>
 
-  <div class="module-grid">
-    <% const modules = [
-      { key: 'tickets', icon: '🎫', title: 'Tickets', desc: 'Panels, categories, claiming, and transcripts.', count: 10 },
-      { key: 'moderation', icon: '🛡️', title: 'Moderation', desc: 'Ban, kick, warn, timeout, and case history.', count: 9 },
-      { key: 'anti_nuke', icon: '🔒', title: 'Anti-Nuke', desc: 'Raid protection, anti-spam, anti-invite, anti-link.', count: 10 },
-      { key: 'automod', icon: '🤖', title: 'Automod', desc: 'Word filters, link filters, mention spam, caps.', count: 10 },
-      { key: 'leveling', icon: '📈', title: 'Leveling', desc: 'XP tracking, level rewards, leaderboards.', count: 10 },
-      { key: 'economy', icon: '💰', title: 'Economy', desc: 'Balances, daily rewards, shop, transactions.', count: 10 },
-      { key: 'giveaways', icon: '🎁', title: 'Giveaways', desc: 'Timed draws, multiple winners, rerolls.', count: 7 },
-      { key: 'vouches', icon: '⭐', title: 'Vouches', desc: 'User reputation, vouch counts, leaderboard.', count: 7 },
-      { key: 'welcome_goodbye_boost', icon: '👋', title: 'Welcome/Goodbye', desc: 'Custom greetings, boost messages, channels.', count: 10 },
-      { key: 'logging', icon: '📝', title: 'Logging', desc: 'Event tracking, log channels, audit trail.', count: 15 },
-    ] %>
-    <% modules.forEach((mod) => { %>
-      <a href="/admin/modules/<%= guildId %>/<%= mod.key %>" class="module-card">
-        <div class="module-card__icon"><%= mod.icon %></div>
-        <div class="module-card__body">
-          <h3><%= mod.title %></h3>
-          <p><%= mod.desc %></p>
-          <span class="module-card__count"><%= mod.count %> settings</span>
-        </div>
-        <span class="module-card__arrow">→</span>
-      </a>
-    <% }) %>
+  <div class="guild-metrics" aria-label="Guild overview">
+    <div class="guild-metric">
+      <span class="guild-metric__label">Members</span>
+      <strong><%= memberCount ?? '—' %></strong>
+      <span class="guild-metric__note">In this Discord guild</span>
+    </div>
+    <div class="guild-metric">
+      <span class="guild-metric__label">Text channels</span>
+      <strong><%= channelCount %></strong>
+      <span class="guild-metric__note">Available for module setup</span>
+    </div>
+    <div class="guild-metric">
+      <span class="guild-metric__label">Server roles</span>
+      <strong><%= roleCount %></strong>
+      <span class="guild-metric__note">Choose roles for staff access</span>
+    </div>
+    <div class="guild-metric guild-metric--accent">
+      <span class="guild-metric__label">Modules</span>
+      <strong><%= modules.length %></strong>
+      <span class="guild-metric__note">Ready to configure</span>
+    </div>
   </div>
-</section>
 
-<style>
-.dashboard-overview {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 24px;
-}
-.page-heading {
-  margin-bottom: 32px;
-}
-.section-kicker {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 8px;
-}
-.page-heading h1 {
-  font-size: 32px;
-  color: var(--ink);
-  margin-bottom: 8px;
-  letter-spacing: -0.04em;
-}
-.page-heading p {
-  color: var(--muted);
-  font-size: 16px;
-}
-.module-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-}
-.module-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 24px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  text-decoration: none;
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
-}
-.module-card:hover {
-  border-color: var(--accent);
-  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.4);
-  transform: translateY(-2px);
-}
-.module-card__icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  background: var(--surface-raised);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  flex-shrink: 0;
-}
-.module-card__body {
-  flex: 1;
-}
-.module-card__body h3 {
-  font-size: 18px;
-  color: var(--ink);
-  margin: 0 0 6px 0;
-  font-weight: 700;
-}
-.module-card__body p {
-  font-size: 14px;
-  color: var(--muted);
-  margin: 0 0 10px 0;
-  line-height: 1.4;
-}
-.module-card__count {
-  font-size: 12px;
-  color: var(--accent);
-  font-weight: 700;
-}
-.module-card__arrow {
-  font-size: 18px;
-  color: var(--muted);
-  flex-shrink: 0;
-}
-@media (max-width: 640px) {
-  .dashboard-overview {
-    padding: 16px;
-  }
-  .module-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
+  <section class="guild-modules" aria-labelledby="modules-heading">
+    <header class="guild-section-heading">
+      <div>
+        <h2 id="modules-heading">Guild modules</h2>
+        <p>Choose a module to tune its settings for this server.</p>
+      </div>
+      <a class="guild-section-link" href="/admin/<%= guildId %>/roles">Configure staff roles <span aria-hidden="true">↗</span></a>
+    </header>
+    <div class="guild-module-list">
+      <% modules.forEach((mod) => { %>
+        <a class="guild-module" href="/admin/modules/<%= guildId %>/<%= mod.key %>">
+          <span class="guild-module__icon" aria-hidden="true"><%= mod.icon %></span>
+          <span class="guild-module__copy">
+            <strong><%= mod.title %></strong>
+            <span><%= mod.desc %></span>
+          </span>
+          <span class="guild-module__action">Configure <span aria-hidden="true">↗</span></span>
+        </a>
+      <% }) %>
+    </div>
+  </section>
+
+  <section class="guild-staff-callout" aria-labelledby="staff-heading">
+    <div class="guild-staff-callout__mark" aria-hidden="true">✦</div>
+    <div>
+      <h2 id="staff-heading">Give staff the right access.</h2>
+      <p>Assign command permissions to the roles your team already uses in Discord.</p>
+    </div>
+    <a class="button button--quiet" href="/admin/<%= guildId %>/roles">Manage role permissions <span aria-hidden="true">↗</span></a>
+  </section>
+</section>
 <% } %>

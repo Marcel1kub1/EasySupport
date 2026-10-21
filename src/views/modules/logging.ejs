@@ -5,13 +5,13 @@
       <h1>Logging settings</h1>
       <p>Configure which events are logged and where they are sent.</p>
     </div>
-    <a href="/dashboard" class="button button--quiet">← Back to dashboard</a>
+    <a href="/dashboard/<%= guildId %>" class="button button--quiet">← Back to guild</a>
   </header>
 
   <form method="post" action="/admin/modules/<%= guildId %>/logging" class="settings-form">
     <div class="settings-grid">
       <% 
-      const settings = [
+      const fields = [
         { key: 'log_channel', label: 'Log Channel', type: 'channel', desc: 'Default channel for all logs' },
         { key: 'log_message_delete', label: 'Message Delete', type: 'toggle', desc: 'Log deleted messages' },
         { key: 'log_message_edit', label: 'Message Edit', type: 'toggle', desc: 'Log edited messages' },
@@ -28,9 +28,9 @@
         { key: 'log_nickname_change', label: 'Nickname Change', type: 'toggle', desc: 'Log nickname changes' },
         { key: 'log_avatar_change', label: 'Avatar Change', type: 'toggle', desc: 'Log avatar changes' },
       ];
-      settings.forEach((s) => { %>
+      fields.forEach((s) => { %>
         <div class="setting-field">
-          <label class="setting-label"><%= s.label %></label>
+          <label class="setting-label" for="<%= s.key %>"><%= s.label %></label>
           <p class="setting-desc"><%= s.desc %></p>
           <% if (s.type === 'toggle') { %>
             <div class="toggle">
@@ -38,8 +38,15 @@
               <span class="toggle-slider"></span>
             </div>
           <% } else if (s.type === 'channel') { %>
-            <input type="text" id="<%= s.key %>" name="<%= s.key %>" placeholder="Channel ID" value="<%= settings[s.key] || '' %>">
-            <span class="field-hint">Enter the channel ID</span>
+            <select id="<%= s.key %>" name="<%= s.key %>">
+              <option value="">Select a channel</option>
+              <% channels.forEach((channel) => { %>
+                <option value="<%= channel.id %>" <%= settings[s.key] === channel.id ? 'selected' : '' %>>#<%= channel.name %></option>
+              <% }) %>
+              <% if (settings[s.key] && !channels.some((channel) => channel.id === settings[s.key])) { %>
+                <option value="<%= settings[s.key] %>" selected>Saved channel is unavailable</option>
+              <% } %>
+            </select>
           <% } else { %>
             <input type="text" id="<%= s.key %>" name="<%= s.key %>" value="<%= settings[s.key] || '' %>">
           <% } %>

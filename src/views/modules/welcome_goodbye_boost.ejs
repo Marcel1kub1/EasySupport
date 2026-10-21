@@ -5,13 +5,13 @@
       <h1>Welcome/Goodbye/Boost settings</h1>
       <p>Configure custom greetings, boost messages, and channels.</p>
     </div>
-    <a href="/dashboard" class="button button--quiet">← Back to dashboard</a>
+    <a href="/dashboard/<%= guildId %>" class="button button--quiet">← Back to guild</a>
   </header>
 
   <form method="post" action="/admin/modules/<%= guildId %>/welcome_goodbye_boost" class="settings-form">
     <div class="settings-grid">
       <% 
-      const settings = [
+      const fields = [
         { key: 'welcome_enabled', label: 'Welcome Messages', type: 'toggle', desc: 'Send welcome messages when members join' },
         { key: 'welcome_channel', label: 'Welcome Channel', type: 'channel', desc: 'Channel for welcome messages' },
         { key: 'welcome_message', label: 'Welcome Message', type: 'text', desc: 'Custom welcome message template' },
@@ -23,18 +23,35 @@
         { key: 'boost_message', label: 'Boost Message', type: 'text', desc: 'Custom boost message template' },
         { key: 'boost_role', label: 'Boost Role', type: 'role', desc: 'Role given to boosters' },
       ];
-      settings.forEach((s) => { %>
+      fields.forEach((s) => { %>
         <div class="setting-field">
-          <label class="setting-label"><%= s.label %></label>
+          <label class="setting-label" for="<%= s.key %>"><%= s.label %></label>
           <p class="setting-desc"><%= s.desc %></p>
           <% if (s.type === 'toggle') { %>
             <div class="toggle">
               <input type="checkbox" id="<%= s.key %>" name="<%= s.key %>" value="true" <%= settings[s.key] === 'true' || settings[s.key] === true ? 'checked' : '' %>>
               <span class="toggle-slider"></span>
             </div>
-          <% } else if (s.type === 'channel' || s.type === 'role') { %>
-            <input type="text" id="<%= s.key %>" name="<%= s.key %>" placeholder="ID or mention" value="<%= settings[s.key] || '' %>">
-            <span class="field-hint">Enter the <%= s.type %> ID</span>
+          <% } else if (s.type === 'role') { %>
+            <select id="<%= s.key %>" name="<%= s.key %>">
+              <option value="">Select a role</option>
+              <% roles.forEach((role) => { %>
+                <option value="<%= role.id %>" <%= settings[s.key] === role.id ? 'selected' : '' %>><%= role.name %></option>
+              <% }) %>
+              <% if (settings[s.key] && !roles.some((role) => role.id === settings[s.key])) { %>
+                <option value="<%= settings[s.key] %>" selected>Saved role is unavailable</option>
+              <% } %>
+            </select>
+          <% } else if (s.type === 'channel') { %>
+            <select id="<%= s.key %>" name="<%= s.key %>">
+              <option value="">Select a channel</option>
+              <% channels.forEach((channel) => { %>
+                <option value="<%= channel.id %>" <%= settings[s.key] === channel.id ? 'selected' : '' %>>#<%= channel.name %></option>
+              <% }) %>
+              <% if (settings[s.key] && !channels.some((channel) => channel.id === settings[s.key])) { %>
+                <option value="<%= settings[s.key] %>" selected>Saved channel is unavailable</option>
+              <% } %>
+            </select>
           <% } else { %>
             <input type="text" id="<%= s.key %>" name="<%= s.key %>" value="<%= settings[s.key] || '' %>">
           <% } %>

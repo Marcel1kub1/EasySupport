@@ -1,28 +1,15 @@
-<%
-  var statusTone = 'operational';
-  var currentStatus = status?.status_text ?? 'All systems operational';
-  var statusLower = currentStatus.toLowerCase();
-  if (statusLower.includes('outage')) {
-    statusTone = 'outage';
-  } else if (statusLower.includes('degrad')) {
-    statusTone = 'degraded';
-  } else if (statusLower.includes('maintenance')) {
-    statusTone = 'maintenance';
-  }
-%>
 <section class="home">
   <div class="hero">
     <div class="hero-copy">
-      <p class="hero-status">
-        <span class="status-light status-light--<%= statusTone %>" aria-hidden="true"></span>
-        <span><%= currentStatus %></span>
-        <a href="/status">Service status</a>
-      </p>
       <h1>Support, in one place.</h1>
       <p class="hero-description">
-        Private tickets, clear staff workflows, and useful transcripts — all from one self-hosted Discord bot.
+        Tickets, moderation, and community tools configured for your guild from one dashboard.
       </p>
       <div class="hero-actions">
+        <a class="button button--primary" href="<%= signedIn ? '/dashboard' : '/login' %>">
+          <span>Open guild dashboard</span>
+          <span aria-hidden="true">↗</span>
+        </a>
         <a class="github-button" href="<%= repoUrl %>" target="_blank" rel="noopener noreferrer">
           <span class="github-button__icon" aria-hidden="true">
             <svg viewBox="0 0 496 512" focusable="false">
@@ -32,7 +19,6 @@
           <span>View on GitHub</span>
           <span class="github-button__arrow" aria-hidden="true">↗</span>
         </a>
-        <a class="button button--quiet" href="/status">Check system status</a>
       </div>
       <p class="hero-note">Open source · Runs alongside your Discord bot</p>
     </div>

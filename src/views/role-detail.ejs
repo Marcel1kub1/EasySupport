@@ -1,11 +1,11 @@
 <section class="admin-page">
   <header class="page-heading admin-heading">
     <div>
-      <p class="section-kicker">Role permissions</p>
+      <p class="section-kicker">Staff roles</p>
       <h1><%= role.name %></h1>
-      <p>Configure command access for <strong><%= role.name %></strong> in <%= guildName %>.</p>
+      <p>Choose which commands <strong><%= role.name %></strong> can use in <%= guildName %>.</p>
     </div>
-    <a class="button button--quiet" href="/admin/<%= guildId %>/roles">← Back to roles <span aria-hidden="true">↗</span></a>
+    <a class="button button--quiet" href="/admin/<%= guildId %>/roles">← Back to staff roles</a>
   </header>
 
   <% if (!roles || roles.length === 0) { %>

@@ -5,13 +5,13 @@
       <h1>Automod settings</h1>
       <p>Configure word filters, link filters, mention spam, and caps filter.</p>
     </div>
-    <a href="/dashboard" class="button button--quiet">← Back to dashboard</a>
+    <a href="/dashboard/<%= guildId %>" class="button button--quiet">← Back to guild</a>
   </header>
 
   <form method="post" action="/admin/modules/<%= guildId %>/automod" class="settings-form">
     <div class="settings-grid">
       <% 
-      const settings = [
+      const fields = [
         { key: 'word_filter_enabled', label: 'Word Filter', type: 'toggle', desc: 'Block messages containing blocked words' },
         { key: 'blocked_words', label: 'Blocked Words', type: 'text', desc: 'Comma-separated list of blocked words' },
         { key: 'link_filter_enabled', label: 'Link Filter', type: 'toggle', desc: 'Block messages containing links' },
@@ -23,9 +23,9 @@
         { key: 'max_line_length', label: 'Max Line Length', type: 'number', desc: 'Maximum characters per line' },
         { key: 'automod_action', label: 'Default Action', type: 'select', desc: 'Action on automod violation', options: ['none','delete','mute','kick'] },
       ];
-      settings.forEach((s) => { %>
+      fields.forEach((s) => { %>
         <div class="setting-field">
-          <label class="setting-label"><%= s.label %></label>
+          <label class="setting-label" for="<%= s.key %>"><%= s.label %></label>
           <p class="setting-desc"><%= s.desc %></p>
           <% if (s.type === 'toggle') { %>
             <div class="toggle">

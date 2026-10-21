@@ -89,13 +89,13 @@
 - Message delete/edit, member join/leave/ban, role/channel changes, voice, nickname, avatar
 
 ### 🌐 Web Dashboard
-- **Browser-based management** — configure all 107 settings from a polished dashboard
-- **Role-based permissions** — granular command access control per role via a matrix UI
-- **Module overview** — one-click access to each feature module at `/dashboard`
+- **Guild-based management** — sign in with Discord and configure servers where you have Manage Server access
+- **Module settings** — configure channels, categories, roles, and feature options for each guild
+- **Staff role permissions** — grant or deny command access for the roles in each guild
 - **Settings persistence** — all changes saved to MySQL in real-time
 
 ### 👥 Role-Based Command Permissions
-- Configure which roles can run which commands via `/admin/roles`
+- Configure which staff roles can run each command from the guild dashboard
 - Admins with `Administrator` permission always bypass checks
 - Default fallback to Discord's native permission system when no role config exists
 
@@ -175,12 +175,12 @@ src/
 ├── config.js                validated env config
 ├── art.js                   SVG art generator: category + panel banners with names
 ├── categories.js            CENTRAL CONFIG: categories, questions, statuses
-├── db.js                    SQLite schema + repository functions
+├── db.js                    MySQL schema + repository functions
 ├── transcripts.js           TXT + HTML transcript generation
-├── web.js                   public site, status page, and admin routes
+├── web.js                   public site and Discord-authenticated guild dashboard
 ├── views/                   EJS templates rendered as HTML pages
 ├── public/site.css          shared responsive website styling
-├── public/site.js           dismissible admin notices
+├── public/site.js           dashboard form feedback
 ├── commands/setup.js        /setup — per-guild configuration
 ├── commands/panel.js        /panel — post the ticket panel
 └── events/

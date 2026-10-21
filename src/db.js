@@ -91,18 +91,6 @@ export async function initialize() {
 )`,
     `CREATE INDEX IF NOT EXISTS idx_tickets_guild_user   ON tickets(guild_id, user_id, status)`,
     `CREATE INDEX IF NOT EXISTS idx_messages_ticket      ON ticket_messages(ticket_id)`,
-    `CREATE TABLE IF NOT EXISTS system_status (
-  id          INT PRIMARY KEY DEFAULT 1,
-  status_text VARCHAR(255) NOT NULL DEFAULT 'All systems operational',
-  updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-)`,
-    `CREATE TABLE IF NOT EXISTS announcements (
-  id          INT PRIMARY KEY AUTO_INCREMENT,
-  title       VARCHAR(255) NOT NULL,
-  content     TEXT NOT NULL,
-  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  created_by  VARCHAR(255)
-)`,
     /* ---------- guild_settings (107 settings across 10 modules) ---------- */
     `CREATE TABLE IF NOT EXISTS guild_settings (
   guild_id       VARCHAR(255) NOT NULL,
@@ -692,50 +680,6 @@ export async function getManagementRole(guildId) {
 
 export async function setManagementRole(guildId, roleId) {
   await run('UPDATE guilds SET management_role_id = ? WHERE guild_id = ?', [roleId ?? null, guildId]);
-}
-
-/* ------------------------------- website data ------------------------------ */
-
-export async function getSystemStatus() {
-  return get('SELECT * FROM system_status WHERE id = 1', []);
-}
-
-export async function setSystemStatus(statusText) {
-  await run(`
-    INSERT INTO system_status (id, status_text, updated_at) VALUES (1, ?, NOW())
-    ON DUPLICATE KEY UPDATE status_text = VALUES(status_text), updated_at = NOW()
-  `, [statusText]);
-}
-
-export async function setSystemStatusWithAnnouncement(statusText, createdBy) {
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-    try {
-      await connection.execute(`
-        INSERT INTO system_status (id, status_text, updated_at) VALUES (1, ?, NOW())
-        ON DUPLICATE KEY UPDATE status_text = VALUES(status_text), updated_at = NOW()
-      `, [statusText]);
-      await connection.execute(
-        'INSERT INTO announcements (title, content, created_by) VALUES (?, ?, ?)',
-        ['System status updated', statusText, createdBy]
-      );
-      await connection.commit();
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    }
-  } finally {
-    connection.release();
-  }
-}
-
-export async function getAnnouncements() {
-  return query('SELECT * FROM announcements ORDER BY created_at DESC LIMIT 10');
-}
-
-export async function createAnnouncement(title, content, createdBy) {
-  await run('INSERT INTO announcements (title, content, created_by) VALUES (?, ?, ?)', [title, content, createdBy]);
 }
 
 export async function getGuildStats() {

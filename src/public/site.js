@@ -1,14 +1,3 @@
-document.addEventListener('click', (event) => {
-  const target = event.target;
-  if (!(target instanceof Element)) return;
-
-  const dismissButton = target.closest('[data-dismiss-notice]');
-  if (!dismissButton) return;
-
-  const notice = dismissButton.closest('.status-notice');
-  notice?.setAttribute('hidden', '');
-});
-
 /* ============ Dashboard interactivity ============ */
 
 // Toggle switch accessibility
@@ -29,7 +18,9 @@ document.querySelectorAll('.toggle input').forEach((checkbox) => {
 // Form validation and AJAX save for module settings
 document.querySelectorAll('.settings-form').forEach((form) => {
   form.addEventListener('submit', async (e) => {
+    e.preventDefault();
     const submitBtn = form.querySelector('button[type="submit"]');
+    if (!submitBtn) return;
     const originalText = submitBtn.textContent;
 
     submitBtn.textContent = 'Saving…';

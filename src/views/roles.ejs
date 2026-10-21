@@ -1,11 +1,11 @@
 <section class="admin-page">
   <header class="page-heading admin-heading">
     <div>
-      <p class="section-kicker">Role permissions</p>
-      <h1>Command access matrix</h1>
-      <p>Toggle which commands each role can run. Admins with Administrator permission always bypass these checks.</p>
+      <p class="section-kicker">Staff roles</p>
+      <h1>Command permissions</h1>
+      <p>Choose which commands each Discord role can use. Members with Discord Administrator permission always bypass these checks.</p>
     </div>
-    <a class="button button--primary" href="/admin">Back to admin <span aria-hidden="true">↗</span></a>
+    <a class="button button--quiet" href="/dashboard/<%= guildId %>">Back to guild <span aria-hidden="true">↗</span></a>
   </header>
 
   <% if (!roles || roles.length === 0) { %>

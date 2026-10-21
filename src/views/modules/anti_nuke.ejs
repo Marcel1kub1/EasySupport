@@ -5,13 +5,13 @@
       <h1>Anti-Nuke settings</h1>
       <p>Configure raid protection, anti-spam, anti-invite, and anti-link rules.</p>
     </div>
-    <a href="/dashboard" class="button button--quiet">← Back to dashboard</a>
+    <a href="/dashboard/<%= guildId %>" class="button button--quiet">← Back to guild</a>
   </header>
 
   <form method="post" action="/admin/modules/<%= guildId %>/anti_nuke" class="settings-form">
     <div class="settings-grid">
       <% 
-      const settings = [
+      const fields = [
         { key: 'anti_raid_enabled', label: 'Anti-Raid', type: 'toggle', desc: 'Protect against mass channel/role creation' },
         { key: 'anti_raid_threshold', label: 'Raid Threshold', type: 'number', desc: 'Max actions per minute before raid detected' },
         { key: 'anti_raid_action', label: 'Raid Action', type: 'select', desc: 'Action to take on raid detection', options: ['none','kick','ban'] },
@@ -23,9 +23,9 @@
         { key: 'whitelist_roles', label: 'Whitelisted Roles', type: 'text', desc: 'Comma-separated role IDs exempt from anti-nuke' },
         { key: 'whitelist_users', label: 'Whitelisted Users', type: 'text', desc: 'Comma-separated user IDs exempt from anti-nuke' },
       ];
-      settings.forEach((s) => { %>
+      fields.forEach((s) => { %>
         <div class="setting-field">
-          <label class="setting-label"><%= s.label %></label>
+          <label class="setting-label" for="<%= s.key %>"><%= s.label %></label>
           <p class="setting-desc"><%= s.desc %></p>
           <% if (s.type === 'toggle') { %>
             <div class="toggle">

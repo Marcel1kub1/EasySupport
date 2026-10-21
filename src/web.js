@@ -1,18 +1,13 @@
 import express from 'express';
 import session from 'express-session';
 import ejs from 'ejs';
+import { ChannelType } from 'discord.js';
 import path from 'node:path';
 import { config } from './config.js';
 import {
-  getSystemStatus,
-  setSystemStatusWithAnnouncement,
-  getAnnouncements,
-  createAnnouncement,
-  pool,
   getRolePermissions,
   getAllRolePermissions,
   setRolePermission,
-  deleteRolePermission,
   getGuildSettings,
   bulkUpdateGuildSettings,
 } from './db.js';
@@ -25,13 +20,18 @@ const templateDefaults = {
   message: undefined,
   error: null,
   repoUrl: 'https://github.com/Marcel1kub1/EasySupport',
-  admin: false,
+  signedIn: false,
   notFound: false,
-  status: null,
-  announcements: [],
-  components: [],
-  overallStatus: 'operational',
-  overallLabel: 'All systems operational',
+  guilds: [],
+  guildId: null,
+  guildName: null,
+  user: null,
+  noGuilds: false,
+  botInGuild: false,
+  guildIcon: null,
+  memberCount: null,
+  channelCount: 0,
+  roleCount: 0,
   config,
 };
 
@@ -40,65 +40,6 @@ async function renderPage(res, view, locals = {}) {
   const body = await ejs.renderFile(path.join(viewsDir, `${view}.ejs`), pageLocals);
   const html = await ejs.renderFile(path.join(viewsDir, 'layout.ejs'), { ...pageLocals, body });
   return res.send(html);
-}
-
-const STATUS_ORDER = { operational: 0, degraded: 1, outage: 2 };
-const STATUS_LABEL = {
-  operational: 'Operational',
-  degraded: 'Degraded Performance',
-  outage: 'Major Outage',
-  maintenance: 'Maintenance',
-};
-
-/** Hardcoded announcement templates an admin can post to the status page with one click. */
-const HARDCODED_ANNOUNCEMENTS = [
-  {
-    key: 'operational',
-    title: 'All systems operational',
-    content: 'All systems operational. Gateway, database, and API endpoints are healthy.',
-    type: 'info',
-  },
-  {
-    key: 'maintenance',
-    title: 'Scheduled maintenance',
-    content: 'MySQL maintenance window tonight 02:00–04:00 UTC. Brief blips possible during failover.',
-    type: 'warn',
-  },
-  {
-    key: 'feature',
-    title: 'New feature',
-    content: 'High-rank DM module is now live. Use /setup to configure per-guild module toggles.',
-    type: 'feature',
-  },
-  {
-    key: 'outage',
-    title: 'Major outage',
-    content: 'We are experiencing issues with the Discord gateway. Some features may be delayed.',
-    type: 'err',
-  },
-];
-
-async function getComponentStatuses() {
-  let dbStatus = 'operational';
-  try {
-    await pool.query('SELECT 1');
-  } catch {
-    dbStatus = 'outage';
-  }
-
-  return [
-    { name: 'Gateway', desc: 'Discord gateway WebSocket', status: 'operational', label: STATUS_LABEL.operational },
-    { name: 'Database', desc: 'MySQL storage', status: dbStatus, label: STATUS_LABEL[dbStatus] ?? STATUS_LABEL.operational },
-    { name: 'API', desc: 'REST API and HTTP endpoints', status: 'operational', label: STATUS_LABEL.operational },
-  ];
-}
-
-function overallStatus(components) {
-  let worst = 'operational';
-  for (const c of components) {
-    if (STATUS_ORDER[c.status] > STATUS_ORDER[worst]) worst = c.status;
-  }
-  return worst;
 }
 
 export function createWebApp(client) {
@@ -156,40 +97,15 @@ export function createWebApp(client) {
   /* ---------------------------------- routes -------------------------------- */
 
   app.get('/', async (req, res) => {
-    const admin = isAuthed(req);
-    const [status, announcements] = await Promise.all([
-      getSystemStatus(),
-      getAnnouncements(),
-    ]);
     return renderPage(res, 'index', {
       title: 'EasySupport — Home',
       active: 'home',
-      admin,
+      signedIn: isAuthed(req),
       repoUrl: 'https://github.com/Marcel1kub1/EasySupport',
-      status,
-      announcements,
     });
   });
 
-  app.get('/status', async (req, res) => {
-    const admin = isAuthed(req);
-    const [status, announcements, components] = await Promise.all([
-      getSystemStatus(),
-      getAnnouncements(),
-      getComponentStatuses(),
-    ]);
-    const overall = overallStatus(components);
-    return renderPage(res, 'status', {
-      title: 'EasySupport — Status',
-      active: 'status',
-      admin,
-      status,
-      announcements,
-      components,
-      overallStatus: overall,
-      overallLabel: STATUS_LABEL[overall],
-    });
-  });
+  app.get('/status', (req, res) => res.redirect('/'));
 
   app.get('/login', (req, res) => {
     if (isAuthed(req)) return res.redirect('/dashboard');
@@ -262,47 +178,6 @@ export function createWebApp(client) {
     });
   });
 
-  app.get('/admin', requireAuth, async (req, res) => {
-    const [status, announcements] = await Promise.all([
-      getSystemStatus(),
-      getAnnouncements(),
-    ]);
-    return renderPage(res, 'admin', {
-      title: 'EasySupport — Admin',
-      active: 'admin',
-      status,
-      announcements,
-      hardcoded: HARDCODED_ANNOUNCEMENTS,
-      statusUpdated: req.query.updated === 'status',
-      user: req.session.discordUser,
-      guilds: getUserGuilds(req),
-    });
-  });
-
-  app.post('/admin/status', requireAuth, async (req, res) => {
-    const statusText = typeof req.body.status_text === 'string' ? req.body.status_text.trim() : '';
-    if (!statusText || statusText.length > 255) {
-      return res.redirect('/admin');
-    }
-    await setSystemStatusWithAnnouncement(statusText, req.session.discordUser?.username ?? 'user');
-    res.redirect('/admin?updated=status');
-  });
-
-  app.post('/admin/announce', requireAuth, async (req, res) => {
-    const { key } = req.body;
-    if (key) {
-      const template = HARDCODED_ANNOUNCEMENTS.find((announcement) => announcement.key === key);
-      if (!template) return res.redirect('/admin');
-      await createAnnouncement(template.title, template.content, req.session.discordUser?.username ?? 'user');
-    } else {
-      const title = typeof req.body.title === 'string' ? req.body.title.trim() : '';
-      const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
-      if (!title || title.length > 255 || !content) return res.redirect('/admin');
-      await createAnnouncement(title, content, req.session.discordUser?.username ?? 'user');
-    }
-    res.redirect('/admin');
-  });
-
   /* ---------------------------------- dashboard (guild-scoped) ---------------------------------- */
 
   app.get('/dashboard', requireAuth, async (req, res) => {
@@ -325,6 +200,10 @@ export function createWebApp(client) {
     const guild = client.guilds.cache.get(guildId);
     const guilds = getUserGuilds(req);
     const currentGuild = guilds.find((g) => g.id === guildId) ?? { id: guildId, name: guild?.name ?? 'Unknown Server' };
+    const roles = guild?.roles.cache
+      .filter((role) => !role.managed && role.id !== guild.id)
+      .sort((a, b) => b.position - a.position)
+      .map((role) => ({ id: role.id, name: role.name })) ?? [];
 
     return renderPage(res, 'dashboard', {
       title: `EasySupport — ${currentGuild.name}`,
@@ -334,6 +213,11 @@ export function createWebApp(client) {
       guilds,
       user: req.session.discordUser,
       currentGuild,
+      botInGuild: Boolean(guild),
+      guildIcon: guild?.iconURL({ size: 96 }) ?? (currentGuild.icon ? `https://cdn.discordapp.com/icons/${guildId}/${currentGuild.icon}.png?size=96` : null),
+      memberCount: guild?.memberCount ?? null,
+      channelCount: guild?.channels.cache.filter((channel) => channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement).size ?? 0,
+      roleCount: roles.length,
     });
   });
   const MODULE_LABELS = {
@@ -361,15 +245,33 @@ export function createWebApp(client) {
     if (!guild) return res.redirect(`/dashboard/${guildId}`);
 
     const settings = await getGuildSettings(guildId);
+    const roles = guild.roles.cache
+      .filter((role) => !role.managed && role.id !== guild.id)
+      .sort((a, b) => b.position - a.position)
+      .map((role) => ({ id: role.id, name: role.name }));
+    const channels = guild.channels.cache
+      .filter((channel) => channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement)
+      .sort((a, b) => a.position - b.position)
+      .map((channel) => ({ id: channel.id, name: channel.name }));
+    const categories = guild.channels.cache
+      .filter((channel) => channel.type === ChannelType.GuildCategory)
+      .sort((a, b) => a.position - b.position)
+      .map((channel) => ({ id: channel.id, name: channel.name }));
 
     return renderPage(res, `modules/${module}`, {
       title: `EasySupport — ${MODULE_LABELS[module]}`,
       active: `module-${module}`,
       guildId,
       guildName: guild.name,
+      botInGuild: true,
       settings,
       moduleFields: moduleSettings,
       moduleLabel: MODULE_LABELS[module],
+      roles,
+      channels,
+      categories,
+      user: req.session.discordUser,
+      guilds: getUserGuilds(req),
     });
   });
 
@@ -563,12 +465,15 @@ export function createWebApp(client) {
     });
 
     return renderPage(res, 'roles', {
-      title: 'EasySupport — Role Permissions',
+      title: 'EasySupport — Staff Roles',
       active: 'roles',
       guildId,
       guildName: guild.name,
+      botInGuild: true,
       roles: rolesWithPerms,
       commands: COMMAND_NAMES,
+      user: req.session.discordUser,
+      guilds: getUserGuilds(req),
     });
   });
 
@@ -593,9 +498,12 @@ export function createWebApp(client) {
       active: 'roles',
       guildId,
       guildName: guild.name,
+      botInGuild: true,
       role: { id: role.id, name: role.name, color: role.color },
       commands: COMMAND_NAMES,
       perms: permMap,
+      user: req.session.discordUser,
+      guilds: getUserGuilds(req),
     });
   });
 
@@ -614,15 +522,10 @@ export function createWebApp(client) {
 
   app.use((req, res) => {
     res.status(404);
-    return renderPage(res, 'status', {
+    return renderPage(res, 'not-found', {
       title: 'EasySupport — Not Found',
-      admin: isAuthed(req),
-      status: null,
-      announcements: [],
-      components: [],
-      overallStatus: 'outage',
-      overallLabel: STATUS_LABEL.outage,
       notFound: true,
+      signedIn: isAuthed(req),
     });
   });
 
