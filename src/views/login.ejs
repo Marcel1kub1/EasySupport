@@ -1,22 +1,33 @@
 <section class="login-page">
   <div class="login-intro">
     <p class="section-kicker">EasySupport administration</p>
-    <h1>Manage service updates.</h1>
-    <p>The status page is public. Sign in to change the current status or publish an update.</p>
+    <h1>Sign in with Discord.</h1>
+    <p>Authorize EasySupport to manage your server settings through the dashboard.</p>
+    <% if (error) { %>
+      <p class="login-error"><%= error %></p>
+    <% } %>
   </div>
   <div class="login-panel">
-    <h2>Admin sign in</h2>
-    <form method="post" action="/admin/login">
-      <div class="form-group">
-        <label for="user">Username</label>
-        <input id="user" name="user" autocomplete="username" required autofocus>
-      </div>
-      <div class="form-group">
-        <label for="pass">Password</label>
-        <input id="pass" name="pass" type="password" autocomplete="current-password" required>
-      </div>
-      <button class="button button--primary" type="submit">Sign in</button>
-    </form>
-    <p class="login-note">Your credentials are used only to access the admin area.</p>
+    <a href="/login" class="button button--primary button--block">
+      <span>Continue with Discord</span>
+    </a>
+    <p class="login-note">You'll be redirected to Discord to authorize access. Only servers you manage will be visible.</p>
   </div>
 </section>
+
+<style>
+.login-page .login-error {
+  color: var(--err);
+  font-size: 14px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: rgba(250, 119, 124, 0.1);
+  border: 1px solid var(--err);
+  border-radius: 8px;
+}
+.button--block {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+</style>

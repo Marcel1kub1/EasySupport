@@ -3,10 +3,8 @@ import {
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
-  UserSelectMenuBuilder,
 } from 'discord.js';
 import {
-  getGuild,
   isModuleEnabled,
   createVouch,
   getVouches,

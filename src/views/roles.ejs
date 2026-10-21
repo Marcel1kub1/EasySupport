@@ -211,7 +211,7 @@ document.querySelectorAll('.perm-toggle input').forEach((checkbox) => {
     const cmd = toggle.dataset.cmd;
     const allowed = e.target.checked ? 'true' : 'false';
 
-    fetch(`/admin/roles/${roleId}/toggle`, {
+    fetch(`/admin/<%= guildId %>/roles/${roleId}/toggle`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: `command_name=${encodeURIComponent(cmd)}&allowed=${encodeURIComponent(allowed)}`,

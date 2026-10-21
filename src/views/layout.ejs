@@ -19,6 +19,16 @@
             <span class="sidebar-brand-name">EasySupport</span>
           </a>
           <div class="sidebar-divider"></div>
+          <% if (user) { %>
+            <div class="sidebar-user">
+              <img class="sidebar-user__avatar" src="<%= user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : 'https://discord.com/assets/6debd47ed13483642af0928a2744ab84e6027f9c1e1b5f3d9e6f1b5f3d9e6f1' %>" alt="<%= user.globalName ?? user.username %>">
+              <div class="sidebar-user__info">
+                <p class="sidebar-user__name"><%= user.globalName ?? user.username %></p>
+                <p class="sidebar-user__tag"><%= user.username %>#<%= user.discriminator %></p>
+              </div>
+            </div>
+            <div class="sidebar-divider"></div>
+          <% } %>
           <p class="sidebar-guild"><%= guildName || 'Server' %></p>
         </div>
 
@@ -29,43 +39,83 @@
           </a>
           <div class="sidebar-nav-section">
             <p class="sidebar-nav-section-label">Modules</p>
-            <a href="/admin/modules/tickets" class="sidebar-nav-item <%= active === 'module-tickets' ? 'is-active' : '' %>">
+            <% if (guildId) { %>
+              <a href="/admin/modules/<%= guildId %>/tickets" class="sidebar-nav-item <%= active === 'module-tickets' ? 'is-active' : '' %>">
+            <% } else { %>
+              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-tickets' ? 'is-active' : '' %>">
+            <% } %>
               <span class="sidebar-nav-icon" aria-hidden="true">🎫</span>
               <span class="sidebar-nav-label">Tickets</span>
             </a>
-            <a href="/admin/modules/moderation" class="sidebar-nav-item <%= active === 'module-moderation' ? 'is-active' : '' %>">
+            <% if (guildId) { %>
+              <a href="/admin/modules/<%= guildId %>/moderation" class="sidebar-nav-item <%= active === 'module-moderation' ? 'is-active' : '' %>">
+            <% } else { %>
+              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-moderation' ? 'is-active' : '' %>">
+            <% } %>
               <span class="sidebar-nav-icon" aria-hidden="true">🛡️</span>
               <span class="sidebar-nav-label">Moderation</span>
             </a>
-            <a href="/admin/modules/anti_nuke" class="sidebar-nav-item <%= active === 'module-anti_nuke' ? 'is-active' : '' %>">
+            <% if (guildId) { %>
+              <a href="/admin/modules/<%= guildId %>/anti_nuke" class="sidebar-nav-item <%= active === 'module-anti_nuke' ? 'is-active' : '' %>">
+            <% } else { %>
+              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-anti_nuke' ? 'is-active' : '' %>">
+            <% } %>
               <span class="sidebar-nav-icon" aria-hidden="true">🔒</span>
               <span class="sidebar-nav-label">Anti-Nuke</span>
             </a>
-            <a href="/admin/modules/automod" class="sidebar-nav-item <%= active === 'module-automod' ? 'is-active' : '' %>">
+            <% if (guildId) { %>
+              <a href="/admin/modules/<%= guildId %>/automod" class="sidebar-nav-item <%= active === 'module-automod' ? 'is-active' : '' %>">
+            <% } else { %>
+              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-automod' ? 'is-active' : '' %>">
+            <% } %>
               <span class="sidebar-nav-icon" aria-hidden="true">🤖</span>
               <span class="sidebar-nav-label">Automod</span>
             </a>
-            <a href="/admin/modules/leveling" class="sidebar-nav-item <%= active === 'module-leveling' ? 'is-active' : '' %>">
+            <% if (guildId) { %>
+              <a href="/admin/modules/<%= guildId %>/leveling" class="sidebar-nav-item <%= active === 'module-leveling' ? 'is-active' : '' %>">
+            <% } else { %>
+              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-leveling' ? 'is-active' : '' %>">
+            <% } %>
               <span class="sidebar-nav-icon" aria-hidden="true">📈</span>
               <span class="sidebar-nav-label">Leveling</span>
             </a>
-            <a href="/admin/modules/economy" class="sidebar-nav-item <%= active === 'module-economy' ? 'is-active' : '' %>">
+            <% if (guildId) { %>
+              <a href="/admin/modules/<%= guildId %>/economy" class="sidebar-nav-item <%= active === 'module-economy' ? 'is-active' : '' %>">
+            <% } else { %>
+              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-economy' ? 'is-active' : '' %>">
+            <% } %>
               <span class="sidebar-nav-icon" aria-hidden="true">💰</span>
               <span class="sidebar-nav-label">Economy</span>
             </a>
-            <a href="/admin/modules/giveaways" class="sidebar-nav-item <%= active === 'module-giveaways' ? 'is-active' : '' %>">
+            <% if (guildId) { %>
+              <a href="/admin/modules/<%= guildId %>/giveaways" class="sidebar-nav-item <%= active === 'module-giveaways' ? 'is-active' : '' %>">
+            <% } else { %>
+              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-giveaways' ? 'is-active' : '' %>">
+            <% } %>
               <span class="sidebar-nav-icon" aria-hidden="true">🎁</span>
               <span class="sidebar-nav-label">Giveaways</span>
             </a>
-            <a href="/admin/modules/vouches" class="sidebar-nav-item <%= active === 'module-vouches' ? 'is-active' : '' %>">
+            <% if (guildId) { %>
+              <a href="/admin/modules/<%= guildId %>/vouches" class="sidebar-nav-item <%= active === 'module-vouches' ? 'is-active' : '' %>">
+            <% } else { %>
+              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-vouches' ? 'is-active' : '' %>">
+            <% } %>
               <span class="sidebar-nav-icon" aria-hidden="true">⭐</span>
               <span class="sidebar-nav-label">Vouches</span>
             </a>
-            <a href="/admin/modules/welcome_goodbye_boost" class="sidebar-nav-item <%= active === 'module-welcome_goodbye_boost' ? 'is-active' : '' %>">
+            <% if (guildId) { %>
+              <a href="/admin/modules/<%= guildId %>/welcome_goodbye_boost" class="sidebar-nav-item <%= active === 'module-welcome_goodbye_boost' ? 'is-active' : '' %>">
+            <% } else { %>
+              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-welcome_goodbye_boost' ? 'is-active' : '' %>">
+            <% } %>
               <span class="sidebar-nav-icon" aria-hidden="true">👋</span>
               <span class="sidebar-nav-label">Welcome/Goodbye</span>
             </a>
-            <a href="/admin/modules/logging" class="sidebar-nav-item <%= active === 'module-logging' ? 'is-active' : '' %>">
+            <% if (guildId) { %>
+              <a href="/admin/modules/<%= guildId %>/logging" class="sidebar-nav-item <%= active === 'module-logging' ? 'is-active' : '' %>">
+            <% } else { %>
+              <a href="/dashboard" class="sidebar-nav-item <%= active === 'module-logging' ? 'is-active' : '' %>">
+            <% } %>
               <span class="sidebar-nav-icon" aria-hidden="true">📝</span>
               <span class="sidebar-nav-label">Logging</span>
             </a>

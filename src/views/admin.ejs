@@ -17,6 +17,9 @@
       <h1>Manage updates</h1>
     </div>
     <a class="button button--quiet" href="/status">View public status <span aria-hidden="true">↗</span></a>
+    <% if (user) { %>
+      <a href="/dashboard" class="button button--primary">Go to Dashboard <span aria-hidden="true">↗</span></a>
+    <% } %>
   </header>
 
   <% if (statusUpdated) { %>

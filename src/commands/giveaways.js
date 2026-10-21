@@ -3,16 +3,12 @@ import {
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
-  ChannelSelectMenuBuilder,
-  ActionRowBuilder,
 } from 'discord.js';
 import {
-  getGuild,
   isModuleEnabled,
   createGiveaway,
   getGiveaways,
   endGiveaway,
-  deleteGiveaway,
   getRolePermission,
 } from '../db.js';
 

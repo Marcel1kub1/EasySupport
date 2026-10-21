@@ -3,14 +3,10 @@ import {
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
-  UserSelectMenuBuilder,
-  RoleSelectMenuBuilder,
-  StringSelectMenuBuilder,
 } from 'discord.js';
 import {
   getGuild,
   isModuleEnabled,
-  getManagementRole,
 } from '../db.js';
 
 export default {

@@ -1,7 +1,6 @@
 import { Events } from 'discord.js';
 import {
   getGuild,
-  saveGuildSettings,
   setRolePermission,
   bulkUpdateGuildSettings,
 } from '../db.js';

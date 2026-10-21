@@ -32,6 +32,7 @@ const templateDefaults = {
   components: [],
   overallStatus: 'operational',
   overallLabel: 'All systems operational',
+  config,
 };
 
 async function renderPage(res, view, locals = {}) {
@@ -121,14 +122,34 @@ export function createWebApp(client) {
     })
   );
 
-  /* ---------------------------------- auth ---------------------------------- */
+  /* ---------------------------------- auth (Discord OAuth2) ---------------------------------- */
 
   function isAuthed(req) {
-    return Boolean(req.session.admin);
+    return Boolean(req.session.discordUser);
   }
 
-  function requireAdmin(req, res, next) {
-    if (!isAuthed(req)) return res.redirect('/admin/login');
+  function requireAuth(req, res, next) {
+    if (!isAuthed(req)) return res.redirect('/login');
+    next();
+  }
+
+  /** Returns the guilds the current user manages (from session). */
+  function getUserGuilds(req) {
+    return req.session.userGuilds ?? [];
+  }
+
+  /** Middleware: ensure the user manages the guild in :guildId. */
+  function requireGuildAccess(req, res, next) {
+    const guildId = req.params.guildId;
+    if (!guildId) return res.redirect('/dashboard');
+
+    const userGuilds = getUserGuilds(req);
+    const manages = userGuilds.some(
+      (g) => g.id === guildId && (g.owner || (g.permissions & 0x20) !== 0) // Manage Guild permission = 0x20
+    );
+    if (!manages) {
+      return res.status(403).send('<h1>Forbidden</h1><p>You do not manage this server.</p><a href="/dashboard">Back to servers</a>');
+    }
     next();
   }
 
@@ -170,29 +191,78 @@ export function createWebApp(client) {
     });
   });
 
-  app.get('/admin/login', (req, res) => {
-    if (isAuthed(req)) return res.redirect('/');
-    return renderPage(res, 'login', { title: 'EasySupport — Admin Login', active: 'login', error: null });
+  app.get('/login', (req, res) => {
+    if (isAuthed(req)) return res.redirect('/dashboard');
+    const params = new URLSearchParams({
+      client_id: config.clientId,
+      redirect_uri: config.oauthRedirectUri,
+      response_type: 'code',
+      scope: config.oauthScope,
+      prompt: 'consent',
+    });
+    return res.redirect(`https://discord.com/api/oauth2/authorize?${params}`);
   });
 
-  app.post('/admin/login', (req, res) => {
-    const { user, pass } = req.body;
-    if (user === config.adminUser && pass === config.adminPassword) {
-      req.session.admin = true;
-      req.session.adminUser = user;
-      return res.redirect('/');
+  app.get('/auth/callback', async (req, res) => {
+    const code = req.query.code;
+    if (!code) return res.redirect('/login?error=missing_code');
+
+    try {
+      const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: config.clientId,
+          client_secret: config.clientSecret,
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: config.oauthRedirectUri,
+        }),
+      });
+      if (!tokenResponse.ok) throw new Error('Token exchange failed');
+      const tokenData = await tokenResponse.json();
+
+      const userResponse = await fetch('https://discord.com/api/users/@me', {
+        headers: { Authorization: `${tokenData.token_type} ${tokenData.access_token}` },
+      });
+      if (!userResponse.ok) throw new Error('Failed to fetch user');
+      const user = await userResponse.json();
+
+      const guildsResponse = await fetch('https://discord.com/api/users/@me/guilds', {
+        headers: { Authorization: `${tokenData.token_type} ${tokenData.access_token}` },
+      });
+      const guilds = guildsResponse.ok ? (await guildsResponse.json()) : [];
+
+      // Only keep guilds the user manages (owner or Manage Guild permission)
+      const managedGuilds = guilds.filter(
+        (g) => g.owner || (g.permissions & 0x20) !== 0
+      );
+
+      req.session.discordUser = {
+        id: user.id,
+        username: user.username,
+        globalName: user.global_name ?? user.username,
+        avatar: user.avatar,
+        discriminator: user.discriminator,
+      };
+      req.session.userGuilds = managedGuilds;
+      req.session.accessToken = tokenData.access_token;
+
+      return res.redirect('/dashboard');
+    } catch (error) {
+      console.error('[oauth] Callback error:', error);
+      return res.redirect('/login?error=callback_failed');
     }
-    return renderPage(res, 'login', { title: 'EasySupport — Admin Login', active: 'login', error: 'Invalid credentials.' });
   });
 
-  app.get('/admin/logout', (req, res) => {
+  app.get('/logout', (req, res) => {
     req.session.destroy(() => {
       res.clearCookie('es_session');
       res.redirect('/');
     });
   });
 
-  app.get('/admin', requireAdmin, async (req, res) => {
+  app.get('/admin', requireAuth, async (req, res) => {
     const [status, announcements] = await Promise.all([
       getSystemStatus(),
       getAnnouncements(),
@@ -204,33 +274,68 @@ export function createWebApp(client) {
       announcements,
       hardcoded: HARDCODED_ANNOUNCEMENTS,
       statusUpdated: req.query.updated === 'status',
+      user: req.session.discordUser,
+      guilds: getUserGuilds(req),
     });
   });
 
-  app.post('/admin/status', requireAdmin, async (req, res) => {
+  app.post('/admin/status', requireAuth, async (req, res) => {
     const statusText = typeof req.body.status_text === 'string' ? req.body.status_text.trim() : '';
     if (!statusText || statusText.length > 255) {
       return res.redirect('/admin');
     }
-    await setSystemStatusWithAnnouncement(statusText, req.session.adminUser ?? 'admin');
+    await setSystemStatusWithAnnouncement(statusText, req.session.discordUser?.username ?? 'user');
     res.redirect('/admin?updated=status');
   });
 
-  app.post('/admin/announce', requireAdmin, async (req, res) => {
+  app.post('/admin/announce', requireAuth, async (req, res) => {
     const { key } = req.body;
     if (key) {
       const template = HARDCODED_ANNOUNCEMENTS.find((announcement) => announcement.key === key);
       if (!template) return res.redirect('/admin');
-      await createAnnouncement(template.title, template.content, req.session.adminUser ?? 'admin');
+      await createAnnouncement(template.title, template.content, req.session.discordUser?.username ?? 'user');
     } else {
       const title = typeof req.body.title === 'string' ? req.body.title.trim() : '';
       const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
       if (!title || title.length > 255 || !content) return res.redirect('/admin');
-      await createAnnouncement(title, content, req.session.adminUser ?? 'admin');
+      await createAnnouncement(title, content, req.session.discordUser?.username ?? 'user');
     }
     res.redirect('/admin');
   });
 
+  /* ---------------------------------- dashboard (guild-scoped) ---------------------------------- */
+
+  app.get('/dashboard', requireAuth, async (req, res) => {
+    const guilds = getUserGuilds(req);
+    if (guilds.length === 0) {
+      return renderPage(res, 'dashboard', {
+        title: 'EasySupport — Dashboard',
+        active: 'dashboard',
+        guilds: [],
+        user: req.session.discordUser,
+        noGuilds: true,
+      });
+    }
+    // Redirect to the first managed guild's dashboard
+    return res.redirect(`/dashboard/${guilds[0].id}`);
+  });
+
+  app.get('/dashboard/:guildId', requireAuth, requireGuildAccess, async (req, res) => {
+    const guildId = req.params.guildId;
+    const guild = client.guilds.cache.get(guildId);
+    const guilds = getUserGuilds(req);
+    const currentGuild = guilds.find((g) => g.id === guildId) ?? { id: guildId, name: guild?.name ?? 'Unknown Server' };
+
+    return renderPage(res, 'dashboard', {
+      title: `EasySupport — ${currentGuild.name}`,
+      active: 'dashboard',
+      guildId,
+      guildName: currentGuild.name,
+      guilds,
+      user: req.session.discordUser,
+      currentGuild,
+    });
+  });
   const MODULE_LABELS = {
     tickets: 'Tickets',
     moderation: 'Moderation',
@@ -244,33 +349,16 @@ export function createWebApp(client) {
     logging: 'Logging',
   };
 
-  /* ---------------------------------- dashboard ---------------------------------- */
+  /* ---------------------------------- dashboard (guild-scoped) ---------------------------------- */
 
-  app.get('/dashboard', requireAdmin, async (req, res) => {
-    const guildId = resolveGuildId();
-    if (!guildId) return res.redirect('/admin');
-
-    const guild = client.guilds.cache.get(guildId);
-    if (!guild) return res.redirect('/admin');
-
-    return renderPage(res, 'dashboard', {
-      title: 'EasySupport — Dashboard',
-      active: 'dashboard',
-      guildId,
-      guildName: guild.name,
-    });
-  });
-
-  app.get('/admin/modules/:module', requireAdmin, async (req, res) => {
-    const guildId = resolveGuildId();
-    if (!guildId) return res.redirect('/admin');
-
+  app.get('/admin/modules/:guildId/:module', requireAuth, requireGuildAccess, async (req, res) => {
+    const guildId = req.params.guildId;
     const module = req.params.module;
     const moduleSettings = getModuleSettings(module);
-    if (!moduleSettings) return res.redirect('/dashboard');
+    if (!moduleSettings) return res.redirect(`/dashboard/${guildId}`);
 
     const guild = client.guilds.cache.get(guildId);
-    if (!guild) return res.redirect('/admin');
+    if (!guild) return res.redirect(`/dashboard/${guildId}`);
 
     const settings = await getGuildSettings(guildId);
 
@@ -285,13 +373,11 @@ export function createWebApp(client) {
     });
   });
 
-  app.post('/admin/modules/:module', requireAdmin, async (req, res) => {
-    const guildId = resolveGuildId();
-    if (!guildId) return res.redirect('/admin');
-
+  app.post('/admin/modules/:guildId/:module', requireAuth, requireGuildAccess, async (req, res) => {
+    const guildId = req.params.guildId;
     const module = req.params.module;
     const moduleSettings = getModuleSettings(module);
-    if (!moduleSettings) return res.redirect('/dashboard');
+    if (!moduleSettings) return res.redirect(`/dashboard/${guildId}`);
 
     const updates = {};
     for (const field of moduleSettings) {
@@ -304,13 +390,8 @@ export function createWebApp(client) {
 
     await bulkUpdateGuildSettings(guildId, updates);
 
-    return res.redirect(`/admin/modules/${module}?saved=1`);
+    return res.redirect(`/admin/modules/${guildId}/${module}?saved=1`);
   });
-
-  function resolveGuildId() {
-    const guild = client.guilds.cache.first();
-    return guild ? guild.id : null;
-  }
 
   const COMMAND_NAMES = [
     'ticket',
@@ -451,16 +532,10 @@ export function createWebApp(client) {
     return MODULE_SETTINGS[module] ?? null;
   }
 
-  app.get('/admin/roles', requireAdmin, async (req, res) => {
-    const guildId = resolveGuildId();
-    if (!guildId) {
-      return res.redirect('/admin');
-    }
-
+  app.get('/admin/:guildId/roles', requireAuth, requireGuildAccess, async (req, res) => {
+    const guildId = req.params.guildId;
     const guild = client.guilds.cache.get(guildId);
-    if (!guild) {
-      return res.redirect('/admin');
-    }
+    if (!guild) return res.redirect(`/dashboard/${guildId}`);
 
     const roles = guild.roles.cache
       .filter((role) => !role.managed && role.id !== guild.id)
@@ -497,20 +572,14 @@ export function createWebApp(client) {
     });
   });
 
-  app.get('/admin/roles/:roleId', requireAdmin, async (req, res) => {
-    const guildId = resolveGuildId();
-    if (!guildId) {
-      return res.redirect('/admin');
-    }
-
+  app.get('/admin/:guildId/roles/:roleId', requireAuth, requireGuildAccess, async (req, res) => {
+    const guildId = req.params.guildId;
     const guild = client.guilds.cache.get(guildId);
-    if (!guild) {
-      return res.redirect('/admin');
-    }
+    if (!guild) return res.redirect(`/dashboard/${guildId}`);
 
     const role = guild.roles.cache.get(req.params.roleId);
     if (!role || role.managed || role.id === guild.id) {
-      return res.redirect('/admin/roles');
+      return res.redirect(`/admin/${guildId}/roles`);
     }
 
     const perms = await getRolePermissions(guildId, req.params.roleId);
@@ -530,21 +599,17 @@ export function createWebApp(client) {
     });
   });
 
-  app.post('/admin/roles/:roleId/toggle', requireAdmin, async (req, res) => {
-    const guildId = resolveGuildId();
-    if (!guildId) {
-      return res.redirect('/admin');
-    }
-
+  app.post('/admin/:guildId/roles/:roleId/toggle', requireAuth, requireGuildAccess, async (req, res) => {
+    const guildId = req.params.guildId;
     const { command_name: commandName, allowed } = req.body;
     if (!commandName || !COMMAND_NAMES.includes(commandName)) {
-      return res.redirect('/admin/roles');
+      return res.redirect(`/admin/${guildId}/roles`);
     }
 
     const isAllowed = allowed === 'true' || allowed === true;
     await setRolePermission(guildId, req.params.roleId, commandName, isAllowed);
 
-    res.redirect(`/admin/roles/${req.params.roleId}`);
+    res.redirect(`/admin/${guildId}/roles/${req.params.roleId}`);
   });
 
   app.use((req, res) => {

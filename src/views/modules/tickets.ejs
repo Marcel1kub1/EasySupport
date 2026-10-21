@@ -8,7 +8,7 @@
     <a href="/dashboard" class="button button--quiet">← Back to dashboard</a>
   </header>
 
-  <form method="post" action="/admin/modules/tickets" class="settings-form">
+  <form method="post" action="/admin/modules/<%= guildId %>/tickets" class="settings-form">
     <div class="settings-grid">
       <% 
       const settings = [

@@ -3,10 +3,8 @@ import {
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
-  BooleanBuilder,
 } from 'discord.js';
 import {
-  getGuild,
   isModuleEnabled,
   getAutomodConfig,
   setAutomodConfig,

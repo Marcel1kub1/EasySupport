@@ -9,7 +9,20 @@ const PROJECT_ROOT = path.join(import.meta.dirname, '..');
 
 test('existing commands load with no duplicates', async () => {
   const names = await loadCommandNames(path.join(PROJECT_ROOT, 'src', 'commands'));
-  assert.deepEqual([...names].sort(), ['blacklist', 'export', 'panel', 'setup']);
+  assert.deepEqual([...names].sort(), [
+    'anti_nuke',
+    'automod',
+    'economy',
+    'giveaways',
+    'highrankdm',
+    'leveling',
+    'logging',
+    'moderation',
+    'panel',
+    'setup',
+    'vouches',
+    'welcome_goodbye_boost',
+  ]);
 });
 
 test('loader walks nested directories and skips non-js files', async () => {

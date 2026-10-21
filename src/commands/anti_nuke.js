@@ -3,13 +3,8 @@ import {
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
-  StringSelectMenuBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
 } from 'discord.js';
 import {
-  getGuild,
   isModuleEnabled,
   getAntiNukeConfig,
   setAntiNukeConfig,

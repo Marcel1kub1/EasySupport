@@ -3,11 +3,8 @@ import {
   MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
-  ChannelSelectMenuBuilder,
-  ActionRowBuilder,
 } from 'discord.js';
 import {
-  getGuild,
   isModuleEnabled,
   getWelcomeGoodbyeBoostConfig,
   setWelcomeGoodbyeBoostConfig,

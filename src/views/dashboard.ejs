@@ -1,10 +1,154 @@
-<section class="dashboard-overview">
+<% if (noGuilds) { %>
+<section class="dashboard-empty">
   <header class="page-heading">
     <div>
       <p class="section-kicker">Dashboard</p>
-      <h1>Module overview</h1>
-      <p>Manage all EasySupport features from one place.</p>
+      <h1>No Servers Found</h1>
+      <p>You don't manage any Discord servers with EasySupport. Add EasySupport to a server and try again.</p>
     </div>
+  </header>
+  <div class="empty-state">
+    <p>Invite EasySupport to your server to get started:</p>
+    <a
+      href="https://discord.com/api/oauth2/authorize?client_id=<%= config.clientId ?? '' %>&permissions=8&scope=bot%20applications.commands"
+      class="button button--primary"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Add EasySupport to Your Server
+    </a>
+  </div>
+</section>
+
+<style>
+.dashboard-empty {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  text-align: center;
+}
+.empty-state {
+  margin-top: 32px;
+  padding: 32px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.empty-state p {
+  color: var(--muted);
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+</style>
+<% } else if (!guildId) { %>
+<section class="dashboard-servers">
+  <header class="page-heading">
+    <div>
+      <p class="section-kicker">Dashboard</p>
+      <h1>Select a Server</h1>
+      <p>Choose a server to configure its EasySupport settings.</p>
+    </div>
+  </header>
+
+  <div class="server-grid">
+    <% guilds.forEach((g) => { %>
+      <a href="/dashboard/<%= g.id %>" class="server-card">
+        <div class="server-card__icon">
+          <% if (g.icon) { %>
+            <img src="https://cdn.discordapp.com/icons/<%= g.id %>/<%= g.icon %>.png" alt="<%= g.name %>">
+          <% } else { %>
+            <span class="server-card__default">💬</span>
+          <% } %>
+        </div>
+        <div class="server-card__body">
+          <h3><%= g.name %></h3>
+          <p><%= g.owner ? 'Owner' : 'Manage Guild' %></p>
+        </div>
+        <span class="server-card__arrow">→</span>
+      </a>
+    <% }) %>
+  </div>
+</section>
+
+<style>
+.dashboard-servers {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.server-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+.server-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.server-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.4);
+  transform: translateY(-2px);
+}
+.server-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--surface-raised);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.server-card__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.server-card__default {
+  font-size: 24px;
+}
+.server-card__body {
+  flex: 1;
+}
+.server-card__body h3 {
+  font-size: 18px;
+  color: var(--ink);
+  margin: 0 0 6px 0;
+  font-weight: 700;
+}
+.server-card__body p {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+.server-card__arrow {
+  font-size: 18px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .dashboard-servers { padding: 16px; }
+  .server-grid { grid-template-columns: 1fr; }
+}
+</style>
+<% } else { %>
+<section class="dashboard-overview">
+  <header class="page-heading">
+    <div>
+      <p class="section-kicker">Dashboard — <%= guildName %></p>
+      <h1>Module overview</h1>
+      <p>Manage all EasySupport features for <%= guildName %>.</p>
+    </div>
+    <a href="/dashboard" class="button button--quiet">← Change server</a>
   </header>
 
   <div class="module-grid">
@@ -21,7 +165,7 @@
       { key: 'logging', icon: '📝', title: 'Logging', desc: 'Event tracking, log channels, audit trail.', count: 15 },
     ] %>
     <% modules.forEach((mod) => { %>
-      <a href="/admin/modules/<%= mod.key %>" class="module-card">
+      <a href="/admin/modules/<%= guildId %>/<%= mod.key %>" class="module-card">
         <div class="module-card__icon"><%= mod.icon %></div>
         <div class="module-card__body">
           <h3><%= mod.title %></h3>
@@ -127,3 +271,4 @@
   }
 }
 </style>
+<% } %>
