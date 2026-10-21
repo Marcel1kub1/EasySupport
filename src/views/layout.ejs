@@ -24,7 +24,7 @@
         <% if (user) { %>
           <div class="sidebar-account">
             <% if (user.avatar) { %>
-              <img class="sidebar-account__avatar" src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png?size=96" alt="">
+              <img class="sidebar-account__avatar" src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png?size=128" alt="">
             <% } else { %>
               <span class="sidebar-account__avatar sidebar-account__avatar--initial" aria-hidden="true"><%= (user.globalName ?? user.username).slice(0, 1) %></span>
             <% } %>

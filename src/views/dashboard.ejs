@@ -19,7 +19,7 @@
         <a class="guild-list__item" href="/dashboard/<%= guild.id %>">
           <span class="guild-list__avatar">
             <% if (guild.icon) { %>
-              <img src="https://cdn.discordapp.com/icons/<%= guild.id %>/<%= guild.icon %>.png?size=96" alt="">
+              <img src="https://cdn.discordapp.com/icons/<%= guild.id %>/<%= guild.icon %>.png?size=128" alt="">
             <% } else { %>
               <%= guild.name.slice(0, 1) %>
             <% } %>

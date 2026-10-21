@@ -274,7 +274,7 @@ export function createWebApp(client) {
       user: req.session.discordUser,
       currentGuild,
       botInGuild: Boolean(guild),
-      guildIcon: guild?.iconURL({ size: 96 }) ?? (currentGuild.icon ? `https://cdn.discordapp.com/icons/${guildId}/${currentGuild.icon}.png?size=96` : null),
+      guildIcon: guild?.iconURL({ size: 128 }) ?? (currentGuild.icon ? `https://cdn.discordapp.com/icons/${guildId}/${currentGuild.icon}.png?size=128` : null),
       memberCount: guild?.memberCount ?? null,
       channelCount: guild?.channels.cache.filter((channel) => channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement).size ?? 0,
       roleCount: roles.length,
