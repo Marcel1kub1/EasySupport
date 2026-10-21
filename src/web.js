@@ -4,6 +4,7 @@ import ejs from 'ejs';
 import { ChannelType } from 'discord.js';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import {
   getRolePermissions,
@@ -13,9 +14,9 @@ import {
   bulkUpdateGuildSettings,
 } from './db.js';
 
-const __dirname = path.resolve();
-const viewsDir = path.join(__dirname, 'src', 'views');
-const releaseDataPath = path.join(__dirname, 'src', 'data', 'releases.json');
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const viewsDir = path.join(projectRoot, 'src', 'views');
+const releaseDataPath = path.join(projectRoot, 'src', 'data', 'releases.json');
 const releaseFeed = JSON.parse(readFileSync(releaseDataPath, 'utf8'));
 const modules = [
   { key: 'tickets', short: 'TK', title: 'Tickets', desc: 'Panels, staff access, transcripts and intake.', command: 'panel', search: 'setup highrankdm' },
@@ -88,9 +89,9 @@ export function createWebApp(client) {
   app.set('views', viewsDir);
   app.set('view engine', 'ejs');
 
-  app.use(express.static(path.join(__dirname, 'src', 'public')));
-  app.use('/vendor/gsap', express.static(path.join(__dirname, 'node_modules', 'gsap', 'dist'), { index: false }));
-  app.use('/assets', express.static(path.join(__dirname, 'assets')));
+  app.use(express.static(path.join(projectRoot, 'src', 'public')));
+  app.use('/vendor/gsap', express.static(path.join(projectRoot, 'node_modules', 'gsap', 'dist'), { index: false }));
+  app.use('/assets', express.static(path.join(projectRoot, 'assets')));
   app.use(express.urlencoded({ extended: false }));
   app.use(express.json());
 
