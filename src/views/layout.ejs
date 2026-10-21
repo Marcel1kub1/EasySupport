@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="/assets/logo.png">
   <link rel="preload" href="/assets/fonts/cabinet-grotesk-bold.woff2" as="font" type="font/woff2" crossorigin>
   <title><%= title %></title>
-  <link rel="stylesheet" href="/site.css">
+  <link rel="stylesheet" href="/site.css?v=<%= siteCssVersion %>">
 </head>
 <body class="<%= active === 'home' ? 'public-page' : '' %>">
   <a class="skip-link" href="#main-content">Skip to content</a>

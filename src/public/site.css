@@ -213,12 +213,12 @@ button {
   transform: none;
 }
 
-.btn-wrapper {
+.save-button-wrapper {
   display: inline-flex;
   justify-content: flex-end;
 }
 
-.btn {
+.save-button {
   position: relative;
   display: inline-grid;
   min-width: 124px;
@@ -238,27 +238,27 @@ button {
   transition: border-color 240ms var(--ease-out), box-shadow 240ms var(--ease-out), transform 240ms var(--ease-out);
 }
 
-.btn:hover,
-.btn:focus-visible {
+.save-button:hover,
+.save-button:focus-visible {
   border-color: var(--accent);
   box-shadow: 0 4px 14px rgb(0 0 0 / 24%);
 }
 
-.btn:active {
+.save-button:active {
   transform: scale(.98);
 }
 
-.btn:focus-visible {
+.save-button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 
-.btn:disabled {
+.save-button:disabled {
   cursor: wait;
   opacity: .72;
 }
 
-.btn-main {
+.save-button__main {
   position: relative;
   display: flex;
   min-height: 42px;
@@ -268,7 +268,7 @@ button {
   white-space: nowrap;
 }
 
-.btn-dot {
+.save-button__dot {
   width: 8px;
   height: 8px;
   flex: 0 0 8px;
@@ -277,12 +277,12 @@ button {
   transition: transform 300ms var(--ease-out), background-color 300ms ease;
 }
 
-.btn-label {
+.save-button__label {
   display: inline-block;
   transition: transform 260ms var(--ease-out), opacity 220ms ease;
 }
 
-.btn-reveal {
+.save-button__reveal {
   position: absolute;
   z-index: 1;
   inset: 0;
@@ -300,65 +300,65 @@ button {
   transition: transform 300ms var(--ease-out), opacity 220ms ease;
 }
 
-.btn-reveal__label {
+.save-button__reveal-label {
   line-height: 1;
   white-space: nowrap;
 }
 
-.btn-reveal__label--saved {
+.save-button__reveal-label--saved {
   display: none;
 }
 
-.btn-arrow {
+.save-button__arrow {
   width: 16px;
   height: 16px;
   flex: 0 0 16px;
   transition: transform 260ms var(--ease-out);
 }
 
-.btn:hover .btn-main .btn-label,
-.btn:focus-visible .btn-main .btn-label,
-.btn[data-save-state="saved"] .btn-main .btn-label {
+.save-button:hover .save-button__main .save-button__label,
+.save-button:focus-visible .save-button__main .save-button__label,
+.save-button[data-save-state="saved"] .save-button__main .save-button__label {
   opacity: 0;
   transform: translateX(28px);
 }
 
-.btn:hover .btn-main .btn-dot,
-.btn:focus-visible .btn-main .btn-dot {
+.save-button:hover .save-button__main .save-button__dot,
+.save-button:focus-visible .save-button__main .save-button__dot {
   background: var(--accent);
   transform: scale(24);
 }
 
-.btn:hover .btn-reveal,
-.btn:focus-visible .btn-reveal,
-.btn[data-save-state="saved"] .btn-reveal {
+.save-button:hover .save-button__reveal,
+.save-button:focus-visible .save-button__reveal,
+.save-button[data-save-state="saved"] .save-button__reveal {
   opacity: 1;
   transform: translateX(0);
 }
 
-.btn:hover .btn-arrow,
-.btn:focus-visible .btn-arrow {
+.save-button:hover .save-button__arrow,
+.save-button:focus-visible .save-button__arrow {
   transform: translateX(2px);
 }
 
-.btn[data-save-state="saved"] .btn-reveal__label--prompt {
+.save-button[data-save-state="saved"] .save-button__reveal-label--prompt {
   display: none;
 }
 
-.btn[data-save-state="saved"] .btn-reveal__label--saved {
+.save-button[data-save-state="saved"] .save-button__reveal-label--saved {
   display: inline;
 }
 
-.btn[data-save-state="saving"] {
+.save-button[data-save-state="saving"] {
   border-color: var(--accent);
 }
 
-.btn[data-save-state="saving"] .btn-dot {
+.save-button[data-save-state="saving"] .save-button__dot {
   background: var(--accent);
   animation: save-icon-pulse 750ms ease-in-out infinite alternate;
 }
 
-.btn[data-save-state="error"] {
+.save-button[data-save-state="error"] {
   border-color: #a35b64;
   box-shadow: 0 0 0 2px rgb(242 163 168 / 18%);
 }
@@ -3360,7 +3360,7 @@ button {
   .toast,
   .role-picker__panel,
   .server-loading__words span,
-  .btn[data-save-state="saving"] .btn-dot {
+  .save-button[data-save-state="saving"] .save-button__dot {
     animation: none;
   }
 
@@ -3368,18 +3368,18 @@ button {
     display: none;
   }
 
-  .btn-label,
-  .btn-reveal,
-  .btn-arrow,
-  .btn-dot {
+  .save-button__label,
+  .save-button__reveal,
+  .save-button__arrow,
+  .save-button__dot {
     transition: none;
   }
 
-  .btn[data-save-state="saved"] .btn-main .btn-label {
+  .save-button[data-save-state="saved"] .save-button__main .save-button__label {
     opacity: 0;
   }
 
-  .btn[data-save-state="saved"] .btn-reveal {
+  .save-button[data-save-state="saved"] .save-button__reveal {
     opacity: 1;
     transform: none;
   }

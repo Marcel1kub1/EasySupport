@@ -2,6 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import ejs from 'ejs';
 import { ChannelType } from 'discord.js';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,6 +17,8 @@ import {
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const viewsDir = path.join(projectRoot, 'src', 'views');
+const siteCssPath = path.join(projectRoot, 'src', 'public', 'site.css');
+const siteCssVersion = createHash('sha256').update(readFileSync(siteCssPath)).digest('hex').slice(0, 12);
 const releaseDataPath = path.join(projectRoot, 'src', 'data', 'releases.json');
 const localReleaseFeed = JSON.parse(readFileSync(releaseDataPath, 'utf8'));
 const githubReleasesUrl = 'https://api.github.com/repos/Marcel1kub1/EasySupport/releases?per_page=10';
@@ -171,6 +174,7 @@ const templateDefaults = {
   releases: [],
   latestRelease: null,
   githubReleasesPage,
+  siteCssVersion,
   config,
 };
 
