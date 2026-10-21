@@ -484,6 +484,7 @@ export function createWebApp(client) {
       { key: 'welcome_dm', label: 'Welcome DM', type: 'toggle' },
       { key: 'close_timeout', label: 'Close Timeout', type: 'number', unit: 'min' },
       { key: 'max_tickets_per_user', label: 'Max Tickets Per User', type: 'number' },
+      { key: 'ticket_open_role', label: 'Ticket Access Role', type: 'role' },
       { key: 'staff_role', label: 'Staff Role', type: 'role' },
       { key: 'support_role', label: 'Support Role', type: 'role' },
       { key: 'ticket_prefix', label: 'Ticket Prefix', type: 'text' },

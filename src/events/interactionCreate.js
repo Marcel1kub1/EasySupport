@@ -15,6 +15,7 @@ import {
   countOpenTickets,
   createTicket,
   getGuild,
+  getGuildSettings,
   getTicketById,
   getTicketByChannel,
   getTicketMessages,
@@ -29,6 +30,7 @@ import {
 import { CATEGORIES, DEFAULT_STATUS, TICKET_STATUSES, getStatusMeta, resolveStaffRole } from '../categories.js';
 import { categoryArt } from '../art.js';
 import { saveTranscripts } from '../transcripts.js';
+import { hasTicketAccessRole } from '../tickets/access.js';
 
 const COLORS = { blurple: 0x5865f2, green: 0x57f287, red: 0xed4245, yellow: 0xfee75c };
 const PANEL_COOLDOWN_MS = 5_000;
@@ -196,7 +198,9 @@ async function onPanelClick(interaction, client) {
     });
   }
 
-  if (await isBlacklisted(interaction.guildId, interaction.user.id)) {
+  const dashboardSettings = await getGuildSettings(interaction.guildId);
+  const hasTicketAccess = hasTicketAccessRole(interaction.member, dashboardSettings.ticket_open_role);
+  if (!hasTicketAccess && await isBlacklisted(interaction.guildId, interaction.user.id)) {
     return interaction.reply({ content: 'You are not allowed to open tickets.', flags: MessageFlags.Ephemeral });
   }
 

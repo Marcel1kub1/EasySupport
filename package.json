@@ -9,7 +9,7 @@
     "start": "node src/index.js",
     "deploy": "node deploy-commands.js",
     "release:notes": "node scripts/generate-release-notes.js",
-    "test": "DISCORD_TOKEN=test CLIENT_ID=test DB_FILE=data/test.db node --experimental-sqlite --test src/commands/*.test.js src/loader.test.js"
+    "test": "DISCORD_TOKEN=test CLIENT_ID=test DB_FILE=data/test.db node --experimental-sqlite --test src/commands/*.test.js src/tickets/*.test.js src/loader.test.js"
   },
   "engines": {
     "node": ">=22.5"

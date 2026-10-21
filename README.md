@@ -91,6 +91,7 @@
 ### 🌐 Web Dashboard
 - **Guild-based management** — sign in with Discord and configure servers where you have Manage Server access
 - **Module settings** — configure channels, categories, roles, and feature options for each guild
+- **Ticket access role** — allow a selected role to open tickets even when its members are on the ticket blacklist
 - **Module and command search** — filter the guild’s module list by feature name, description, or command
 - **Searchable guild, channel, category, and role selectors** — find server settings without scrolling long native menus
 - **In-app dashboard navigation** — move between modules and overview without a full page reload
