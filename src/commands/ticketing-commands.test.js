@@ -1,6 +1,11 @@
-import { test } from 'node:test';
+import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import setup from './setup.js';
+import { pool } from '../db.js';
+
+after(async () => {
+  await pool.end();
+});
 
 function mock({ options = {}, subcommand = null, guildId = 'guild-1', admin = true, channel, guild } = {}) {
   const replies = [];
