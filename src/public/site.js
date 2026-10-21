@@ -1,11 +1,42 @@
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-document.querySelectorAll('[data-guild-switch]').forEach((select) => {
-  select.addEventListener('change', () => {
-    if (select.value) window.location.assign(`/dashboard/${encodeURIComponent(select.value)}`);
-  });
-});
+let toastTimer;
+let pickerSequence = 0;
+let navigationController;
 
+function makeElement(tag, className, text) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  if (text !== undefined) element.textContent = text;
+  return element;
+}
+
+function showToast(message, type = 'success') {
+  let region = document.querySelector('[data-toast-region]');
+  if (!region) {
+    region = makeElement('div', 'toast-region');
+    region.dataset.toastRegion = '';
+    region.setAttribute('aria-live', 'polite');
+    region.setAttribute('aria-relevant', 'additions text');
+    region.setAttribute('aria-atomic', 'false');
+    document.body.append(region);
+  }
+
+  const toast = makeElement('div', `toast toast--${type}`);
+  toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+  const indicator = makeElement('span', 'toast__indicator', type === 'error' ? '!' : '✓');
+  const text = makeElement('span', 'toast__message', message);
+  const dismiss = makeElement('button', 'toast__dismiss', '×');
+  dismiss.type = 'button';
+  dismiss.setAttribute('aria-label', 'Dismiss notification');
+  dismiss.addEventListener('click', () => toast.remove());
+  toast.append(indicator, text, dismiss);
+  region.replaceChildren(toast);
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => toast.remove(), 4200);
+}
+
+function initialiseWorkspace() {
 const moduleSearch = document.querySelector('[data-module-search]');
 if (moduleSearch) {
   const cards = [...document.querySelectorAll('[data-module-card]')];
@@ -28,27 +59,11 @@ if (moduleSearch) {
 
   moduleSearch.addEventListener('input', filterModules);
 
-  document.addEventListener('keydown', (event) => {
-    const target = event.target;
-    const isEditing = target instanceof HTMLElement &&
-      (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
-
-    if (event.key === '/' && !isEditing && !event.metaKey && !event.ctrlKey && !event.altKey) {
-      event.preventDefault();
-      moduleSearch.focus();
-    }
-  });
-}
-
-function makeElement(tag, className, text) {
-  const element = document.createElement(tag);
-  if (className) element.className = className;
-  if (text !== undefined) element.textContent = text;
-  return element;
 }
 
 function enhanceSingleRolePicker(select) {
-  if (!select.id || select.dataset.enhanced === 'true') return;
+  if (select.dataset.enhanced === 'true') return;
+  if (!select.id) select.id = `select-picker-${++pickerSequence}`;
 
   const wrapper = makeElement('div', 'role-picker');
   const trigger = makeElement('button', 'role-picker__trigger');
@@ -57,9 +72,21 @@ function enhanceSingleRolePicker(select) {
   const panel = makeElement('div', 'role-picker__panel');
   const search = makeElement('input', 'role-picker__search');
   const optionList = makeElement('div', 'role-picker__options');
-  const emptyState = makeElement('p', 'role-picker__empty', 'No matching roles.');
+  const emptyState = makeElement('p', 'role-picker__empty', 'No matching options.');
   const form = select.form ?? document;
   const label = [...form.querySelectorAll('label[for]')].find((item) => item.htmlFor === select.id);
+  const fieldLabel = select.closest('.setting-field')?.querySelector('.setting-label');
+  const groupLabel = select.matches('[data-guild-switch]')
+    ? select.closest('.guild-switcher')?.querySelector('span')?.textContent?.trim()
+    : null;
+  const kind = select.matches('[data-guild-switch]') ? 'guilds'
+    : /channel/i.test(fieldLabel?.textContent ?? '') ? 'channels'
+    : /role/i.test(fieldLabel?.textContent ?? '') ? 'roles'
+    : /category/i.test(fieldLabel?.textContent ?? '') ? 'categories'
+    : 'options';
+  const emptyLabel = select.options[0]?.value === ''
+    ? select.options[0].textContent.trim()
+    : `Select ${kind === 'options' ? 'an option' : `a ${kind.slice(0, -1)}`}`;
   const triggerId = `${select.id}-picker`;
   const listId = `${select.id}-options`;
 
@@ -70,12 +97,12 @@ function enhanceSingleRolePicker(select) {
   trigger.setAttribute('aria-haspopup', 'listbox');
   trigger.setAttribute('aria-expanded', 'false');
   trigger.setAttribute('aria-controls', listId);
-  value.textContent = select.selectedOptions[0]?.textContent?.trim() || 'Select a role';
+  value.textContent = select.selectedOptions[0]?.textContent?.trim() || emptyLabel;
   trigger.append(value, chevron);
   search.type = 'search';
-  search.placeholder = 'Search server roles';
+  search.placeholder = `Search ${kind}`;
   search.autocomplete = 'off';
-  search.setAttribute('aria-label', 'Search server roles');
+  search.setAttribute('aria-label', `${groupLabel ? `${groupLabel}: ` : ''}Search ${kind}`);
   optionList.id = listId;
   optionList.setAttribute('role', 'listbox');
   panel.hidden = true;
@@ -103,10 +130,12 @@ function enhanceSingleRolePicker(select) {
     label.htmlFor = triggerId;
     if (!label.id) label.id = `${select.id}-label`;
     trigger.setAttribute('aria-labelledby', `${label.id} ${triggerId}`);
+  } else {
+    trigger.setAttribute('aria-label', `${groupLabel ?? fieldLabel?.textContent?.trim() ?? `Select ${kind}`} selection`);
   }
 
   const syncValue = () => {
-    value.textContent = select.selectedOptions[0]?.textContent?.trim() || 'Select a role';
+    value.textContent = select.selectedOptions[0]?.textContent?.trim() || emptyLabel;
     for (const option of optionList.children) {
       option.setAttribute('aria-selected', String(option.dataset.value === select.value));
     }
@@ -121,6 +150,7 @@ function enhanceSingleRolePicker(select) {
     emptyState.hidden = true;
     if (returnFocus) trigger.focus();
   };
+  wrapper.addEventListener('picker:close', () => close());
 
   const open = () => {
     panel.hidden = false;
@@ -145,16 +175,18 @@ function enhanceSingleRolePicker(select) {
     const query = search.value.trim().toLocaleLowerCase();
     let visibleCount = 0;
     for (const option of optionList.children) {
-      option.hidden = !option.textContent.toLocaleLowerCase().includes(query);
+      option.hidden = !`${option.textContent} ${option.dataset.value}`.toLocaleLowerCase().includes(query);
       if (!option.hidden) visibleCount += 1;
     }
     emptyState.hidden = visibleCount > 0;
   });
 
   search.addEventListener('keydown', (event) => {
-    if (event.key === 'ArrowDown') {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
-      [...optionList.children].find((option) => !option.hidden)?.focus();
+      const options = [...optionList.children].filter((option) => !option.hidden);
+      const selected = options.find((option) => option.dataset.value === select.value);
+      (event.key === 'ArrowUp' && selected ? selected : options[0])?.focus();
     } else if (event.key === 'Escape') {
       event.preventDefault();
       close(true);
@@ -194,12 +226,15 @@ function enhanceSingleRolePicker(select) {
   });
 
   select.addEventListener('change', syncValue);
-  document.addEventListener('click', (event) => {
-    if (!wrapper.contains(event.target) && !panel.hidden) close();
-  });
 }
 
-document.querySelectorAll('select[data-role-picker="single"]').forEach(enhanceSingleRolePicker);
+document.querySelectorAll('.app-shell select:not([multiple])').forEach(enhanceSingleRolePicker);
+
+document.querySelectorAll('[data-guild-switch]').forEach((select) => {
+  select.addEventListener('change', () => {
+    if (select.value) navigateDashboard(`/dashboard/${encodeURIComponent(select.value)}`);
+  });
+});
 
 function enhanceRoleListPicker(widget) {
   const field = widget.closest('.setting-field');
@@ -304,7 +339,7 @@ document.querySelectorAll('[data-role-multiselect]').forEach(enhanceRoleListPick
 document.querySelectorAll('.settings-form').forEach((form) => {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const submitButton = form.querySelector('button[type="submit"]');
+    const submitButton = form.querySelector('[data-save-button]');
     if (!submitButton) return;
 
     let status = form.querySelector('[data-form-status]');
@@ -316,9 +351,9 @@ document.querySelectorAll('.settings-form').forEach((form) => {
       form.querySelector('.form-actions')?.prepend(status);
     }
 
-    const originalLabel = submitButton.textContent;
-    submitButton.textContent = 'Saving changes…';
     submitButton.disabled = true;
+    submitButton.dataset.saveState = 'saving';
+    submitButton.setAttribute('aria-label', 'Saving settings');
     status.textContent = 'Saving your settings.';
 
     try {
@@ -331,17 +366,20 @@ document.querySelectorAll('.settings-form').forEach((form) => {
       if (new URL(response.url).pathname !== new URL(form.action, window.location.href).pathname) {
         throw new Error('The session expired before the settings could be saved.');
       }
-      submitButton.textContent = 'Settings saved';
-      submitButton.classList.add('button--saved');
+      submitButton.dataset.saveState = 'saved';
+      submitButton.setAttribute('aria-label', 'Settings saved');
       status.textContent = 'Your settings have been saved.';
+      showToast('Settings saved', 'success');
     } catch (error) {
       console.error('[dashboard] Unable to save module settings:', error);
-      submitButton.textContent = 'Save failed';
+      submitButton.dataset.saveState = 'error';
+      submitButton.setAttribute('aria-label', 'Save failed');
       status.textContent = 'The settings could not be saved. Please try again.';
+      showToast('Could not save settings. Please try again.', 'error');
     } finally {
       window.setTimeout(() => {
-        submitButton.textContent = originalLabel;
-        submitButton.classList.remove('button--saved');
+        submitButton.dataset.saveState = 'idle';
+        submitButton.setAttribute('aria-label', submitButton.dataset.defaultLabel);
         submitButton.disabled = false;
       }, 1800);
     }
@@ -400,6 +438,7 @@ document.querySelectorAll('.permission-toggle input, .role-command-row input').f
       console.error('[dashboard] Cannot save role permission without a guild ID.');
       input.checked = !input.checked;
       getPermissionStatus().textContent = 'Could not save this permission because the guild is unavailable.';
+      showToast('Could not save this permission.', 'error');
       return;
     }
     const previousValue = !input.checked;
@@ -418,10 +457,12 @@ document.querySelectorAll('.permission-toggle input, .role-command-row input').f
         throw new Error('The session expired before the permission could be saved.');
       }
       status.textContent = `Permission for /${cmd} saved.`;
+      showToast(`/${cmd} permission saved`, 'success');
     } catch (error) {
       console.error('[dashboard] Unable to save role permission:', error);
       input.checked = previousValue;
       status.textContent = `Could not save /${cmd}. Try again.`;
+      showToast(`Could not save /${cmd} permission.`, 'error');
     } finally {
       input.disabled = false;
     }
@@ -546,3 +587,113 @@ function initialiseMotion() {
 }
 
 initialiseMotion();
+}
+
+async function navigateDashboard(url, { replace = false, restoreScroll = false } = {}) {
+  const target = new URL(url, window.location.href);
+  if (target.origin !== window.location.origin) {
+    window.location.assign(target.href);
+    return;
+  }
+
+  const shell = document.querySelector('.app-shell');
+  if (!shell) {
+    window.location.assign(target.href);
+    return;
+  }
+  navigationController?.abort();
+  const controller = new AbortController();
+  navigationController = controller;
+  const nextGuildId = target.pathname.match(/^\/dashboard\/([^/]+)/)?.[1] ?? '';
+  const isChangingGuild = Boolean(nextGuildId && nextGuildId !== shell.dataset.guildId);
+  const serverLoader = shell.querySelector('[data-server-loading]');
+
+  shell.setAttribute('aria-busy', 'true');
+  shell.classList.add('is-navigating');
+  if (isChangingGuild && serverLoader) {
+    serverLoader.hidden = false;
+    serverLoader.setAttribute('aria-hidden', 'false');
+  }
+
+  try {
+    const response = await fetch(target.href, {
+      headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
+      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
+    });
+    if (!response.ok) throw new Error(`Page navigation returned HTTP ${response.status}`);
+    if (response.redirected && new URL(response.url).pathname.startsWith('/login')) {
+      window.location.assign(response.url);
+      return;
+    }
+
+    const nextDocument = new DOMParser().parseFromString(await response.text(), 'text/html');
+    const nextShell = nextDocument.querySelector('.app-shell');
+    if (!nextShell) throw new Error('The requested page did not contain the dashboard shell.');
+
+    shell.replaceWith(nextShell);
+    document.title = nextDocument.title;
+    if (replace) history.replaceState({}, '', target.href);
+    else if (!restoreScroll) history.pushState({}, '', target.href);
+
+    const { gsap, ScrollTrigger } = window;
+    if (gsap && ScrollTrigger) ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+    initialiseWorkspace();
+    if (restoreScroll) window.scrollTo({ top: 0, behavior: 'instant' });
+    else window.scrollTo({ top: 0, behavior: reducedMotion.matches ? 'instant' : 'smooth' });
+    const heading = nextShell.querySelector('.workspace h1');
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    }
+  } catch (error) {
+    if (controller.signal.aborted) return;
+    if (serverLoader) {
+      serverLoader.hidden = true;
+      serverLoader.setAttribute('aria-hidden', 'true');
+    }
+    console.error('[dashboard] In-app navigation failed; falling back to a full page load:', error);
+    window.location.assign(target.href);
+  }
+}
+
+document.addEventListener('click', (event) => {
+  const link = event.target.closest('a[href]');
+  if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  if (!link.closest('.app-shell') || link.target || link.hasAttribute('download')) return;
+
+  const target = new URL(link.href, window.location.href);
+  if (target.origin !== window.location.origin) return;
+  if (!/^\/(?:dashboard|admin)\//.test(target.pathname)) return;
+  if (target.pathname === window.location.pathname && target.search === window.location.search) {
+    event.preventDefault();
+    return;
+  }
+
+  event.preventDefault();
+  navigateDashboard(target.href);
+});
+
+document.addEventListener('pointerdown', (event) => {
+  document.querySelectorAll('.role-picker.is-open').forEach((wrapper) => {
+    if (!wrapper.contains(event.target)) wrapper.dispatchEvent(new Event('picker:close'));
+  });
+});
+
+document.addEventListener('keydown', (event) => {
+  const target = event.target;
+  const isEditing = target instanceof HTMLElement &&
+    (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+  if (event.key === '/' && !isEditing && !event.metaKey && !event.ctrlKey && !event.altKey) {
+    const search = document.querySelector('[data-module-search]');
+    if (search) {
+      event.preventDefault();
+      search.focus();
+    }
+  }
+});
+
+window.addEventListener('popstate', () => {
+  navigateDashboard(window.location.href, { replace: true, restoreScroll: true });
+});
+
+initialiseWorkspace();

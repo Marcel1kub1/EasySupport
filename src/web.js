@@ -17,7 +17,13 @@ import {
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const viewsDir = path.join(projectRoot, 'src', 'views');
 const releaseDataPath = path.join(projectRoot, 'src', 'data', 'releases.json');
-const releaseFeed = JSON.parse(readFileSync(releaseDataPath, 'utf8'));
+const localReleaseFeed = JSON.parse(readFileSync(releaseDataPath, 'utf8'));
+const githubReleasesUrl = 'https://api.github.com/repos/Marcel1kub1/EasySupport/releases?per_page=10';
+const githubReleasesPage = 'https://github.com/Marcel1kub1/EasySupport/releases';
+const releaseCacheDuration = 5 * 60 * 1000;
+let releaseCache = Array.isArray(localReleaseFeed.releases) ? localReleaseFeed.releases : [];
+let releaseCacheUpdatedAt = 0;
+let releaseRefreshPromise;
 const modules = [
   { key: 'tickets', short: 'TK', title: 'Tickets', desc: 'Panels, staff access, transcripts and intake.', command: 'panel', search: 'setup highrankdm' },
   { key: 'moderation', short: 'MD', title: 'Moderation', desc: 'Staff tools, warnings and action logs.', command: 'moderation' },
@@ -49,8 +55,99 @@ function isReleaseEntry(release) {
   );
 }
 
-if (!Array.isArray(releaseFeed.releases) || !releaseFeed.releases.every(isReleaseEntry)) {
+if (!Array.isArray(localReleaseFeed.releases) || !localReleaseFeed.releases.every(isReleaseEntry)) {
   throw new Error(`Invalid local release feed at ${releaseDataPath}`);
+}
+
+function releaseChanges(body) {
+  const changes = {};
+  let category = 'Release notes';
+
+  for (const rawLine of body.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    const heading = line.match(/^#{1,6}\s+(.+)$/);
+    if (heading) {
+      category = heading[1].replaceAll('**', '').replaceAll('`', '');
+      continue;
+    }
+
+    const entry = line
+      .replace(/^[-*+]\s+/, '')
+      .replace(/^\d+\.\s+/, '')
+      .replaceAll('**', '')
+      .replaceAll('`', '');
+    changes[category] ??= [];
+    changes[category].push(entry);
+  }
+
+  return changes;
+}
+
+function mapGitHubRelease(release) {
+  if (
+    !release ||
+    typeof release.tag_name !== 'string' ||
+    typeof release.html_url !== 'string' ||
+    typeof release.published_at !== 'string' ||
+    release.draft ||
+    release.prerelease
+  ) {
+    return null;
+  }
+
+  const body = typeof release.body === 'string' ? release.body : '';
+  const bodyLines = body.trim().split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const summaryLine = bodyLines.find((line) => !/^#{1,6}\s|^[-*+]\s|^\d+\.\s/.test(line));
+  const summary = (summaryLine ?? bodyLines[0] ?? release.name ?? release.tag_name)
+    .replace(/^[-*+]\s+/, '')
+    .replaceAll('**', '')
+    .replaceAll('`', '');
+
+  return {
+    version: release.tag_name,
+    title: release.name?.trim() || `EasySupport ${release.tag_name}`,
+    date: release.published_at.slice(0, 10),
+    summary: summary.length > 240 ? `${summary.slice(0, 237)}...` : summary,
+    changes: releaseChanges(body),
+    commands: [],
+    files: [],
+    url: release.html_url,
+  };
+}
+
+export async function getReleaseFeed() {
+  if (Date.now() - releaseCacheUpdatedAt < releaseCacheDuration) return releaseCache;
+  if (releaseRefreshPromise) return releaseRefreshPromise;
+
+  releaseRefreshPromise = (async () => {
+    try {
+      const response = await fetch(githubReleasesUrl, {
+        headers: {
+          Accept: 'application/vnd.github+json',
+          'User-Agent': 'EasySupport-Guild-Dashboard',
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!response.ok) throw new Error(`GitHub Releases API returned HTTP ${response.status}`);
+
+      const payload = await response.json();
+      if (!Array.isArray(payload)) throw new Error('GitHub Releases API returned an invalid release list');
+
+      releaseCache = payload.map(mapGitHubRelease).filter(Boolean);
+      releaseCacheUpdatedAt = Date.now();
+    } catch (error) {
+      console.error('[releases] Could not refresh GitHub releases; using the last available feed:', error);
+      releaseCacheUpdatedAt = Date.now();
+    } finally {
+      releaseRefreshPromise = undefined;
+    }
+
+    return releaseCache;
+  })();
+
+  return releaseRefreshPromise;
 }
 
 const templateDefaults = {
@@ -71,8 +168,9 @@ const templateDefaults = {
   channelCount: 0,
   roleCount: 0,
   modules,
-  releases: releaseFeed.releases,
-  latestRelease: releaseFeed.releases[0] ?? null,
+  releases: [],
+  latestRelease: null,
+  githubReleasesPage,
   config,
 };
 
@@ -241,6 +339,7 @@ export function createWebApp(client) {
     const guildId = req.params.guildId;
     const guild = client.guilds.cache.get(guildId);
     if (!guild) return res.redirect(`/dashboard/${guildId}`);
+    const releases = await getReleaseFeed();
 
     return renderPage(res, 'updates', {
       title: 'EasySupport — What’s new',
@@ -250,14 +349,15 @@ export function createWebApp(client) {
       guilds: getUserGuilds(req),
       user: req.session.discordUser,
       botInGuild: true,
-      releases: releaseFeed.releases,
-      latestRelease: releaseFeed.releases[0] ?? null,
+      releases,
+      latestRelease: releases[0] ?? null,
     });
   });
 
   app.get('/dashboard/:guildId', requireAuth, requireGuildAccess, async (req, res) => {
     const guildId = req.params.guildId;
     const guild = client.guilds.cache.get(guildId);
+    const releases = await getReleaseFeed();
     const guilds = getUserGuilds(req);
     const currentGuild = guilds.find((g) => g.id === guildId) ?? { id: guildId, name: guild?.name ?? 'Unknown Server' };
     const roles = guild?.roles.cache
@@ -278,6 +378,8 @@ export function createWebApp(client) {
       memberCount: guild?.memberCount ?? null,
       channelCount: guild?.channels.cache.filter((channel) => channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement).size ?? 0,
       roleCount: roles.length,
+      releases,
+      latestRelease: releases[0] ?? null,
     });
   });
   const MODULE_LABELS = {

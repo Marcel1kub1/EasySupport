@@ -92,27 +92,30 @@
 - **Guild-based management** — sign in with Discord and configure servers where you have Manage Server access
 - **Module settings** — configure channels, categories, roles, and feature options for each guild
 - **Module and command search** — filter the guild’s module list by feature name, description, or command
-- **Searchable Discord role controls** — select one role or manage role lists using real guild roles
+- **Searchable guild, channel, category, and role selectors** — find server settings without scrolling long native menus
+- **In-app dashboard navigation** — move between modules and overview without a full page reload
 - **Staff role permissions** — grant or deny command access for the roles in each guild
-- **Settings persistence** — all changes saved to MySQL in real-time
-- **Local release notes** — show changelog entries included with the installed self-hosted version
+- **Save notifications** — receive custom success and error notices when settings or permissions are saved
+- **Animated save controls and server loading state** — clear feedback while settings save or a guild opens
+- **Settings persistence** — all changes saved to MySQL in real time
+- **GitHub release notes** — show published EasySupport releases in the guild dashboard
 
 ### 👥 Role-Based Command Permissions
 - Configure which staff roles can run each command from the guild dashboard
 - Admins with `Administrator` permission always bypass checks
 - Default fallback to Discord's native permission system when no role config exists
 
-### 📰 Local release notes
+### 📰 GitHub release notes
 
-Release notes are generated locally from Git history; the project does not send code to an AI service or use a hosted update API. The generator groups commit subjects using `scripts/release-notes.rules.json`, lists changed paths, and includes slash-command definitions when their command files changed. These are factual, editable notes—not AI-written summaries.
+The dashboard checks the public GitHub Releases API for published EasySupport releases when a guild dashboard or release-notes page is opened. Results are cached for five minutes and include a link to the original release. If GitHub is temporarily unavailable, the dashboard logs the fetch error and uses the last locally generated feed when available.
 
-Before generating notes, set `package.json` to the release version and commit or tag the changes. Then provide the previous release ref and matching version:
+Maintainers can also generate factual draft notes locally from Git history; this does not send code to an AI service. The generator groups commit subjects using `scripts/release-notes.rules.json`, lists changed paths, and includes slash-command definitions when their command files changed. Set `package.json` to the release version and provide the previous release ref:
 
 ```bash
 npm run release:notes -- --from v2.2.0 --version 2.3.0
 ```
 
-Review and edit `src/data/releases.json` and `src/data/releases.md`, then include them with the repository update. The dashboard shows the feed after a self-hosted instance receives that update and restarts. It cannot notify an offline instance about a remote push before the instance installs the change. Read and dismiss state is stored in that browser only; no Discord message is sent.
+Review and edit `src/data/releases.json` and `src/data/releases.md` before publishing if you want those local notes to serve as a fallback. GitHub release notes are visible to a running instance the next time someone opens the dashboard; an offline instance cannot display changes while it is offline. Read and dismiss state is stored in that browser only; no Discord message is sent.
 
 ## 🖼️ Preview
 

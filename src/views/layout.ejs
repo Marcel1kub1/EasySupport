@@ -14,7 +14,7 @@
   <a class="skip-link" href="#main-content">Skip to content</a>
 
   <% if (active === 'dashboard' || active?.startsWith('module') || active === 'roles' || active === 'updates') { %>
-    <div class="app-shell">
+    <div class="app-shell" data-guild-id="<%= guildId || '' %>">
       <aside class="app-sidebar" aria-label="Guild dashboard">
         <a class="app-brand" href="<%= guildId ? `/dashboard/${guildId}` : '/dashboard' %>">
           <img src="/assets/logo.png" width="36" height="36" alt="">
@@ -105,6 +105,21 @@
           <% if (error) { %><div class="flash flash--error" role="alert"><%= error %></div><% } %>
           <%- body %>
         </main>
+      </div>
+      <div class="server-loading" data-server-loading role="status" aria-live="polite" aria-label="Loading server" aria-hidden="true" hidden>
+        <div class="server-loading__card">
+          <div class="server-loading__loader">
+            <span>Loading</span>
+            <span class="server-loading__words" aria-hidden="true">
+              <span>buttons</span>
+              <span>forms</span>
+              <span>switches</span>
+              <span>cards</span>
+              <span>buttons</span>
+            </span>
+          </div>
+          <p>Opening your server workspace</p>
+        </div>
       </div>
     </div>
   <% } else { %>

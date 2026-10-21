@@ -2,14 +2,15 @@
   <header class="page-intro" data-reveal>
     <p class="eyebrow">Release feed · <%= guildName %></p>
     <h1>What’s new.</h1>
-    <p>Updates shipped with the version installed on this self-hosted instance.</p>
+    <p>Published updates from the EasySupport GitHub repository.</p>
   </header>
 
   <% if (releases.length === 0) { %>
     <div class="updates-empty" data-reveal>
       <span class="updates-empty__rule" aria-hidden="true"></span>
-      <h2>No release notes have been published here yet.</h2>
-      <p>When a maintainer includes a generated release feed with an update, its notes will appear on this page after the instance restarts.</p>
+      <h2>No published releases are available right now.</h2>
+      <p>This page checks GitHub for published EasySupport releases. Try again later or browse the releases directly.</p>
+      <a class="text-link" href="<%= githubReleasesPage %>" target="_blank" rel="noopener noreferrer">Browse GitHub releases <span aria-hidden="true">↗</span></a>
       <a class="text-link" href="/dashboard/<%= guildId %>">Back to overview <span aria-hidden="true">↗</span></a>
     </div>
   <% } else { %>
@@ -23,6 +24,9 @@
             </div>
             <time datetime="<%= release.date %>"><%= release.date %></time>
           </header>
+          <% if (release.url) { %>
+            <a class="text-link release-card__source" href="<%= release.url %>" target="_blank" rel="noopener noreferrer">View on GitHub <span aria-hidden="true">↗</span></a>
+          <% } %>
           <p class="release-card__summary"><%= release.summary %></p>
           <% Object.entries(release.changes).forEach(([category, entries]) => { if (entries.length) { %>
             <section class="release-card__group">
