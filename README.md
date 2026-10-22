@@ -118,6 +118,15 @@ npm run release:notes -- --from v2.3.0 --version 2.4.0
 
 Review and edit `src/data/releases.json` and `src/data/releases.md` before publishing if you want those local notes to serve as a fallback. GitHub release notes are visible to a running instance the next time someone opens the dashboard; an offline instance cannot display changes while it is offline. Read and dismiss state is stored in that browser only; no Discord message is sent.
 
+### 📡 Private status API
+
+Set a unique `STATUS_HEALTH_API_TOKEN` (at least 32 characters) in the bot's private environment
+to enable `GET /api/status/health`. EasyVStatus calls this endpoint with a Bearer token to read
+the Discord client's ready state and run a live `SELECT 1` against the bot's MySQL pool. The
+response contains only component states and generic details; it does not include database
+credentials or host information. Use the same token for `MAIN_SYSTEMS_API_TOKEN` in EasyVStatus.
+The public `GET /healthz` endpoint independently confirms that the website gateway responds.
+
 ## 🖼️ Preview
 
 **The ticket panel** (`/panel` — one button per category, handled-by pills per field):

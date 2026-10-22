@@ -199,6 +199,10 @@ function enhanceSingleRolePicker(select) {
     select.value = option.dataset.value;
     select.dispatchEvent(new Event('change', { bubbles: true }));
     syncValue();
+    wrapper.classList.remove('is-selecting');
+    void wrapper.offsetWidth;
+    wrapper.classList.add('is-selecting');
+    window.setTimeout(() => wrapper.classList.remove('is-selecting'), 420);
     close(true);
   });
 
@@ -378,6 +382,7 @@ document.querySelectorAll('.settings-form').forEach((form) => {
       showToast('Could not save settings. Please try again.', 'error');
     } finally {
       window.setTimeout(() => {
+        if (!submitButton.isConnected) return;
         submitButton.dataset.saveState = 'idle';
         submitButton.setAttribute('aria-label', submitButton.dataset.defaultLabel);
         submitButton.disabled = false;
@@ -628,9 +633,23 @@ async function navigateDashboard(url, { replace = false, restoreScroll = false }
 
     const nextDocument = new DOMParser().parseFromString(await response.text(), 'text/html');
     const nextShell = nextDocument.querySelector('.app-shell');
-    if (!nextShell) throw new Error('The requested page did not contain the dashboard shell.');
+    if (!nextShell) {
+      if (response.redirected) {
+        window.location.assign(response.url);
+        return;
+      }
+      throw new Error('The requested page did not contain the dashboard shell.');
+    }
+
+    const currentWorkspace = shell.querySelector('.workspace');
+    currentWorkspace?.classList.add('workspace--leaving');
+    if (!reducedMotion.matches) {
+      await new Promise((resolve) => window.setTimeout(resolve, 150));
+    }
 
     shell.replaceWith(nextShell);
+    nextShell.classList.remove('is-navigating');
+    nextShell.setAttribute('aria-busy', 'false');
     document.title = nextDocument.title;
     if (replace) history.replaceState({}, '', target.href);
     else if (!restoreScroll) history.pushState({}, '', target.href);
@@ -638,6 +657,11 @@ async function navigateDashboard(url, { replace = false, restoreScroll = false }
     const { gsap, ScrollTrigger } = window;
     if (gsap && ScrollTrigger) ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
     initialiseWorkspace();
+    const nextWorkspace = nextShell.querySelector('.workspace');
+    if (nextWorkspace && !reducedMotion.matches) {
+      nextWorkspace.classList.add('workspace--entering');
+      nextWorkspace.addEventListener('animationend', () => nextWorkspace.classList.remove('workspace--entering'), { once: true });
+    }
     if (restoreScroll) window.scrollTo({ top: 0, behavior: 'instant' });
     else window.scrollTo({ top: 0, behavior: reducedMotion.matches ? 'instant' : 'smooth' });
     const heading = nextShell.querySelector('.workspace h1');
@@ -651,8 +675,11 @@ async function navigateDashboard(url, { replace = false, restoreScroll = false }
       serverLoader.hidden = true;
       serverLoader.setAttribute('aria-hidden', 'true');
     }
-    console.error('[dashboard] In-app navigation failed; falling back to a full page load:', error);
-    window.location.assign(target.href);
+    shell.classList.remove('is-navigating');
+    shell.setAttribute('aria-busy', 'false');
+    shell.querySelector('.workspace')?.classList.remove('workspace--leaving');
+    console.error('[dashboard] In-app navigation failed:', error);
+    showToast('Could not open that page. Please try again.', 'error');
   }
 }
 

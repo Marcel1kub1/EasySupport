@@ -33,4 +33,5 @@ export const config = {
   // Discord OAuth2 for multi-server dashboard
   oauthRedirectUri: required('OAUTH_REDIRECT_URI'),
   oauthScope: process.env.OAUTH_SCOPE ?? 'identify guilds',
+  statusHealthApiToken: process.env.STATUS_HEALTH_API_TOKEN ?? '',
 };

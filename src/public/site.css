@@ -220,28 +220,29 @@ button {
 
 .save-button {
   position: relative;
-  display: inline-grid;
-  min-width: 124px;
-  min-height: 44px;
+  display: inline-flex;
+  min-width: 150px;
+  min-height: 46px;
   align-items: center;
+  justify-content: center;
+  gap: 15px;
   overflow: hidden;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface-raised);
-  color: var(--ink);
+  padding: 0 18px;
+  border: 1px solid #8176e5;
+  border-radius: 11px;
+  background: var(--accent-strong);
+  color: #fff;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
-  text-align: left;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 18%);
-  transition: border-color 240ms var(--ease-out), box-shadow 240ms var(--ease-out), transform 240ms var(--ease-out);
+  transition: border-color 220ms var(--ease-out), background-color 220ms var(--ease-out), box-shadow 220ms var(--ease-out), transform 220ms var(--ease-out);
 }
 
 .save-button:hover,
 .save-button:focus-visible {
-  border-color: var(--accent);
-  box-shadow: 0 4px 14px rgb(0 0 0 / 24%);
+  border-color: #a9a0ff;
+  background: #7568df;
+  box-shadow: 0 7px 20px rgb(103 90 209 / 25%);
 }
 
 .save-button:active {
@@ -255,117 +256,107 @@ button {
 
 .save-button:disabled {
   cursor: wait;
-  opacity: .72;
+  opacity: .82;
 }
 
-.save-button__main {
+.save-button__text {
   position: relative;
-  display: flex;
-  min-height: 42px;
-  align-items: center;
-  gap: 12px;
-  padding: 0 19px;
-  white-space: nowrap;
-}
-
-.save-button__dot {
-  width: 8px;
-  height: 8px;
-  flex: 0 0 8px;
-  border-radius: 50%;
-  background: var(--ink);
-  transition: transform 300ms var(--ease-out), background-color 300ms ease;
-}
-
-.save-button__label {
-  display: inline-block;
-  transition: transform 260ms var(--ease-out), opacity 220ms ease;
-}
-
-.save-button__reveal {
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 0 16px;
+  display: grid;
+  min-width: 88px;
+  height: 1.35em;
   overflow: hidden;
-  border-radius: inherit;
-  background: var(--accent-strong);
-  color: #fff;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.save-button__state {
+  grid-area: 1 / 1;
+  align-self: center;
+  transition: opacity 180ms ease, transform 240ms var(--ease-out);
+}
+
+.save-button__state:not(.save-button__state--idle) {
   opacity: 0;
-  transform: translateX(100%);
-  transition: transform 300ms var(--ease-out), opacity 220ms ease;
+  transform: translateY(120%);
 }
 
-.save-button__reveal-label {
-  line-height: 1;
-  white-space: nowrap;
+.save-button__icon {
+  position: relative;
+  display: grid;
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  place-items: center;
 }
 
-.save-button__reveal-label--saved {
-  display: none;
+.save-button__arrow,
+.save-button__check {
+  position: absolute;
+  width: 19px;
+  height: 19px;
+  transition: opacity 180ms ease, transform 260ms var(--ease-out);
 }
 
 .save-button__arrow {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
-  transition: transform 260ms var(--ease-out);
-}
-
-.save-button:hover .save-button__main .save-button__label,
-.save-button:focus-visible .save-button__main .save-button__label,
-.save-button[data-save-state="saved"] .save-button__main .save-button__label {
-  opacity: 0;
-  transform: translateX(28px);
-}
-
-.save-button:hover .save-button__main .save-button__dot,
-.save-button:focus-visible .save-button__main .save-button__dot {
-  background: var(--accent);
-  transform: scale(24);
-}
-
-.save-button:hover .save-button__reveal,
-.save-button:focus-visible .save-button__reveal,
-.save-button[data-save-state="saved"] .save-button__reveal {
   opacity: 1;
-  transform: translateX(0);
+}
+
+.save-button__check {
+  opacity: 0;
+  transform: scale(.55) rotate(-35deg);
 }
 
 .save-button:hover .save-button__arrow,
 .save-button:focus-visible .save-button__arrow {
-  transform: translateX(2px);
+  transform: translateX(4px);
 }
 
-.save-button[data-save-state="saved"] .save-button__reveal-label--prompt {
-  display: none;
+.save-button[data-save-state="saving"] .save-button__arrow {
+  animation: save-arrow-pulse 650ms ease-in-out infinite alternate;
 }
 
-.save-button[data-save-state="saved"] .save-button__reveal-label--saved {
-  display: inline;
+.save-button[data-save-state="saved"] .save-button__state--idle,
+.save-button[data-save-state="saving"] .save-button__state--idle,
+.save-button[data-save-state="error"] .save-button__state--idle {
+  opacity: 0;
+  transform: translateY(-120%);
+}
+
+.save-button[data-save-state="saved"] .save-button__state--saved,
+.save-button[data-save-state="saving"] .save-button__state--saving,
+.save-button[data-save-state="error"] .save-button__state--error {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.save-button[data-save-state="saved"] {
+  border-color: #6ea98a;
+  background: #286044;
+}
+
+.save-button[data-save-state="saved"] .save-button__arrow {
+  opacity: 0;
+  transform: translateX(7px);
+}
+
+.save-button[data-save-state="saved"] .save-button__check {
+  opacity: 1;
+  transform: scale(1) rotate(0);
 }
 
 .save-button[data-save-state="saving"] {
-  border-color: var(--accent);
-}
-
-.save-button[data-save-state="saving"] .save-button__dot {
-  background: var(--accent);
-  animation: save-icon-pulse 750ms ease-in-out infinite alternate;
+  border-color: #a9a0ff;
+  background: #51469f;
 }
 
 .save-button[data-save-state="error"] {
   border-color: #a35b64;
-  box-shadow: 0 0 0 2px rgb(242 163 168 / 18%);
+  background: #65343c;
 }
 
-@keyframes save-icon-pulse {
+@keyframes save-arrow-pulse {
   to {
-    transform: rotate(25deg) scale(.86);
+    transform: translateX(3px) scale(.86);
     opacity: .72;
   }
 }
@@ -921,6 +912,7 @@ button {
   min-width: 0;
   min-height: 100vh;
   grid-template-columns: 258px minmax(0, 1fr);
+  background: var(--page);
 }
 
 .app-sidebar {
@@ -1072,18 +1064,25 @@ button {
   color: #c0beca;
   font-size: 12px;
   font-weight: 600;
-  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+  transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, transform 220ms var(--ease-out);
 }
 
 .sidebar-link:hover {
   background: #222229;
   color: var(--ink);
+  transform: translateX(2px);
 }
 
 .sidebar-link.is-active {
   border-color: #39364f;
   background: #28263a;
   color: #e3dfff;
+  animation: sidebar-active-in 260ms var(--ease-out) both;
+}
+
+@keyframes sidebar-active-in {
+  from { transform: translateX(-5px); }
+  to { transform: translateX(0); }
 }
 
 .sidebar-link__mark {
@@ -1129,7 +1128,51 @@ button {
 }
 
 .app-main {
+  position: relative;
+  isolation: isolate;
   min-width: 0;
+}
+
+.dashboard-atmosphere {
+  position: fixed;
+  z-index: 0;
+  inset: 0 0 0 258px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.dashboard-atmosphere__orb {
+  position: absolute;
+  width: clamp(280px, 42vw, 650px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(103 90 209 / 13%) 0, rgb(103 90 209 / 5%) 38%, transparent 70%);
+  filter: blur(14px);
+  opacity: .8;
+  will-change: transform;
+}
+
+.dashboard-atmosphere__orb--one {
+  top: -25%;
+  left: 12%;
+  animation: atmosphere-drift-one 26s ease-in-out infinite alternate;
+}
+
+.dashboard-atmosphere__orb--two {
+  right: -12%;
+  bottom: -42%;
+  width: clamp(260px, 34vw, 520px);
+  animation: atmosphere-drift-two 32s ease-in-out infinite alternate;
+}
+
+@keyframes atmosphere-drift-one {
+  from { transform: translate3d(-3%, -2%, 0) scale(.96); }
+  to { transform: translate3d(8%, 10%, 0) scale(1.06); }
+}
+
+@keyframes atmosphere-drift-two {
+  from { transform: translate3d(4%, 0, 0) scale(1.02); }
+  to { transform: translate3d(-9%, -8%, 0) scale(.94); }
 }
 
 .app-topbar {
@@ -1200,21 +1243,44 @@ button {
 }
 
 .workspace {
+  position: relative;
+  z-index: 1;
   width: min(100%, var(--dashboard-width));
   min-height: calc(100vh - 68px);
   margin-inline: auto;
   padding: clamp(26px, 4vw, 58px) clamp(22px, 3.6vw, 54px) 76px;
-  transition: opacity 160ms ease, transform 220ms var(--ease-out);
+  transition: opacity 160ms ease, transform 220ms var(--ease-out), filter 180ms ease;
 }
 
 .app-shell.is-navigating {
   cursor: progress;
 }
 
-.app-shell.is-navigating .workspace {
-  opacity: .56;
-  transform: translateY(4px);
-  pointer-events: none;
+.app-shell.is-navigating .app-topbar {
+  cursor: progress;
+}
+
+.workspace--leaving {
+  opacity: 0;
+  filter: blur(3px);
+  transform: translateY(10px);
+}
+
+.workspace--entering {
+  animation: workspace-enter 360ms var(--ease-out) both;
+}
+
+@keyframes workspace-enter {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
 }
 
 .server-loading {
@@ -2013,6 +2079,18 @@ button {
   background: #1c1c24;
 }
 
+.role-picker.is-selecting .role-picker__trigger {
+  animation: picker-selection 380ms var(--ease-out);
+}
+
+@keyframes picker-selection {
+  45% {
+    border-color: var(--accent);
+    background: #28263a;
+    transform: scale(.99);
+  }
+}
+
 .role-picker__chevron {
   width: 7px;
   height: 7px;
@@ -2697,6 +2775,10 @@ button {
 }
 
 @media (max-width: 1080px) {
+  .dashboard-atmosphere {
+    inset: 140px 0 0;
+  }
+
   .app-shell {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2781,6 +2863,10 @@ button {
 }
 
 @media (max-width: 800px) {
+  .dashboard-atmosphere {
+    inset: 125px 0 0;
+  }
+
   .public-header,
   .public-main,
   .public-footer {
@@ -3360,7 +3446,8 @@ button {
   .toast,
   .role-picker__panel,
   .server-loading__words span,
-  .save-button[data-save-state="saving"] .save-button__dot {
+  .save-button[data-save-state="saving"] .save-button__arrow,
+  .dashboard-atmosphere__orb {
     animation: none;
   }
 
@@ -3368,19 +3455,30 @@ button {
     display: none;
   }
 
-  .save-button__label,
-  .save-button__reveal,
+  .save-button__state,
   .save-button__arrow,
-  .save-button__dot {
+  .save-button__check {
     transition: none;
   }
 
-  .save-button[data-save-state="saved"] .save-button__main .save-button__label {
-    opacity: 0;
-  }
-
-  .save-button[data-save-state="saved"] .save-button__reveal {
+  .workspace--leaving,
+  .workspace--entering {
+    animation: none;
+    filter: none;
     opacity: 1;
     transform: none;
+  }
+
+  .save-button[data-save-state="saved"] .save-button__state--saved,
+  .save-button[data-save-state="saving"] .save-button__state--saving,
+  .save-button[data-save-state="error"] .save-button__state--error {
+    opacity: 1;
+    transform: none;
+  }
+
+  .save-button[data-save-state="saved"] .save-button__state--idle,
+  .save-button[data-save-state="saving"] .save-button__state--idle,
+  .save-button[data-save-state="error"] .save-button__state--idle {
+    opacity: 0;
   }
 }
