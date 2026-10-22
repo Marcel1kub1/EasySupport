@@ -120,12 +120,11 @@ Review and edit `src/data/releases.json` and `src/data/releases.md` before publi
 
 ### 📡 Private status API
 
-Set a unique `STATUS_HEALTH_API_TOKEN` (at least 32 characters) in the bot's private environment
-to enable `GET /api/status/health`. EasyVStatus calls this endpoint with a Bearer token to read
-the Discord client's ready state and run a live `SELECT 1` against the bot's MySQL pool. The
-response contains only component states and generic details; it does not include database
-credentials or host information. Use the same token for `MAIN_SYSTEMS_API_TOKEN` in EasyVStatus.
-The public `GET /healthz` endpoint independently confirms that the website gateway responds.
+`GET /api/status/health` is a public, read-only endpoint polled by EasyVStatus. It reports the
+Discord client's ready state and runs a live `SELECT 1` against the bot's MySQL pool. The response
+contains only component states and generic details; it does not include database credentials or
+host information. The public `GET /healthz` endpoint independently confirms that the website
+gateway responds.
 
 ## 🖼️ Preview
 

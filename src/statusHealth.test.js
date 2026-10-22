@@ -1,15 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { authorizeStatusHealthRequest, createStatusHealthSnapshot } from './statusHealth.js';
-
-const token = 'private-status-api-test-secret-with-at-least-32-characters';
-
-test('private health API accepts only a matching bearer token of sufficient length', () => {
-  assert.equal(authorizeStatusHealthRequest(`Bearer ${token}`, token), true);
-  assert.equal(authorizeStatusHealthRequest(`Bearer ${token}x`, token), false);
-  assert.equal(authorizeStatusHealthRequest(token, token), false);
-  assert.equal(authorizeStatusHealthRequest(`Bearer ${token}`, 'short'), false);
-});
+import { createStatusHealthSnapshot } from './statusHealth.js';
 
 test('health snapshot reports the Discord client and successful MySQL query', async () => {
   const snapshot = await createStatusHealthSnapshot({

@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { authorizeStatusHealthRequest, createStatusHealthSnapshot } from './statusHealth.js';
+import { createStatusHealthSnapshot } from './statusHealth.js';
 import {
   getRolePermissions,
   getAllRolePermissions,
@@ -245,14 +245,7 @@ export function createWebApp(client) {
     res.set('Cache-Control', 'no-store').status(200).json({ status: 'ok', service: 'website-gateway' });
   });
 
-  app.get('/api/status/health', async (req, res) => {
-    if (config.statusHealthApiToken.length < 32) {
-      return res.status(503).json({ error: 'The private status health API is not configured.' });
-    }
-    if (!authorizeStatusHealthRequest(req.get('authorization'), config.statusHealthApiToken)) {
-      return res.status(401).json({ error: 'Unauthorized.' });
-    }
-
+  app.get('/api/status/health', async (_req, res) => {
     const health = await createStatusHealthSnapshot({
       botReady: client.isReady(),
       checkDatabase: () => pool.query('SELECT 1'),
