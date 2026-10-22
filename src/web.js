@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { createStatusHealthSnapshot } from './statusHealth.js';
 import {
+  pool,
   getRolePermissions,
   getAllRolePermissions,
   setRolePermission,
