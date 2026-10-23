@@ -25,6 +25,15 @@ EasySupport gives Discord communities one place to handle private tickets, moder
 configuration, and staff permissions. Members open tickets from a Discord panel; authorized staff
 can manage guild modules and roles from the web dashboard.
 
+## 📡 Service status
+
+Check the current status of EasySupport and EasyVStatus, view past incidents, and report errors:
+
+- **[Service status page](https://easyvstatus.wisp.uno)** — uptime, incident history, and current outages
+- **[Official website](https://easyv.wisp.uno)** — documentation, dashboard login, and support
+
+If you experience an issue, check the status page first to see whether it is already known. If it is not listed, report it through the official website or open an issue on GitHub.
+
 ## Product preview
 
 The panel gives members a clear starting point for support:
