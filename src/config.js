@@ -33,4 +33,5 @@ export const config = {
   // Discord OAuth2 for multi-server dashboard
   oauthRedirectUri: required('OAUTH_REDIRECT_URI'),
   oauthScope: process.env.OAUTH_SCOPE ?? 'identify guilds',
+  statusUrl: process.env.STATUS_URL ?? 'https://easyvstatus.wisp.uno',
 };

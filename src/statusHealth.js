@@ -1,4 +1,6 @@
-export async function createStatusHealthSnapshot({ botReady, checkDatabase, logger = console }) {
+import { getClusterConfig, getClusterStatus } from './cluster.js';
+
+export async function createStatusHealthSnapshot({ botReady, checkDatabase, logger = console, clusterConfig = getClusterConfig() }) {
   let database;
   const started = performance.now();
   try {
@@ -17,14 +19,16 @@ export async function createStatusHealthSnapshot({ botReady, checkDatabase, logg
     };
   }
 
+  const services = {
+    bot: {
+      status: botReady ? 'operational' : 'outage',
+      detail: botReady ? 'The Discord client is connected and ready.' : 'The Discord client is not ready.',
+    },
+    database,
+  };
   return {
     checkedAt: new Date().toISOString(),
-    services: {
-      bot: {
-        status: botReady ? 'operational' : 'outage',
-        detail: botReady ? 'The Discord client is connected and ready.' : 'The Discord client is not ready.',
-      },
-      database,
-    },
+    services,
+    cluster: getClusterStatus(services, clusterConfig),
   };
 }

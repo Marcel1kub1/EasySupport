@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { createStatusHealthSnapshot } from './statusHealth.js';
+import { getClusterConfig } from './cluster.js';
 import {
   pool,
   getRolePermissions,
@@ -243,13 +244,17 @@ export function createWebApp(client) {
   /* ---------------------------------- routes -------------------------------- */
 
   app.get('/healthz', (_req, res) => {
-    res.set('Cache-Control', 'no-store').status(200).json({ status: 'ok', service: 'website-gateway' });
+    res.set('Cache-Control', 'no-store').status(200).json({
+      status: 'ok',
+      service: 'website-gateway',
+    });
   });
 
   app.get('/api/status/health', async (_req, res) => {
     const health = await createStatusHealthSnapshot({
       botReady: client.isReady(),
       checkDatabase: () => pool.query('SELECT 1'),
+      clusterConfig: getClusterConfig(),
     });
     return res.set('Cache-Control', 'no-store').status(200).json(health);
   });
@@ -263,7 +268,7 @@ export function createWebApp(client) {
     });
   });
 
-  app.get('/status', (req, res) => res.redirect('/'));
+  app.get('/status', (_req, res) => res.redirect(config.statusUrl));
 
   app.get('/login', (req, res) => {
     if (isAuthed(req)) return res.redirect('/dashboard');

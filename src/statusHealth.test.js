@@ -11,6 +11,8 @@ test('health snapshot reports the Discord client and successful MySQL query', as
   assert.equal(snapshot.services.bot.status, 'operational');
   assert.equal(snapshot.services.database.status, 'operational');
   assert.equal(snapshot.services.database.detail, 'The EasySupport database query succeeded.');
+  assert.equal(snapshot.cluster.mode, 'single-node');
+  assert.equal(snapshot.cluster.nodes[0].status, 'operational');
   assert.ok(snapshot.services.database.latencyMs >= 0);
   assert.ok(Number.isFinite(Date.parse(snapshot.checkedAt)));
 });
@@ -25,5 +27,6 @@ test('health snapshot reports an offline bot and failed database without leaking
   assert.equal(snapshot.services.bot.status, 'outage');
   assert.equal(snapshot.services.database.status, 'outage');
   assert.equal(snapshot.services.database.detail, 'The EasySupport database query failed.');
+  assert.equal(snapshot.cluster.nodes[0].status, 'outage');
   assert.equal(logged.length, 1);
 });

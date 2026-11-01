@@ -115,6 +115,15 @@ EasyVStatus polls the bot's public, read-only health endpoints:
 
 The endpoints do not require an API token.
 
+The health response also includes a versioned, single-node `cluster` summary. The cluster is an
+observability label for this deployment; it does not provision servers, orchestrate bot instances,
+or proxy Discord traffic. Set `CLUSTER_ID`, `CLUSTER_NAME`, `CLUSTER_REGION`, and
+`CLUSTER_ENDPOINT` to customize the label.
+
+Status presentation belongs to EasyVStatus at `https://easyvstatus.wisp.uno`; the EasySupport
+`/status` route redirects there. EasySupport's website does not render cluster, latency, or
+connection-testing controls.
+
 ## Run your own instance
 
 ### Requirements

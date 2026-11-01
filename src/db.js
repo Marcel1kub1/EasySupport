@@ -440,7 +440,13 @@ export async function migrate() {
 const getGuildStmt = 'SELECT * FROM guilds WHERE guild_id = ?';
 
 export async function getGuild(guildId) {
-  return get(getGuildStmt, [guildId]) ?? null;
+  try {
+    return (await get(getGuildStmt, [guildId])) ?? null;
+  } catch (error) {
+    if (error?.code !== 'ER_NO_SUCH_TABLE') throw error;
+    console.warn('[db] Guild schema is not initialized yet; returning empty guild settings.');
+    return null;
+  }
 }
 
 const upsertGuildStmt = `
