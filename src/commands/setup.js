@@ -163,18 +163,22 @@ function isModuleEnabledSync(settings, module) {
 }
 
 function panelButtons(settings) {
-  const rows = [];
+  const moduleButtons = [];
   for (const module of MODULES) {
     const enabled = isModuleEnabledSync(settings, module);
-    rows.push(
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`setup:toggle:${module}`)
-          .setLabel(`${module} module: ${moduleBadge(enabled)}`)
-          .setStyle(enabled ? ButtonStyle.Success : ButtonStyle.Danger),
-      ),
+    moduleButtons.push(
+      new ButtonBuilder()
+        .setCustomId(`setup:toggle:${module}`)
+        .setLabel(`${module} module: ${moduleBadge(enabled)}`)
+        .setStyle(enabled ? ButtonStyle.Success : ButtonStyle.Danger),
     );
   }
+
+  const rows = [];
+  for (let index = 0; index < moduleButtons.length; index += 4) {
+    rows.push(new ActionRowBuilder().addComponents(...moduleButtons.slice(index, index + 4)));
+  }
+
   return [
     new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('setup:quick').setLabel('Quick Setup').setStyle(ButtonStyle.Success).setEmoji('⚡'),

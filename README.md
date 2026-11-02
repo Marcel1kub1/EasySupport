@@ -21,9 +21,7 @@
 
 ---
 
-EasySupport gives Discord communities one place to handle private tickets, moderation, server
-configuration, and staff permissions. Members open tickets from a Discord panel; authorized staff
-can manage guild modules and roles from the web dashboard.
+## EasySupport a Discord Management and Support Bot 
 
 ## 📡 Service status
 

@@ -50,4 +50,6 @@ test('setup shows configure form', async () => {
   const panel = interaction.lastReply();
   assert.equal(panel.embeds[0].data.title, 'EasySupport — Setup');
   assert.ok(panel.components.length > 0);
+  assert.ok(panel.components.length <= 5);
+  assert.ok(panel.components.every((row) => row.components.length <= 5));
 });
