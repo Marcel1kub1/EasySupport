@@ -106,6 +106,30 @@ jobs:
           }
           NODE
 
+      - name: Create or verify version tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="v$VERSION"
+          git fetch --tags --force
+
+          if git rev-parse "$tag^{commit}" >/dev/null 2>&1; then
+            tagged_commit="$(git rev-parse "$tag^{commit}")"
+            if [[ "$tagged_commit" != "$GITHUB_SHA" ]]; then
+              echo "::error::Tag $tag already exists but points to $tagged_commit instead of $GITHUB_SHA."
+              exit 1
+            fi
+            echo "Tag $tag already points to this release commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "$tag" "$GITHUB_SHA" -m "EasySupport $VERSION"
+            git push origin "$tag"
+          fi
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
