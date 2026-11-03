@@ -1,16 +1,113 @@
-name: Weekly Issues Summary
+name: Issue Organizer
 on:
-  schedule:
-    - cron: '0 9 * * 1' # Runs every Monday at 9:00 AM UTC
-  workflow_dispatch: # Allows you to run it manually anytime with a button click
+  issues:
+    types: [opened, edited, reopened]
+  workflow_dispatch:
 
 jobs:
-  summary:
+  summarize-issue:
+    if: ${{ github.event.issue.pull_request == null }}
     runs-on: ubuntu-latest
     permissions:
       issues: write
     steps:
-      - name: Generate Issue Digest
-        uses: nus-oss/GithubDigest@master
+      - name: Post organized issue summary
+        uses: actions/github-script@v7
         with:
-          secret: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue = context.payload.issue;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            if (!issue) {
+              core.info("No issue payload found, skipping.");
+              return;
+            }
+
+            const body = (issue.body || "").trim();
+            const lines = body
+              .split(/\r?\n/)
+              .map((line) => line.trim())
+              .filter(Boolean);
+
+            const findSection = (patterns) => {
+              for (const line of lines) {
+                for (const pattern of patterns) {
+                  if (pattern.test(line)) return line;
+                }
+              }
+              return null;
+            };
+
+            const summary =
+              lines.find((line) => /(^summary:|^problem:|^issue:)/i.test(line)) ||
+              lines[0] ||
+              "_No clear summary provided._";
+
+            const expected = findSection([/(expected|should|want)/i]) || "_Not provided_";
+            const actual = findSection([/(actual|instead|happens|error)/i]) || "_Not provided_";
+            const environment = findSection([/(environment|browser|os|version|device)/i]) || "_Not provided_";
+
+            const checklist = [
+              body ? "✅ Issue description included" : "❌ Issue description missing",
+              /steps?.{0,20}(reproduce|to reproduce)/i.test(body) ? "✅ Reproduction steps detected" : "⚠️ Reproduction steps not detected",
+              /(expected|should|want)/i.test(body) ? "✅ Expected behavior detected" : "⚠️ Expected behavior not detected",
+              /(actual|error|happens|instead)/i.test(body) ? "✅ Actual behavior detected" : "⚠️ Actual behavior not detected",
+            ].join("\n");
+
+            const marker = "<!-- issue-organizer-comment -->";
+            const organized = `${marker}
+            ## 🧩 Organized Issue Summary
+
+            **Title:** ${issue.title}
+            **Author:** @${issue.user.login}
+            **Issue URL:** ${issue.html_url}
+
+            ### 1) Problem
+            ${summary}
+
+            ### 2) Expected Behavior
+            ${expected}
+
+            ### 3) Actual Behavior
+            ${actual}
+
+            ### 4) Environment
+            ${environment}
+
+            ### 5) Completeness Check
+            ${checklist}
+
+            _This summary was generated automatically to help developers triage faster. Edit the issue body and this summary will refresh._`;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: issue.number,
+              per_page: 100,
+            });
+
+            const existing = comments.find(
+              (comment) =>
+                comment.user.type === "Bot" &&
+                comment.body &&
+                comment.body.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body: organized,
+              });
+              core.info("Updated existing organized summary comment.");
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body: organized,
+              });
+              core.info("Created organized summary comment.");
+            }
