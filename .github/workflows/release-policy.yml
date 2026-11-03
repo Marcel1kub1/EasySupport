@@ -1,0 +1,121 @@
+name: Enforce and publish releases
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  require-release-version:
+    name: Require a new version release
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out pull request
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require version and release notes changes
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+
+          base_version="$(git show "$BASE_SHA:package.json" | node -e "let input=''; process.stdin.on('data', chunk => input += chunk); process.stdin.on('end', () => process.stdout.write(JSON.parse(input).version));")"
+          current_version="$(node -p "require('./package.json').version")"
+
+          if [[ "$base_version" == "$current_version" ]]; then
+            echo "::error::Every pull request must bump package.json to a new release version."
+            exit 1
+          fi
+
+          node - "$base_version" "$current_version" <<'NODE'
+          const [base, current] = process.argv.slice(2);
+          const parse = (version) => {
+            const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/);
+            if (!match) throw new Error(`Invalid semantic version: ${version}`);
+            return match.slice(1).map(Number);
+          };
+          const older = parse(base);
+          const newer = parse(current);
+          const isGreater = newer[0] > older[0] ||
+            (newer[0] === older[0] && newer[1] > older[1]) ||
+            (newer[0] === older[0] && newer[1] === older[1] && newer[2] > older[2]);
+          if (!isGreater) {
+            throw new Error(`Version ${current} must be greater than ${base}.`);
+          }
+          NODE
+
+          node - "$current_version" <<'NODE'
+          const fs = require('node:fs');
+          const version = process.argv[2];
+          const feed = JSON.parse(fs.readFileSync('src/data/releases.json', 'utf8'));
+          if (!feed.releases.some((release) => release.version === version)) {
+            throw new Error(`src/data/releases.json must contain release ${version}.`);
+          }
+          if (!fs.readFileSync('src/data/releases.md', 'utf8').includes(version)) {
+            throw new Error(`src/data/releases.md must document release ${version}.`);
+          }
+          NODE
+
+  publish-release:
+    name: Publish GitHub Release
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+
+      - name: Read release version
+        id: version
+        shell: bash
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Require a new version on main
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          previous_version="$(git show HEAD^:package.json 2>/dev/null | node -e "let input=''; process.stdin.on('data', chunk => input += chunk); process.stdin.on('end', () => process.stdout.write(JSON.parse(input).version));" || true)"
+          if [[ -n "$previous_version" && "$previous_version" == "$VERSION" ]]; then
+            echo "::error::Every update reaching main must bump package.json to a new release version."
+            exit 1
+          fi
+
+      - name: Verify release notes
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          node - "$VERSION" <<'NODE'
+          const fs = require('node:fs');
+          const version = process.argv[2];
+          const feed = JSON.parse(fs.readFileSync('src/data/releases.json', 'utf8'));
+          if (!feed.releases.some((release) => release.version === version)) {
+            throw new Error(`src/data/releases.json must contain release ${version}.`);
+          }
+          NODE
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists."
+          else
+            gh release create "v$VERSION" \
+              --target "$GITHUB_SHA" \
+              --title "EasySupport $VERSION" \
+              --notes-file src/data/releases.md
+          fi

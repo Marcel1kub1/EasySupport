@@ -1,6 +1,29 @@
 {
   "releases": [
     {
+      "version": "2.3.1",
+      "title": "EasySupport 2.3.1 — Mobile dashboard navigation",
+      "date": "2026-11-03",
+      "summary": "Improves the dashboard experience on phones and requires every merged update to be published as a versioned GitHub release.",
+      "changes": {
+        "Dashboard experience": [
+          "Added a touch-friendly slide-out navigation drawer for mobile dashboard users.",
+          "Added backdrop, focus, and Escape-key controls for the mobile navigation."
+        ],
+        "Release updates": [
+          "Added a GitHub Actions policy requiring every pull request to bump the release version and include matching release notes.",
+          "Added automatic GitHub Release publishing after a versioned change reaches main."
+        ]
+      },
+      "commands": [],
+      "files": [
+        ".github/workflows/release-policy.yml",
+        "src/public/site.css",
+        "src/public/site.js",
+        "src/views/layout.ejs"
+      ]
+    },
+    {
       "version": "2.3.0",
       "title": "EasySupport 2.3.0 — Your guild, your dashboard",
       "date": "2026-10-21",

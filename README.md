@@ -102,6 +102,11 @@ Review `src/data/releases.json` and `src/data/releases.md` before publishing if 
 notes to serve as a fallback. An offline instance cannot display new releases while it is offline.
 Read and dismiss state is stored in the browser; no Discord message is sent.
 
+Every pull request targeting `main` must bump the version in `package.json`, add the same version
+to `src/data/releases.json` and `src/data/releases.md`, and pass the repository release policy.
+After the change is merged, GitHub automatically creates the matching `v<version>` release, which
+is then available to the dashboard release feed.
+
 ## Public health endpoints
 
 EasyVStatus polls the bot's public, read-only health endpoints:
