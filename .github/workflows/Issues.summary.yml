@@ -1,113 +1,62 @@
-name: Issue Organizer
+name: 🤖 Issue Summarizer
+
 on:
   issues:
-    types: [opened, edited, reopened]
-  workflow_dispatch:
+    types: [opened]
 
 jobs:
-  summarize-issue:
-    if: ${{ github.event.issue.pull_request == null }}
+  summarize-locally:
     runs-on: ubuntu-latest
     permissions:
       issues: write
+
     steps:
-      - name: Post organized issue summary
+      - name: Install and Start Ollama (Local AI Engine)
+        run: |
+          curl -fsSL https://ollama.com | sh
+          # Start Ollama server in the background
+          ollama serve &
+          # Wait a few seconds for the background server to wake up
+          sleep 5
+
+      - name: Download Light Developer LLM
+        run: |
+          # Pulls the compact 1-billion parameter Llama 3.2 model
+          ollama pull llama3.2:1b
+
+      - name: Generate Developer Summary
+        id: ai_engine
+        run: |
+          # Clean up the issue body text to make it safe for a shell script
+          CLEAN_BODY=$(echo "${{ github.event.issue.body }}" | tr -d '"' | tr -d '`')
+          
+          # Construct the developer-centric prompt
+          read -r -d '' SYSTEM_PROMPT << EOM
+          You are a strict developer assistant. Analyze the user's issue and rewrite it into a short technical breakdown for an engineering team. 
+          Use exactly this structure:
+          ### 🛠️ Developer Summary
+          **TL;DR:** (1 sentence summary)
+          **Steps to Reproduce:** (Numbered steps)
+          **Technical Clues:** (Any errors, elements, or context clues)
+          Keep your response short, direct, and formatted in markdown. Do not include conversational filler like 'Here is the summary'.
+          EOM
+
+          # Run the issue text through the local model
+          SUMMARY_OUTPUT=$(ollama run llama3.2:1b "$SYSTEM_PROMPT. Here is the issue: $CLEAN_BODY")
+          
+          # Save the result to a multi-line environment variable safely
+          echo "AI_SUMMARY<<EOF" >> $GITHUB_ENV
+          echo "$SUMMARY_OUTPUT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Post Dev Summary Comment
         uses: actions/github-script@v7
         with:
           script: |
-            const issue = context.payload.issue;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            if (!issue) {
-              core.info("No issue payload found, skipping.");
-              return;
-            }
-
-            const body = (issue.body || "").trim();
-            const lines = body
-              .split(/\r?\n/)
-              .map((line) => line.trim())
-              .filter(Boolean);
-
-            const findSection = (patterns) => {
-              for (const line of lines) {
-                for (const pattern of patterns) {
-                  if (pattern.test(line)) return line;
-                }
-              }
-              return null;
-            };
-
-            const summary =
-              lines.find((line) => /(^summary:|^problem:|^issue:)/i.test(line)) ||
-              lines[0] ||
-              "_No clear summary provided._";
-
-            const expected = findSection([/(expected|should|want)/i]) || "_Not provided_";
-            const actual = findSection([/(actual|instead|happens|error)/i]) || "_Not provided_";
-            const environment = findSection([/(environment|browser|os|version|device)/i]) || "_Not provided_";
-
-            const checklist = [
-              body ? "✅ Issue description included" : "❌ Issue description missing",
-              /steps?.{0,20}(reproduce|to reproduce)/i.test(body) ? "✅ Reproduction steps detected" : "⚠️ Reproduction steps not detected",
-              /(expected|should|want)/i.test(body) ? "✅ Expected behavior detected" : "⚠️ Expected behavior not detected",
-              /(actual|error|happens|instead)/i.test(body) ? "✅ Actual behavior detected" : "⚠️ Actual behavior not detected",
-            ].join("\n");
-
-            const marker = "<!-- issue-organizer-comment -->";
-            const organized = `${marker}
-            ## 🧩 Organized Issue Summary
-
-            **Title:** ${issue.title}
-            **Author:** @${issue.user.login}
-            **Issue URL:** ${issue.html_url}
-
-            ### 1) Problem
-            ${summary}
-
-            ### 2) Expected Behavior
-            ${expected}
-
-            ### 3) Actual Behavior
-            ${actual}
-
-            ### 4) Environment
-            ${environment}
-
-            ### 5) Completeness Check
-            ${checklist}
-
-            _This summary was generated automatically to help developers triage faster. Edit the issue body and this summary will refresh._`;
-
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              owner,
-              repo,
-              issue_number: issue.number,
-              per_page: 100,
+            const summary = process.env.AI_SUMMARY;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
             });
-
-            const existing = comments.find(
-              (comment) =>
-                comment.user.type === "Bot" &&
-                comment.body &&
-                comment.body.includes(marker),
-            );
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: existing.id,
-                body: organized,
-              });
-              core.info("Updated existing organized summary comment.");
-            } else {
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: issue.number,
-                body: organized,
-              });
-              core.info("Created organized summary comment.");
-            }
