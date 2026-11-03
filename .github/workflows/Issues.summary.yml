@@ -1,23 +1,23 @@
-name: Auto Assign CTO New Agent
-
+name: Auto Issue Reply Agent
 on:
   issues:
-    types: [opened, reopened]
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: read
 
 jobs:
-  assign-agent:
+  auto-reply:
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
     steps:
-      - name: Assign Copilot agent
-        env:
-          GH_TOKEN: ${{ secrets.COPILOT_PAT }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-        run: |
-          set -euo pipefail
-          if [[ -z "$GH_TOKEN" ]]; then
-            echo "::error::Configure the COPILOT_PAT repository secret with permission to assign Copilot to issues."
-            exit 1
-          fi
-          gh issue edit "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --add-assignee "copilot-swe-agent"
+      - name: Checkout Code Context
+        uses: actions/checkout@v4
+
+      - name: Generate AI Answer & Comment
+        uses: mtfoley/pr-reviewer-action@v1.3.0
+        with:
+          # Automatically uses GitHub's internal runner token to write back to the issue
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Tells the AI runner to handle the opened issue text layout
+          prompt: "Analyze this issue description against the repository code. Provide a concise, clear breakdown or immediate step-by-step solution to help fix this issue."
