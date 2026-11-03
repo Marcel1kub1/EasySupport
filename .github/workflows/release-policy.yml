@@ -27,6 +27,12 @@ jobs:
         run: |
           set -euo pipefail
 
+          non_workflow_changes="$(git diff --name-only "$BASE_SHA...HEAD" | grep -v '^\.github/workflows/' || true)"
+          if [[ -z "$non_workflow_changes" ]]; then
+            echo "Workflow-only change; no application release is required."
+            exit 0
+          fi
+
           base_version="$(git show "$BASE_SHA:package.json" | node -e "let input=''; process.stdin.on('data', chunk => input += chunk); process.stdin.on('end', () => process.stdout.write(JSON.parse(input).version));")"
           current_version="$(node -p "require('./package.json').version")"
 
@@ -79,7 +85,8 @@ jobs:
         shell: bash
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - name: Require a new version on main
+      - name: Determine whether this is a release commit
+        id: release_guard
         shell: bash
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -87,11 +94,14 @@ jobs:
           set -euo pipefail
           previous_version="$(git show HEAD^:package.json 2>/dev/null | node -e "let input=''; process.stdin.on('data', chunk => input += chunk); process.stdin.on('end', () => process.stdout.write(JSON.parse(input).version));" || true)"
           if [[ -n "$previous_version" && "$previous_version" == "$VERSION" ]]; then
-            echo "::error::Every update reaching main must bump package.json to a new release version."
-            exit 1
+            echo "Package version is unchanged; skipping release publication."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Verify release notes
+        if: steps.release_guard.outputs.should_release == 'true'
         shell: bash
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -107,6 +117,8 @@ jobs:
           NODE
 
       - name: Create or verify version tag
+        if: steps.release_guard.outputs.should_release == 'true'
+        id: tag
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
@@ -118,28 +130,32 @@ jobs:
 
           if git rev-parse "$tag^{commit}" >/dev/null 2>&1; then
             tagged_commit="$(git rev-parse "$tag^{commit}")"
-            if [[ "$tagged_commit" != "$GITHUB_SHA" ]]; then
-              echo "::error::Tag $tag already exists but points to $tagged_commit instead of $GITHUB_SHA."
-              exit 1
+            if [[ "$tagged_commit" == "$GITHUB_SHA" ]]; then
+              echo "Tag $tag already points to this release commit."
+            else
+              echo "::warning::Tag $tag already points to $tagged_commit; keeping the existing immutable tag."
             fi
-            echo "Tag $tag already points to this release commit."
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git tag -a "$tag" "$GITHUB_SHA" -m "EasySupport $VERSION"
             git push origin "$tag"
+            tagged_commit="$GITHUB_SHA"
           fi
+          echo "target=$tagged_commit" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
+        if: steps.release_guard.outputs.should_release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_TARGET: ${{ steps.tag.outputs.target }}
         run: |
           if gh release view "v$VERSION" >/dev/null 2>&1; then
             echo "Release v$VERSION already exists."
           else
             gh release create "v$VERSION" \
-              --target "$GITHUB_SHA" \
+              --target "$RELEASE_TARGET" \
               --title "EasySupport $VERSION" \
               --notes-file src/data/releases.md
           fi
