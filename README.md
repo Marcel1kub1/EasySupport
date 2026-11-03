@@ -165,7 +165,8 @@ The required settings include `DISCORD_TOKEN`, `CLIENT_ID`, `CLIENT_SECRET`, `MY
 see [`.env.example`](./.env.example) for the complete list.
 
 For a public deployment, set the OAuth callback to your deployed website's `/auth/callback` route
-and add the same URL in the Discord Developer Portal.
+and add the same URL in the Discord Developer Portal. The web server trusts one reverse proxy
+for forwarded client IPs, as required by hosted deployments using `X-Forwarded-For`.
 
 ### 3. Install, register, and start
 
