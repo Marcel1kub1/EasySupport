@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   require-release-version:
@@ -133,7 +133,8 @@ jobs:
             if [[ "$tagged_commit" == "$GITHUB_SHA" ]]; then
               echo "Tag $tag already points to this release commit."
             else
-              echo "::warning::Tag $tag already points to $tagged_commit; keeping the existing immutable tag."
+              echo "::error::Tag $tag already points to $tagged_commit, not $GITHUB_SHA."
+              exit 1
             fi
           else
             git config user.name "github-actions[bot]"
@@ -149,13 +150,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
-          RELEASE_TARGET: ${{ steps.tag.outputs.target }}
+          TAG: v${{ steps.version.outputs.version }}
         run: |
-          if gh release view "v$VERSION" >/dev/null 2>&1; then
-            echo "Release v$VERSION already exists."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists."
           else
-            gh release create "v$VERSION" \
-              --target "$RELEASE_TARGET" \
+            gh release create "$TAG" \
+              --verify-tag \
               --title "EasySupport $VERSION" \
               --notes-file src/data/releases.md
           fi
