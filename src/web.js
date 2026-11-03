@@ -203,11 +203,16 @@ const templateDefaults = {
   latestRelease: null,
   githubReleasesPage,
   siteCssVersion,
+  csrfToken: '',
   config,
 };
 
 async function renderPage(res, view, locals = {}) {
-  const pageLocals = { ...templateDefaults, ...locals };
+  const pageLocals = {
+    ...templateDefaults,
+    ...locals,
+    csrfToken: res.locals.csrfToken ?? '',
+  };
   const body = await ejs.renderFile(path.join(viewsDir, `${view}.ejs`), pageLocals);
   const html = await ejs.renderFile(path.join(viewsDir, 'layout.ejs'), { ...pageLocals, body });
   return res.send(html);
@@ -216,7 +221,8 @@ async function renderPage(res, view, locals = {}) {
 export function createWebApp(client) {
   const app = express();
 
-  if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
+  // The hosted deployment is behind one reverse proxy, which forwards the client IP.
+  app.set('trust proxy', 1);
   app.set('views', viewsDir);
   app.set('view engine', 'ejs');
 
