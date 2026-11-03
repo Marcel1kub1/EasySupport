@@ -9,8 +9,11 @@ jobs:
     permissions:
       issues: write
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Assign Agent via GitHub CLI
         run: |
-          gh issue edit ${{ github.event.issue.number }} --add-assignee "cto-new[bot]"
+          gh issue edit ${{ github.event.issue.number }} --add-assignee "cto-new-bot"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
