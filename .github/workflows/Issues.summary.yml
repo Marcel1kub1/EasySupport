@@ -9,8 +9,8 @@ jobs:
     permissions:
       issues: write
     steps:
-      - name: 'Assign Agent'
-        uses: pozil/auto-assign-issue@v4
-        with:
-          assignees: cto-new-bot
-          numOfAssignee: 1
+      - name: Assign Agent via GitHub CLI
+        run: |
+          gh issue edit ${{ github.event.issue.number }} --add-assignee "cto-new[bot]"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
