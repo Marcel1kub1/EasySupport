@@ -12,12 +12,8 @@ jobs:
     steps:
       - name: Assign Copilot agent
         env:
-          GH_TOKEN: ${{ secrets.COPILOT_PAT }}
+          GH_TOKEN: ${{ secrets.COPILOT_PAT || github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
           set -euo pipefail
-          if [[ -z "$GH_TOKEN" ]]; then
-            echo "::error::Configure the COPILOT_PAT repository secret with permission to assign Copilot to issues."
-            exit 1
-          fi
           gh issue edit "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --add-assignee "copilot-swe-agent"
