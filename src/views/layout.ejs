@@ -15,7 +15,7 @@
 
   <% if (active === 'dashboard' || active?.startsWith('module') || active === 'roles' || active === 'updates') { %>
     <div class="app-shell" data-guild-id="<%= guildId || '' %>">
-      <aside class="app-sidebar" aria-label="Guild dashboard">
+      <aside id="dashboard-sidebar" class="app-sidebar" aria-label="Guild dashboard">
         <a class="app-brand" href="<%= guildId ? `/dashboard/${guildId}` : '/dashboard' %>">
           <img src="/assets/logo.png" width="36" height="36" alt="">
           <span>EasySupport</span>
@@ -91,6 +91,10 @@
           <span class="dashboard-atmosphere__orb dashboard-atmosphere__orb--two"></span>
         </div>
         <header class="app-topbar">
+          <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-controls="dashboard-sidebar" aria-expanded="false">
+            <span class="sr-only">Open dashboard navigation</span>
+            <span class="mobile-menu-toggle__icon" aria-hidden="true"><i></i><i></i><i></i></span>
+          </button>
           <div class="app-topbar__context">
             <span class="app-topbar__guild"><%= guildName || 'Guild dashboard' %></span>
             <span class="app-topbar__divider" aria-hidden="true">/</span>
@@ -110,6 +114,7 @@
           <%- body %>
         </main>
       </div>
+      <button class="mobile-menu-backdrop" type="button" data-mobile-menu-close aria-label="Close dashboard navigation"></button>
       <div class="server-loading" data-server-loading role="status" aria-live="polite" aria-label="Loading server" aria-hidden="true" hidden>
         <div class="server-loading__card">
           <div class="server-loading__loader">
