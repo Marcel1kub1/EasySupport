@@ -37,6 +37,22 @@ function showToast(message, type = 'success') {
 }
 
 function initialiseWorkspace() {
+  const shell = document.querySelector('.app-shell');
+  const menuToggle = shell?.querySelector('[data-mobile-menu-toggle]');
+  const menuClose = shell?.querySelector('[data-mobile-menu-close]');
+  const sidebar = shell?.querySelector('.app-sidebar');
+  const setMobileMenu = (open) => {
+    if (!shell || !menuToggle || !sidebar) return;
+    shell.classList.toggle('mobile-menu-open', open);
+    document.body.classList.toggle('mobile-menu-open', open);
+    menuToggle.setAttribute('aria-expanded', String(open));
+    menuToggle.querySelector('.sr-only').textContent = `${open ? 'Close' : 'Open'} dashboard navigation`;
+    if (open) sidebar.querySelector('a, select, button')?.focus({ preventScroll: true });
+  };
+  menuToggle?.addEventListener('click', () => setMobileMenu(!shell.classList.contains('mobile-menu-open')));
+  menuClose?.addEventListener('click', () => setMobileMenu(false));
+  sidebar?.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => setMobileMenu(false)));
+
 const moduleSearch = document.querySelector('[data-module-search]');
 if (moduleSearch) {
   const cards = [...document.querySelectorAll('[data-module-card]')];
@@ -707,6 +723,15 @@ document.addEventListener('pointerdown', (event) => {
 });
 
 document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    const shell = document.querySelector('.app-shell.mobile-menu-open');
+    const toggle = shell?.querySelector('[data-mobile-menu-toggle]');
+    if (shell && toggle) {
+      toggle.click();
+      return;
+    }
+  }
+
   const target = event.target;
   const isEditing = target instanceof HTMLElement &&
     (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
