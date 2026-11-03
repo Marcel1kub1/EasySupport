@@ -9,6 +9,7 @@
   </header>
 
   <form method="post" action="/admin/modules/<%= guildId %>/welcome_goodbye_boost" class="settings-form">
+    <%- include('../partials/csrf-field') %>
     <div class="settings-grid">
       <% 
       const fields = [
