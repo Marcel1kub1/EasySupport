@@ -1,7 +1,8 @@
 name: Auto Assign CTO New Agent
+
 on:
   issues:
-    types: [opened]
+    types: [opened, reopened]
 
 jobs:
   assign-agent:
@@ -9,11 +10,14 @@ jobs:
     permissions:
       issues: write
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Assign Agent via GitHub CLI
-        run: |
-          gh issue edit ${{ github.event.issue.number }} --add-assignee "cto-new-bot"
+      - name: Assign Copilot agent
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.COPILOT_PAT }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::error::Configure the COPILOT_PAT repository secret with permission to assign Copilot to issues."
+            exit 1
+          fi
+          gh issue edit "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --add-assignee "copilot-swe-agent"
