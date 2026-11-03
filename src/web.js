@@ -1,8 +1,9 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import session from 'express-session';
 import ejs from 'ejs';
 import { ChannelType } from 'discord.js';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -42,6 +43,30 @@ const modules = [
   { key: 'welcome_goodbye_boost', short: 'WB', title: 'Welcome & boosts', desc: 'Member greetings, farewells and boosts.', command: 'welcome_goodbye_boost' },
   { key: 'logging', short: 'LG', title: 'Logging', desc: 'Choose the events and channels to record.', command: 'logging' },
 ];
+const publicRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+});
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+});
+const adminRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 120,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+});
+const mutationRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 60,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+});
 
 function isReleaseEntry(release) {
   return (
@@ -191,6 +216,7 @@ async function renderPage(res, view, locals = {}) {
 export function createWebApp(client) {
   const app = express();
 
+  if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
   app.set('views', viewsDir);
   app.set('view engine', 'ejs');
 
@@ -199,6 +225,7 @@ export function createWebApp(client) {
   app.use('/assets', express.static(path.join(projectRoot, 'assets')));
   app.use(express.urlencoded({ extended: false }));
   app.use(express.json());
+  app.use(publicRateLimiter);
 
   app.use(
     session({
@@ -206,11 +233,38 @@ export function createWebApp(client) {
       secret: config.sessionSecret,
       resave: false,
       saveUninitialized: false,
-      cookie: { httpOnly: true, sameSite: 'lax', maxAge: 1000 * 60 * 60 * 24 * 7 },
+      cookie: {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+      },
     })
   );
 
   /* ---------------------------------- auth (Discord OAuth2) ---------------------------------- */
+
+  app.use((req, res, next) => {
+    req.session.csrfToken ??= randomBytes(32).toString('hex');
+    res.locals.csrfToken = req.session.csrfToken;
+    next();
+  });
+
+  function requireCsrf(req, res, next) {
+    const providedToken = req.get('x-csrf-token') ?? req.body?._csrf;
+    const expectedToken = req.session.csrfToken;
+    if (
+      typeof providedToken !== 'string' ||
+      typeof expectedToken !== 'string' ||
+      providedToken.length !== expectedToken.length ||
+      !timingSafeEqual(Buffer.from(providedToken), Buffer.from(expectedToken))
+    ) {
+      return res.status(403).send('Invalid CSRF token.');
+    }
+    next();
+  }
+
+  app.use('/admin', adminRateLimiter);
 
   function isAuthed(req) {
     return Boolean(req.session.discordUser);
@@ -250,7 +304,7 @@ export function createWebApp(client) {
     });
   });
 
-  app.get('/api/status/health', async (_req, res) => {
+  app.get('/api/status/health', publicRateLimiter, async (_req, res) => {
     const health = await createStatusHealthSnapshot({
       botReady: client.isReady(),
       checkDatabase: () => pool.query('SELECT 1'),
@@ -268,9 +322,18 @@ export function createWebApp(client) {
     });
   });
 
+  app.get('/docs', async (req, res) => {
+    return renderPage(res, 'docs', {
+      title: 'EasySupport — Documentation',
+      active: 'docs',
+      signedIn: isAuthed(req),
+      repoUrl: 'https://github.com/Marcel1kub1/EasySupport',
+    });
+  });
+
   app.get('/status', (_req, res) => res.redirect(config.statusUrl));
 
-  app.get('/login', (req, res) => {
+  app.get('/login', authRateLimiter, (req, res) => {
     if (isAuthed(req)) return res.redirect('/dashboard');
     const params = new URLSearchParams({
       client_id: config.clientId,
@@ -282,7 +345,7 @@ export function createWebApp(client) {
     return res.redirect(`https://discord.com/api/oauth2/authorize?${params}`);
   });
 
-  app.get('/auth/callback', async (req, res) => {
+  app.get('/auth/callback', authRateLimiter, async (req, res) => {
     const code = req.query.code;
     if (!code) return res.redirect('/login?error=missing_code');
 
@@ -460,7 +523,7 @@ export function createWebApp(client) {
     });
   });
 
-  app.post('/admin/modules/:guildId/:module', requireAuth, requireGuildAccess, async (req, res) => {
+  app.post('/admin/modules/:guildId/:module', mutationRateLimiter, requireAuth, requireGuildAccess, requireCsrf, async (req, res) => {
     const guildId = req.params.guildId;
     const module = req.params.module;
     const moduleSettings = getModuleSettings(module);
@@ -693,7 +756,7 @@ export function createWebApp(client) {
     });
   });
 
-  app.post('/admin/:guildId/roles/:roleId/toggle', requireAuth, requireGuildAccess, async (req, res) => {
+  app.post('/admin/:guildId/roles/:roleId/toggle', mutationRateLimiter, requireAuth, requireGuildAccess, requireCsrf, async (req, res) => {
     const guildId = req.params.guildId;
     const { command_name: commandName, allowed } = req.body;
     if (!commandName || !COMMAND_NAMES.includes(commandName)) {

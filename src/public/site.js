@@ -470,7 +470,10 @@ document.querySelectorAll('.permission-toggle input, .role-command-row input').f
     try {
       const response = await fetch(`/admin/${encodeURIComponent(guildId)}/roles/${encodeURIComponent(role)}/toggle`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+        },
         body: new URLSearchParams({ command_name: cmd, allowed: String(input.checked) }),
       });
       if (!response.ok) throw new Error(`Permission save returned HTTP ${response.status}`);

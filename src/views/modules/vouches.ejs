@@ -9,6 +9,7 @@
   </header>
 
   <form method="post" action="/admin/modules/<%= guildId %>/vouches" class="settings-form">
+    <%- include('../partials/csrf-field') %>
     <div class="settings-grid">
       <% 
       const fields = [
