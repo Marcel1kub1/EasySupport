@@ -6,6 +6,7 @@
       <p class="landing-hero__description">Bring private tickets, staff workflows, and community tools into one clear place, configured for your guild.</p>
       <div class="landing-actions">
         <a class="button button--primary" href="<%= signedIn ? '/dashboard' : '/login' %>"><%= signedIn ? 'Open guild dashboard' : 'Connect Discord' %><span aria-hidden="true">↗</span></a>
+        <a class="button button--quiet" href="/docs">Documentation <span aria-hidden="true">↗</span></a>
         <a class="text-link" href="<%= repoUrl %>" target="_blank" rel="noopener noreferrer">Explore the source <span aria-hidden="true">↗</span></a>
       </div>
       <p class="landing-hero__note">Open source · Runs alongside your Discord bot</p>
