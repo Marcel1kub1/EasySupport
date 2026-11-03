@@ -322,6 +322,15 @@ export function createWebApp(client) {
     });
   });
 
+  app.get('/docs', async (req, res) => {
+    return renderPage(res, 'docs', {
+      title: 'EasySupport — Documentation',
+      active: 'docs',
+      signedIn: isAuthed(req),
+      repoUrl: 'https://github.com/Marcel1kub1/EasySupport',
+    });
+  });
+
   app.get('/status', (_req, res) => res.redirect(config.statusUrl));
 
   app.get('/login', authRateLimiter, (req, res) => {

@@ -141,6 +141,7 @@
         </a>
         <div class="public-nav__links">
           <a href="/" <%= active === 'home' ? 'aria-current="page"' : '' %>>Product</a>
+          <a href="/docs" <%= active === 'docs' ? 'aria-current="page"' : '' %>>Docs</a>
           <a href="<%= signedIn ? '/dashboard' : '/login' %>" class="button button--small button--primary"><%= signedIn ? 'Open dashboard' : 'Connect Discord' %><span aria-hidden="true">↗</span></a>
         </div>
       </nav>
