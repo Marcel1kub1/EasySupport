@@ -133,8 +133,19 @@ jobs:
             if [[ "$tagged_commit" == "$GITHUB_SHA" ]]; then
               echo "Tag $tag already points to this release commit."
             else
-              echo "::error::Tag $tag already points to $tagged_commit, not $GITHUB_SHA."
-              exit 1
+              echo "Tag $tag points to $tagged_commit instead of $GITHUB_SHA; replacing the tag and any existing release."
+              if gh release view "$tag" >/dev/null 2>&1; then
+                gh release delete "$tag" --yes --cleanup-tag
+              else
+                git push origin ":refs/tags/$tag"
+              fi
+              git tag -d "$tag" >/dev/null 2>&1 || true
+              git fetch --tags --force
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git tag -a "$tag" "$GITHUB_SHA" -m "EasySupport $VERSION"
+              git push origin "$tag"
+              tagged_commit="$GITHUB_SHA"
             fi
           else
             git config user.name "github-actions[bot]"
