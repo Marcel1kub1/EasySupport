@@ -86,9 +86,11 @@ As a project maintainer, reply with clarifying questions to gather all informati
 Title: ${issueTitle}
 Body: ${issueBody}
 
-Reply with exactly one of these two lines at the top of your response:
+Reply with exactly this format at the top of your response:
 - SUFFICIENT: yes   (if the issue has enough detail to act on)
 - SUFFICIENT: no    (if more information is needed from the user)
+
+If SUFFICIENT: no, then after that line, list the specific questions that still need to be asked of the user (maximum 5 questions, one per line, prefixed with "- ").
 
 Then briefly explain your reasoning.`;
 

@@ -125,19 +125,7 @@ jobs:
           echo "issue_author=$ISSUE_AUTHOR" >> "$GITHUB_OUTPUT"
           echo "comment_author=$COMMENT_AUTHOR" >> "$GITHUB_OUTPUT"
 
-      - name: Triage new issue (questions)
-        id: questions
-        env:
-          KILO_API_KEY: ${{ secrets.KILO_API_KEY }}
-          ISSUE_TITLE: ${{ steps.context.outputs.issue_title }}
-          ISSUE_BODY: ${{ steps.context.outputs.issue_body }}
-        shell: bash
-        run: |
-          node .github/scripts/triage-issue.js --mode questions > triage-response.md
-          gh issue comment ${{ steps.context.outputs.issue_number }} --body-file triage-response.md
-          gh issue edit ${{ steps.context.outputs.issue_number }} --add-label "triage/needs-info"
-
-      - name: Evaluate issue comment (summary)
+      - name: Evaluate issue (sufficiency + questions)
         id: evaluate
         env:
           KILO_API_KEY: ${{ secrets.KILO_API_KEY }}
@@ -145,26 +133,39 @@ jobs:
           ISSUE_BODY: ${{ steps.context.outputs.issue_body }}
         shell: bash
         run: |
-          if gh issue view ${{ steps.context.outputs.issue_number }} --json labels 2>/dev/null | grep -q 'triage/ready'; then
-            echo "Issue already triaged as ready; skipping evaluation."
-            echo "sufficient=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
           node .github/scripts/triage-issue.js --mode evaluate > triage-evaluation.md
-          if grep -q "SUFFICIENT: yes" triage-evaluation.md; then
+          if grep -q "^SUFFICIENT: yes" triage-evaluation.md; then
             echo "sufficient=true" >> "$GITHUB_OUTPUT"
           else
             echo "sufficient=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Post dev summary
-        if: steps.evaluate.outputs.sufficient == 'true'
+      - name: Post dev summary or ask questions
+        id: summary
         env:
           KILO_API_KEY: ${{ secrets.KILO_API_KEY }}
           ISSUE_TITLE: ${{ steps.context.outputs.issue_title }}
           ISSUE_BODY: ${{ steps.context.outputs.issue_body }}
+          ISSUE_NUMBER: ${{ steps.context.outputs.issue_number }}
         shell: bash
         run: |
-          node .github/scripts/triage-issue.js --mode summary > dev-summary.md
-          gh issue comment ${{ steps.context.outputs.issue_number }} --body-file dev-summary.md
-          gh issue edit ${{ steps.context.outputs.issue_number }} --add-label "triage/ready" --remove-label "triage/needs-info"
+          if [[ "${steps.evaluate.outputs.sufficient}" == "true" ]]; then
+            node .github/scripts/triage-issue.js --mode summary > dev-summary.md
+            gh issue comment "$ISSUE_NUMBER" --body-file dev-summary.md
+            gh issue edit "$ISSUE_NUMBER" --add-label "triage/ready" --remove-label "triage/needs-info"
+            echo "summary_posted=true" >> "$GITHUB_OUTPUT"
+            echo "action=dev_summary" >> "$GITHUB_OUTPUT"
+          else
+            # Extract questions from evaluation output (lines after SUFFICIENT: no that start with "- ")
+            sed -n '/^SUFFICIENT: no/,$p' triage-evaluation.md | grep '^- ' > needed-questions.md || true
+            if [[ -s needed-questions.md ]]; then
+              gh issue comment "$ISSUE_NUMBER" --body-file needed-questions.md
+              gh issue edit "$ISSUE_NUMBER" --add-label "triage/needs-info" --remove-label "triage/ready"
+              echo "questions_posted=true" >> "$GITHUB_OUTPUT"
+              echo "action=questions_asked" >> "$GITHUB_OUTPUT"
+            else
+              echo "No specific questions returned; issue needs more info."
+              echo "questions_posted=false" >> "$GITHUB_OUTPUT"
+              echo "action=needs_info" >> "$GITHUB_OUTPUT"
+            fi
+          fi
