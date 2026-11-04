@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 
-const endpoint = 'https://gateway.kilo.ai/v1/chat/completions';
+const endpoint = 'https://ai-gateway.kilo.ai/api/v1/chat/completions';
 const model = 'kilo-auto/free';
 
 function git(args) {
