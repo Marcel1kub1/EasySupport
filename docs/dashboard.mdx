@@ -1,0 +1,47 @@
+# Dashboard
+
+EasySupport includes a web dashboard for per-guild configuration. Sign in with Discord to manage guilds where you have **Manage Server** access.
+
+## What you can configure
+
+- Supported modules, channels, categories, and role settings for each guild
+- Role-based access to commands; server administrators retain their bypass
+- Search modules and commands by name or description
+- Searchable guild, channel, category, and role selectors
+- Clear save and loading feedback while settings are updated
+- Read published EasySupport release notes from the dashboard
+
+## Public health endpoints
+
+EasyVStatus polls the bot's public, read-only health endpoints:
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/status/health` | Reports Discord readiness and performs a live `SELECT 1` against the bot's MySQL pool. Returns component state and generic details, never database credentials or host information. |
+| `GET /healthz` | Independently confirms that the website gateway responds. |
+
+The endpoints do not require an API token.
+
+The health response also includes a versioned, single-node `cluster` summary. The cluster is an observability label for this deployment; it does not provision servers, orchestrate bot instances, or proxy Discord traffic. Set `CLUSTER_ID`, `CLUSTER_NAME`, `CLUSTER_REGION`, and `CLUSTER_ENDPOINT` to customize the label.
+
+Status presentation belongs to EasyVStatus at `https://easyvstatus.wisp.uno`; the EasySupport `/status` route redirects there. EasySupport's website does not render cluster, latency, or connection-testing controls.
+
+## OAuth setup
+
+For the web dashboard, configure the Discord OAuth2 client and its callback URL to match the `OAUTH_REDIRECT_URI` value in your environment:
+
+```
+OAUTH_REDIRECT_URI=http://localhost:3000/auth/callback
+OAUTH_SCOPE=identify guilds
+```
+
+For a public deployment, set the OAuth callback to your deployed website's `/auth/callback` route and add the same URL in the Discord Developer Portal.
+
+## Service status
+
+Check the current status of EasySupport and EasyVStatus, view past incidents, and report errors:
+
+- **[Service status page](https://easyvstatus.wisp.uno)** — uptime, incident history, and current outages
+- **[Official website](https://easyv.wisp.uno)** — documentation, dashboard login, and support
+
+If you experience an issue, check the status page first to see whether it is already known. If it is not listed, report it through the official website or open an issue on GitHub.

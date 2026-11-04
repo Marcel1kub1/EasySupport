@@ -1,0 +1,72 @@
+# Categories & statuses
+
+Ticket categories and statuses are defined in [`src/categories.js`](./src/categories.js). This is the central configuration file for panel buttons, intake questions, and the full ticket-status registry.
+
+## Adding a category
+
+Add a category entry, then re-post `/panel` to render its button:
+
+```js
+refunds: {
+  label: 'Refunds',
+  emoji: '💸',
+  staffRole: 'Billing Team',
+  questions: ['What was refunded?', 'When did you pay? (optional)'],
+},
+```
+
+- `staffRole` may be a role name or ID.
+- Questions can be plain strings or objects such as `{ label: 'Order ID', style: 'short', required: false }`.
+
+## Adding a status
+
+Add a status in `TICKET_STATUSES`. Each status becomes a control-panel button and appears in ticket logs:
+
+```js
+escalated: {
+  label: 'Escalated to management',
+  emoji: '🔺',
+  staffRole: 'Management',
+},
+```
+
+| Field | Effect |
+|---|---|
+| `label` / `emoji` | Embed text, button label, and log text |
+| `staffRole` | Grants channel access and pings that role once on entry |
+| `claimable` | Records the staff member who selected the status |
+| `staffOnly` | Defaults to `true`; `false` allows members to select it |
+| `terminal` | Runs the close flow, transcript delivery, rating DM, and channel deletion |
+
+Set `terminal: true` on the final status to enable the close flow. Terminal statuses stop counting toward the open-ticket limit and freeze message logging. Existing tickets keep their current status; re-post `/panel` after changing the workflow.
+
+## Reopen a closed ticket
+
+The closed ticket record is retained, so a `ticket:reopen` status can create a new channel linked to it.
+
+## Regenerate category art
+
+Artwork is derived from the category key and label and cached in `data/art/`. Rename a category or remove its cached PNG to generate new art.
+
+## Status lifecycle
+
+```
+open ──► pending ──► claimed ──► escalated ──► ... ──► terminal
+```
+
+Each transition can grant channel access + ping the role configured on that status, and may record which staff member made the change. The per-user open-ticket limit counts every non-terminal status.
+
+## Closure protocol
+
+Every **terminal** status (default `closed`) runs this protocol:
+
+1. Staff clicks the terminal status button → ephemeral confirmation (prevents accidents).
+2. **Confirm** → optional reason modal.
+3. Server marks the ticket terminal, writes TXT + HTML transcripts.
+4. User receives a DM with transcripts and a 1–5 star rating row.
+5. Log channel receives the full closure summary (who set it, reason, transcript location, message count).
+6. The ticket channel is deleted after a 10-second grace window.
+
+## Per-category staff roles
+
+Every category in `src/categories.js` can pin its own `staffRoleId`. A ticket of that category grants that role channel access and pings it exactly once when the ticket opens — so different teams (billing, moderation, appeals) are only notified for their own topics. The panel embed lists the handling role for each button. Invalid role IDs are skipped with a console warning instead of breaking channel creation.

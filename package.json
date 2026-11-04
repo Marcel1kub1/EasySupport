@@ -9,6 +9,8 @@
     "start": "node src/index.js",
     "deploy": "node deploy-commands.js",
     "release:notes": "node scripts/generate-release-notes.js",
+    "docs:dev": "npx mintlify dev",
+    "docs:build": "npx mintlify build",
     "test": "DISCORD_TOKEN=test CLIENT_ID=test CLIENT_SECRET=test MYSQL_HOST=127.0.0.1 MYSQL_USER=test MYSQL_PASSWORD=test MYSQL_DATABASE=test OAUTH_REDIRECT_URI=http://localhost:3000/auth/callback DB_FILE=data/test.db node --experimental-sqlite --test src/commands/*.test.js src/tickets/*.test.js src/loader.test.js src/statusHealth.test.js src/cluster.test.js"
   },
   "engines": {

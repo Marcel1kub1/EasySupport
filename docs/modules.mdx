@@ -1,0 +1,35 @@
+# Bot modules
+
+EasySupport ships with a set of bot modules that can be enabled per guild. Available commands and options can vary by the current build and guild configuration.
+
+| Module | What it does |
+|---|---|
+| Moderation | Warnings, timeouts, bans, and warning lookups |
+| Anti-nuke | Configurable raid, spam, invite, and link protections |
+| Automod | Word and link filters, mention spam, caps, and configurable actions |
+| Leveling | XP, ranks, leaderboards, and role rewards |
+| Economy | Balances, payments, daily rewards, and work commands |
+| Giveaways | Timed draws, multiple winners, and automatic results |
+| Vouches | Member vouches, cooldowns, and leaderboards |
+| Welcome / goodbye / boost | Configurable messages, channels, and rewards |
+| Logging | Configurable logs for message, member, moderation, role, channel, and voice events |
+
+Modules are configured per guild through the web dashboard or `/setup`. Staff role binding, log channels, and ticket categories are set at the guild level, with per-category staff roles available in `src/categories.js`.
+
+## Enabling modules
+
+Modules are toggled per guild in the dashboard. Each module registers its own slash commands and event handlers. Staff access is gated by the configured staff role or `ManageMessages`; server administrators retain bypass.
+
+## Module responsibilities
+
+| Module | Responsibility |
+|---|---|
+| Moderation | Warning issuance, lookups, timeouts, bans |
+| Anti-nuke | Raid, spam, invite, and link protection thresholds |
+| Automod | Word/link filters, mention spam, caps, automated actions |
+| Leveling | XP tracking, ranks, leaderboards, role rewards |
+| Economy | Balances, payments, dailies, work commands |
+| Giveaways | Timed draws, winner selection, result posting |
+| Vouches | Member vouches, cooldowns, leaderboards |
+| Welcome / goodbye / boost | Configurable join/leave/boost messages and rewards |
+| Logging | Message, member, moderation, role, channel, voice event logs |

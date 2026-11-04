@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" aria-label="EasySupport banner">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#111111"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="300" fill="url(#bg)"/>
+
+  <!-- Decorative accent blocks -->
+  <rect x="920" y="40" width="4" height="220" fill="url(#accent)" opacity="0.5"/>
+  <rect x="928" y="40" width="2" height="220" fill="#ffffff" opacity="0.08"/>
+
+  <!-- Logo mark -->
+  <g transform="translate(60, 76)">
+    <rect x="0" y="0" width="108" height="108" rx="20" fill="#171717" stroke="#333333" stroke-width="2"/>
+    <rect x="0" y="0" width="108" height="6" rx="3" fill="url(#accent)"/>
+    <circle cx="54" cy="44" r="14" fill="#171717" stroke="url(#accent)" stroke-width="3"/>
+    <path d="M40 44 Q54 30 68 44" fill="none" stroke="url(#accent)" stroke-width="3" stroke-linecap="round"/>
+    <path d="M32 70 L54 92 L76 70" fill="none" stroke="#7c3aed" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="200" y="152" font-family="Inter, system-ui, sans-serif" font-size="52" font-weight="800" fill="#ffffff" letter-spacing="-0.03em">Easy</text>
+  <text x="200" y="152" font-family="Inter, system-ui, sans-serif" font-size="52" font-weight="800" fill="url(#accent)" letter-spacing="-0.03em">
+    <tspan x="346" dy="0">Support</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="200" y="212" font-family="Inter, system-ui, sans-serif" font-size="20" font-weight="400" fill="#94a3b8" letter-spacing="0.02em">Private Discord support tickets, guild tools, and a searchable server dashboard.</text>
+
+  <!-- Right panel: ticket preview -->
+  <g transform="translate(940, 70)">
+    <rect x="0" y="0" width="200" height="160" rx="10" fill="#171717" stroke="#333333" stroke-width="1.5"/>
+    <rect x="0" y="0" width="200" height="44" rx="10" fill="#111111"/>
+    <rect x="16" y="16" width="10" height="10" rx="2" fill="#7c3aed"/>
+    <rect x="16" y="28" width="10" height="10" rx="2" fill="#333333"/>
+    <rect x="16" y="40" width="10" height="10" rx="2" fill="#333333"/>
+    <rect x="24" y="76" width="152" height="8" rx="4" fill="#333333"/>
+    <rect x="24" y="92" width="110" height="8" rx="4" fill="#333333"/>
+    <rect x="24" y="108" width="86" height="8" rx="4" fill="#333333"/>
+    <circle cx="36" cy="136" r="6" fill="#7c3aed"/>
+    <rect x="50" y="130" width="114" height="12" rx="6" fill="#1a1a1a"/>
+  </g>
+</svg>

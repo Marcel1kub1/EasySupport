@@ -1,0 +1,110 @@
+# Architecture
+
+This document covers the technical architecture of EasySupport: stack, module responsibilities, data model, and the ticket lifecycle state machine.
+
+## Stack
+
+| Layer | Choice | Notes |
+|---|---|---|
+| Runtime | Node.js 22.5 LTS+ | Native `fetch`, stable ESM, built-in SQLite. |
+| Library | discord.js v14 | Buttons, modals, slash commands, REST. |
+| Intents | `Guilds`, `GuildMembers`, `GuildMessages`, `MessageContent` | Content intent is privileged — enable it in the Developer Portal. |
+| Storage | `node:sqlite` (built-in, no compile step) / PostgreSQL + `pg` (production) | Swap behind the same repository functions in `src/db.js`. |
+| Config | `dotenv` | Secrets never in source; `.env` is git-ignored. |
+| Process | `systemd`, Docker, or PM2 | Single process; scale by adding shards only past ~2,500 guilds. |
+
+## Module responsibilities
+
+| Module | Responsibility |
+|---|---|
+| `src/index.js` | Client bootstrap, event/command auto-loading, login. |
+| `src/config.js` | Validated environment config. |
+| `src/db.js` | Schema + all persistence (tickets, messages, guild settings, blacklist). |
+| `src/categories.js` | Central config: panel buttons, intake questions and the full ticket-status registry. |
+| `src/events/interactionCreate.js` | All interactive flows: open, claim, close, rate. |
+| `src/events/messageCreate.js` | Automated interaction logging. |
+| `src/transcripts.js` | Plain-text + HTML transcript generation to disk. |
+| `src/commands/` | `/setup` (per-guild config), `/panel` (post ticket panel). |
+
+## Data model
+
+```
+guilds          per-server config: staff_role_id, log_channel_id,
+                ticket_category_id, max_open_tickets
+tickets         id, guild_id, channel_id, user_id, user_tag, category,
+                status (any key of TICKET_STATUSES), claimed_by, timestamps,
+                close_reason, rating, panel_message_id
+ticket_messages every message inside a ticket, ordered — the audit trail
+blacklist       (guild_id, user_id) — members barred from opening tickets
+```
+
+The interaction log is append-only, so transcripts are reproducible from the database even if Discord messages are edited or deleted.
+
+## Lifecycle state machine
+
+```
+/panel click (+ intake modal)
+       │
+       ▼
+┌───────────────┐
+│ DEFAULT_STATUS │   ← configured in src/categories.js
+└───────────────┘
+       │
+staff click any status button on the ticket panel —
+one button per status in TICKET_STATUSES (except the current one):
+
+open ──► pending ──► claimed ──► escalated ──► ... ──► terminal
+(each transition can grant channel access + ping the role configured
+on that status, and may record which staff member made the change)
+
+       │ terminal status button
+       ▼
+┌──────────────────────────────────────────────────┐
+│  Confirm → reason modal → CLOSE                   │
+│  • transcripts written (TXT + HTML)               │
+│  • DM to user: transcript + 1–5⭐ rating buttons   │
+│  • log-channel embed (who/when/why)               │
+│  • channel deleted after 10 s grace window        │
+└──────────────────────────────────────────────────┘
+```
+
+## Core features
+
+### Button-based ticket creation
+
+Panels are posted with `/panel`; each button carries a stable `custom_id` (`ticket:open:<key>`), so panels keep working across restarts without collectors or re-registration.
+
+Cooldown per user (5 s) prevents click spam; per-guild open-ticket limit (configurable, default 2) prevents channel flooding.
+
+The creator only sees their own ticket — every channel is created with explicit permission overwrites (deny `@everyone`, allow user + staff role + bot).
+
+### Intake forms
+
+Optional per-category Discord modal (up to 5 questions) shown before the channel is created; answers are posted into the ticket as an embed, giving staff structured context from the first second.
+
+### Staff role integration
+
+- `/setup` binds a staff role, a log channel and a ticket category to the guild.
+- Every status button is staff-gated by default (`ManageMessages` **or** the configured staff role); individual statuses can opt out with `staffOnly: false`.
+- Status changes are atomic (`UPDATE ... WHERE status != ?`), so two staff clicking at once cannot both win; the control-panel status field updates live.
+- Per-category staff roles: every category in `src/categories.js` can pin its own `staffRoleId`.
+- Per-status staff roles: statuses can ping too — e.g. an `escalated` status that grants the high-rank role channel access and pings it.
+
+### Automated interaction logging
+
+Every message in a ticket channel is stored in `ticket_messages` with author, timestamp and content, including attachment markers. Status-change events post embeds to the log channel — the audit trail survives channel deletion.
+
+### Built-in protections
+
+- Blacklist table (extendable via commands) blocks barred users at click time.
+- Bot-permission warnings during `/setup` when `ManageChannels`/`ManageRoles` are missing.
+- All interaction handlers are wrapped in try/catch — failures reply privately instead of leaving "the application did not respond".
+- Stale role IDs in categories or statuses are skipped with a console warning instead of breaking channel creation or pinging failures.
+
+### Extension points (roadmap)
+
+- Multi-language strings (EN/ES) behind a tiny `t()` helper.
+- Scheduled auto-close for inactivity, working-hours aware routing.
+- Staff statistics command (response time, claims, ratings) from the log table.
+- Add/remove member buttons inside tickets, priority selector.
+- PostgreSQL swap: replace the `better-sqlite3` statements in `src/db.js`.

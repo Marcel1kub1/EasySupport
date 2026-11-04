@@ -1,0 +1,51 @@
+# Release notes
+
+The dashboard checks the public GitHub Releases API when a guild dashboard or release-notes page is opened. Results are cached for five minutes and link to the original release. If GitHub is temporarily unavailable, the dashboard logs the fetch error and uses the last locally generated feed when available.
+
+## Release process
+
+Every pull request targeting `main` must:
+
+1. Bump the version in `package.json`
+2. Add the same version to `src/data/releases.json` and `src/data/releases.md`
+3. Pass the repository release policy
+
+After the change is merged, GitHub automatically creates the matching `v<version>` release, which is then available to the dashboard release feed.
+
+## Generating release notes locally
+
+Maintainers can generate factual draft notes locally from Git history; the generator does not send code to an AI service. It groups commit subjects using [`scripts/release-notes.rules.json`](./scripts/release-notes.rules.json), lists changed paths, and includes slash-command definitions when command files change:
+
+```bash
+npm run release:notes -- --from v2.3.0 --version 2.4.0
+```
+
+Review `src/data/releases.json` and `src/data/releases.md` before publishing if you want local notes to serve as a fallback. An offline instance cannot display new releases while it is offline.
+
+Read and dismiss state is stored in the browser; no Discord message is sent.
+
+## Current release
+
+# EasySupport 2.3.1 — Mobile dashboard navigation
+
+**Draft tag:** `v2.3.1`
+**Release date:** 2026-11-03
+
+Improves the dashboard experience on phones and requires every merged update to be published as a versioned GitHub release.
+
+## Dashboard experience
+
+- Added a touch-friendly slide-out navigation drawer for mobile dashboard users.
+- Added backdrop, focus, and Escape-key controls for the mobile navigation.
+
+## Release updates
+
+- Added a GitHub Actions policy requiring every pull request to bump the release version and include matching release notes.
+- Added automatic GitHub Release publishing after a versioned change reaches `main`.
+
+## Changed files
+
+- `.github/workflows/release-policy.yml`
+- `src/public/site.css`
+- `src/public/site.js`
+- `src/views/layout.ejs`

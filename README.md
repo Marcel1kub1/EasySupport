@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://easyv.wisp.uno">
-    <img src="assets/logo.png" alt="EasySupport logo" width="112">
+    <img src="assets/logo.svg" alt="EasySupport logo" width="112">
   </a>
   <h1>EasySupport</h1>
   <p>Private Discord support tickets, guild tools, and a searchable server dashboard.</p>

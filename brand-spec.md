@@ -2,10 +2,10 @@
 
 ## Assets
 
-- Logo: [`assets/logo.png`](./assets/logo.png)
+- Logo: [`assets/logo.svg`](./assets/logo.svg)
 - Ticket panel screenshot: [`assets/panel.png`](./assets/panel.png)
 - Ticket workflow screenshot: [`assets/ticket.png`](./assets/ticket.png)
-- Supporting banner: [`assets/banner.png`](./assets/banner.png)
+- Supporting banner: [`assets/banner.svg`](./assets/banner.svg)
 - Cabinet Grotesk display font: `assets/fonts/cabinet-grotesk-*.woff2`, sourced from [Fontshare](https://www.fontshare.com/fonts/cabinet-grotesk) and used under Fontshare's free-font terms.
 - Inter body font: existing local assets in `assets/fonts/`.
 

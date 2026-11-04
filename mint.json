@@ -1,0 +1,86 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "EasySupport",
+  "logo": {
+    "dark": "/assets/logo.svg",
+    "light": "/assets/logo.svg",
+    "href": "/",
+    "width": 120,
+    "height": 40
+  },
+  "favicon": "/assets/logo.svg",
+  "colors": {
+    "primary": "#7c3aed",
+    "light": "#0f0f0f",
+    "dark": "#0f0f0f",
+    "anchors": {
+      "from": "#7c3aed",
+      "to": "#a855f7"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/Marcel1kub1/EasySupport",
+      "icon": "github"
+    },
+    {
+      "name": "Official Website",
+      "url": "https://easyv.wisp.uno",
+      "icon": "globe"
+    },
+    {
+      "name": "Service Status",
+      "url": "https://easyvstatus.wisp.uno",
+      "icon": "activity"
+    }
+  ],
+  "topbarCtaButton": {
+    "type": "github",
+    "url": "https://github.com/Marcel1kub1/EasySupport"
+  },
+  "anchors": [
+    {
+      "name": "Changelog",
+      "icon": "git-compare",
+      "url": "https://github.com/Marcel1kub1/EasySupport/releases"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Introduction",
+      "pages": [
+        "intro",
+        "getting-started",
+        "dashboard"
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "modules",
+        "categories-statuses",
+        "development",
+        "release-notes",
+        "architecture"
+      ]
+    }
+  ],
+  "openGraph": {
+    "type": "website",
+    "images": [
+      "/assets/docs-banner.svg"
+    ],
+    "description": "Private Discord support tickets, guild tools, and a searchable server dashboard."
+  },
+  "footerSocials": {
+    "github": "https://github.com/Marcel1kub1/EasySupport"
+  },
+  "feedback": {
+    "suggestAnEdit": true,
+    "raiseAnIssue": true,
+    "createDiscussion": true
+  },
+  "email": "support@easyv.wisp.uno",
+  "redirects": []
+}

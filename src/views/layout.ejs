@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#141419">
   <meta name="description" content="Configure EasySupport modules, roles, and staff workflows for your Discord guild.">
   <meta name="csrf-token" content="<%= csrfToken %>">
-  <link rel="icon" type="image/png" href="/assets/logo.png">
+  <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
   <link rel="preload" href="/assets/fonts/cabinet-grotesk-bold.woff2" as="font" type="font/woff2" crossorigin>
   <title><%= title %></title>
   <link rel="stylesheet" href="/site.css?v=<%= siteCssVersion %>">
@@ -18,7 +18,7 @@
     <div class="app-shell" data-guild-id="<%= guildId || '' %>">
       <aside id="dashboard-sidebar" class="app-sidebar" aria-label="Guild dashboard">
         <a class="app-brand" href="<%= guildId ? `/dashboard/${guildId}` : '/dashboard' %>">
-          <img src="/assets/logo.png" width="36" height="36" alt="">
+          <img src="/assets/logo.svg" width="36" height="36" alt="">
           <span>EasySupport</span>
         </a>
 
@@ -136,7 +136,7 @@
     <header class="public-header">
       <nav class="public-nav" aria-label="Main navigation">
         <a class="public-brand" href="/" aria-label="EasySupport home">
-          <img src="/assets/logo.png" width="34" height="34" alt="">
+          <img src="/assets/logo.svg" width="34" height="34" alt="">
           <span>EasySupport</span>
         </a>
         <div class="public-nav__links">
@@ -155,7 +155,7 @@
 
     <footer class="public-footer">
       <a class="public-footer__brand" href="/">
-        <img src="/assets/logo.png" width="28" height="28" alt="">
+        <img src="/assets/logo.svg" width="28" height="28" alt="">
         <span>EasySupport</span>
       </a>
       <p>Self-hosted support, thoughtfully managed.</p>

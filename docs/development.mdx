@@ -1,0 +1,83 @@
+# Development
+
+Run the test suite with:
+
+```bash
+npm test
+```
+
+## Project layout
+
+```text
+src/
+├── index.js                 client bootstrap and command/event loading
+├── config.js                environment validation
+├── art.js                   ticket panel and category artwork
+├── categories.js            ticket categories, questions, and statuses
+├── db.js                    MySQL schema and repository functions
+├── transcripts.js           TXT and HTML transcript generation
+├── web.js                   website, health API, and guild dashboard
+├── views/                   EJS templates
+├── public/                  website and dashboard assets
+├── commands/                slash commands
+└── events/                  Discord event handlers
+
+assets/
+├── fonts/                   bundled fonts used for artwork
+└── emoji/                   Twemoji SVG assets
+```
+
+## Extending ticket categories and statuses
+
+Ticket categories and statuses are defined in [`src/categories.js`](./src/categories.js). Dashboard settings are stored per guild in MySQL; edit the category definitions when adding code-level ticket workflows.
+
+### Add a category
+
+```js
+refunds: {
+  label: 'Refunds',
+  emoji: '💸',
+  staffRole: 'Billing Team',
+  questions: ['What was refunded?', 'When did you pay? (optional)'],
+},
+```
+
+`staffRole` may be a role name or ID. Questions can be plain strings or objects such as `{ label: 'Order ID', style: 'short', required: false }`.
+
+### Add a status
+
+```js
+escalated: {
+  label: 'Escalated to management',
+  emoji: '🔺',
+  staffRole: 'Management',
+},
+```
+
+Re-post `/panel` after changing the workflow. Panels posted before editing the registry keep their old buttons.
+
+### Reopen a closed ticket
+
+The closed ticket record is retained, so a `ticket:reopen` status can create a new channel linked to it.
+
+### Regenerate category art
+
+Artwork is derived from the category key and label and cached in `data/art/`. Rename a category or remove its cached PNG to generate new art.
+
+## Hosting and operations
+
+The bot stores its data in the configured MySQL database, generated artwork in `data/art/`, downloaded emoji SVGs in `data/emoji/`, and transcripts in `transcripts/`. For production:
+
+- Run under **systemd** or **PM2** so the process restarts after a reboot.
+- Back up the MySQL database regularly.
+- Keep `.env` out of version control and never publish bot or database credentials.
+
+Example systemd service:
+
+```ini
+[Service]
+WorkingDirectory=/opt/easysupport
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+EnvironmentFile=/opt/easysupport/.env
+```
