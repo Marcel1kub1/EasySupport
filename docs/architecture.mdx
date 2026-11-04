@@ -40,6 +40,10 @@ blacklist       (guild_id, user_id) — members barred from opening tickets
 
 The interaction log is append-only, so transcripts are reproducible from the database even if Discord messages are edited or deleted.
 
+<Callout type="note">
+  **Append-only audit trail** — Every message in a ticket channel is stored in `ticket_messages` with author, timestamp and content. Status-change events post embeds to the log channel, and the audit trail survives channel deletion.
+</Callout>
+
 ## Lifecycle state machine
 
 ```

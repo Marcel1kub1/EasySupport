@@ -11,12 +11,20 @@ EasySupport is a self-hosted bot + website. This guide walks you through creatin
 
 Panel art is rasterized with `@resvg/resvg-js`. Category artwork is cached under `data/art/`; transcripts are written under `transcripts/`.
 
+<Callout type="warning">
+  **Keep secrets safe** — Never publish bot or database credentials. Keep `.env` out of version control and set a unique `SESSION_SECRET` for production.
+</Callout>
+
 ## 1. Create and invite the bot
 
 1. Create an application in the Discord Developer Portal and add a bot.
 2. Copy the bot token. Under **Bot → Privileged Gateway Intents**, enable **Server Members Intent** and **Message Content Intent**.
 3. Generate an invite using the `bot` and `applications.commands` scopes. Grant the permissions needed by the bot's enabled features.
 4. For the web dashboard, configure the Discord OAuth2 client and its callback URL to match the `OAUTH_REDIRECT_URI` value in your environment.
+
+<Callout type="note">
+  **Privileged intents** — Enable **Server Members Intent** and **Message Content Intent** under **Bot → Privileged Gateway Intents** in the Discord Developer Portal; both are required for the bot to work.
+</Callout>
 
 ## 2. Configure environment
 

@@ -4,14 +4,13 @@
       <stop offset="0%" stop-color="#7c3aed"/>
       <stop offset="100%" stop-color="#a855f7"/>
     </linearGradient>
-    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-    </filter>
   </defs>
 
+  <!-- Self-contained dark container so logo is visible on both light and dark backgrounds -->
+  <rect x="0" y="0" width="640" height="200" rx="24" fill="#0f0f0f"/>
+
   <!-- Mark: support ticket badge with E monogram -->
-  <g transform="translate(32, 24)">
+  <g transform="translate(32, 32)">
     <rect x="0" y="0" width="108" height="108" rx="20" fill="#171717" stroke="#333333" stroke-width="2"/>
     <rect x="0" y="0" width="108" height="6" rx="3" fill="url(#accent)"/>
     <circle cx="54" cy="44" r="14" fill="#171717" stroke="url(#accent)" stroke-width="3"/>
@@ -20,8 +19,8 @@
   </g>
 
   <!-- Wordmark -->
-  <text x="168" y="118" font-family="Inter, system-ui, sans-serif" font-size="42" font-weight="700" fill="#ffffff" letter-spacing="-0.02em">Easy</text>
-  <text x="168" y="118" font-family="Inter, system-ui, sans-serif" font-size="42" font-weight="700" fill="url(#accent)" letter-spacing="-0.02em" style="paint-order: stroke fill stroke;">
-    <tspan x="304" dy="0">Support</tspan>
+  <text x="184" y="120" font-family="Inter, system-ui, sans-serif" font-size="48" font-weight="800" fill="#ffffff" letter-spacing="-0.02em">Easy</text>
+  <text x="184" y="120" font-family="Inter, system-ui, sans-serif" font-size="48" font-weight="800" fill="url(#accent)" letter-spacing="-0.02em">
+    <tspan x="332" dy="0">Support</tspan>
   </text>
 </svg>

@@ -1,173 +1,176 @@
-name: Enforce and publish releases
+name: Release and issue triage
 
 on:
-  pull_request:
-    branches: [main]
   push:
     branches: [main]
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
-  require-release-version:
-    name: Require a new version release
-    if: github.event_name == 'pull_request'
+  release:
+    name: Auto-release on push
+    if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip release]')
     runs-on: ubuntu-latest
-    steps:
-      - name: Check out pull request
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Require version and release notes changes
-        shell: bash
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          set -euo pipefail
-
-          non_workflow_changes="$(git diff --name-only "$BASE_SHA...HEAD" | grep -v '^\.github/workflows/' || true)"
-          if [[ -z "$non_workflow_changes" ]]; then
-            echo "Workflow-only change; no application release is required."
-            exit 0
-          fi
-
-          base_version="$(git show "$BASE_SHA:package.json" | node -e "let input=''; process.stdin.on('data', chunk => input += chunk); process.stdin.on('end', () => process.stdout.write(JSON.parse(input).version));")"
-          current_version="$(node -p "require('./package.json').version")"
-
-          if [[ "$base_version" == "$current_version" ]]; then
-            echo "::error::Every pull request must bump package.json to a new release version."
-            exit 1
-          fi
-
-          node - "$base_version" "$current_version" <<'NODE'
-          const [base, current] = process.argv.slice(2);
-          const parse = (version) => {
-            const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/);
-            if (!match) throw new Error(`Invalid semantic version: ${version}`);
-            return match.slice(1).map(Number);
-          };
-          const older = parse(base);
-          const newer = parse(current);
-          const isGreater = newer[0] > older[0] ||
-            (newer[0] === older[0] && newer[1] > older[1]) ||
-            (newer[0] === older[0] && newer[1] === older[1] && newer[2] > older[2]);
-          if (!isGreater) {
-            throw new Error(`Version ${current} must be greater than ${base}.`);
-          }
-          NODE
-
-          node - "$current_version" <<'NODE'
-          const fs = require('node:fs');
-          const version = process.argv[2];
-          const feed = JSON.parse(fs.readFileSync('src/data/releases.json', 'utf8'));
-          if (!feed.releases.some((release) => release.version === version)) {
-            throw new Error(`src/data/releases.json must contain release ${version}.`);
-          }
-          if (!fs.readFileSync('src/data/releases.md', 'utf8').includes(version)) {
-            throw new Error(`src/data/releases.md must document release ${version}.`);
-          }
-          NODE
-
-  publish-release:
-    name: Publish GitHub Release
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Check out main
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ github.token }}
 
-      - name: Read release version
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '>=20'
+
+      - name: Read current version
         id: version
         shell: bash
-        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
-
-      - name: Determine whether this is a release commit
-        id: release_guard
-        shell: bash
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          set -euo pipefail
-          previous_version="$(git show HEAD^:package.json 2>/dev/null | node -e "let input=''; process.stdin.on('data', chunk => input += chunk); process.stdin.on('end', () => process.stdout.write(JSON.parse(input).version));" || true)"
-          if [[ -n "$previous_version" && "$previous_version" == "$VERSION" ]]; then
-            echo "Package version is unchanged; skipping release publication."
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          CURRENT=$(node -p "require('./package.json').version")
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+
+      - name: Bump patch version
+        id: bump
+        shell: bash
+        run: |
+          NEW_VERSION=$(node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            const parts = pkg.version.split('.').map(Number);
+            parts[2] += 1;
+            pkg.version = parts.join('.');
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            process.stdout.write(pkg.version);
+          ")
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Commit version bump and tag
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore(release): bump version to ${{ steps.bump.outputs.new_version }} [skip release]"
+          git tag "v${{ steps.bump.outputs.new_version }}"
+          git push origin main --tags
+
+      - name: Get previous tag
+        id: prev_tag
+        shell: bash
+        run: |
+          PREVIOUS=$(git describe --tags --abbrev=0 --match="v*" "${{ steps.bump.outputs.new_version }}^" 2>/dev/null || echo "")
+          echo "previous=$PREVIOUS" >> "$GITHUB_OUTPUT"
+
+      - name: Generate AI changelog via Kilo
+        id: changelog
+        env:
+          KILO_API_TOKEN: ${{ secrets.KILO_API_TOKEN }}
+          COMMIT_FROM: ${{ steps.prev_tag.outputs.previous }}
+          COMMIT_TO: "HEAD"
+        shell: bash
+        run: |
+          node .github/scripts/generate-ai-changelog.js > changelog.md
+          if [[ ! -s changelog.md ]]; then
+            echo "::error::Kilo generated an empty changelog."
+            exit 1
           fi
-
-      - name: Verify release notes
-        if: steps.release_guard.outputs.should_release == 'true'
-        shell: bash
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          node - "$VERSION" <<'NODE'
-          const fs = require('node:fs');
-          const version = process.argv[2];
-          const feed = JSON.parse(fs.readFileSync('src/data/releases.json', 'utf8'));
-          if (!feed.releases.some((release) => release.version === version)) {
-            throw new Error(`src/data/releases.json must contain release ${version}.`);
-          }
-          NODE
-
-      - name: Create or verify version tag
-        if: steps.release_guard.outputs.should_release == 'true'
-        id: tag
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          tag="v$VERSION"
-          git fetch --tags --force
-
-          if git rev-parse "$tag^{commit}" >/dev/null 2>&1; then
-            tagged_commit="$(git rev-parse "$tag^{commit}")"
-            if [[ "$tagged_commit" == "$GITHUB_SHA" ]]; then
-              echo "Tag $tag already points to this release commit."
-            else
-              echo "Tag $tag points to $tagged_commit instead of $GITHUB_SHA; replacing the tag and any existing release."
-              if gh release view "$tag" >/dev/null 2>&1; then
-                gh release delete "$tag" --yes --cleanup-tag
-              else
-                git push origin ":refs/tags/$tag"
-              fi
-              git tag -d "$tag" >/dev/null 2>&1 || true
-              git fetch --tags --force
-              git config user.name "github-actions[bot]"
-              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-              git tag -a "$tag" "$GITHUB_SHA" -m "EasySupport $VERSION"
-              git push origin "$tag"
-              tagged_commit="$GITHUB_SHA"
-            fi
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git tag -a "$tag" "$GITHUB_SHA" -m "EasySupport $VERSION"
-            git push origin "$tag"
-            tagged_commit="$GITHUB_SHA"
-          fi
-          echo "target=$tagged_commit" >> "$GITHUB_OUTPUT"
+          echo "changelog_path=changelog.md" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
-        if: steps.release_guard.outputs.should_release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
-          TAG: v${{ steps.version.outputs.version }}
+          VERSION: ${{ steps.bump.outputs.new_version }}
+        shell: bash
         run: |
+          TAG="v${VERSION}"
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG already exists."
           else
             gh release create "$TAG" \
               --verify-tag \
-              --title "EasySupport $VERSION" \
-              --notes-file src/data/releases.md
+              --title "EasySupport ${VERSION}" \
+              --notes-file changelog.md
           fi
+
+  triage:
+    name: Triage GitHub issues
+    if: github.event_name == 'issues' || github.event_name == 'issue_comment'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '>=20'
+
+      - name: Extract issue context
+        id: context
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "issues" ]]; then
+            ISSUE_NUMBER=${{ github.event.issue.number }}
+            ISSUE_TITLE="${{ github.event.issue.title }}"
+            ISSUE_BODY="${{ github.event.issue.body }}"
+            COMMENT_AUTHOR="${{ github.sender.login }}"
+            ISSUE_AUTHOR="${{ github.event.issue.user.login }}"
+          else
+            ISSUE_NUMBER=${{ github.event.issue.number }}
+            ISSUE_TITLE="${{ github.event.issue.title }}"
+            ISSUE_BODY="${{ github.event.issue.body }}"
+            COMMENT_AUTHOR="${{ github.sender.login }}"
+            ISSUE_AUTHOR="${{ github.event.issue.user.login }}"
+          fi
+          echo "issue_number=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "issue_title=$ISSUE_TITLE" >> "$GITHUB_OUTPUT"
+          echo "issue_author=$ISSUE_AUTHOR" >> "$GITHUB_OUTPUT"
+          echo "comment_author=$COMMENT_AUTHOR" >> "$GITHUB_OUTPUT"
+
+      - name: Triage new issue (questions)
+        if: github.event_name == 'issues'
+        id: questions
+        env:
+          KILO_API_TOKEN: ${{ secrets.KILO_API_TOKEN }}
+          ISSUE_TITLE: ${{ steps.context.outputs.issue_title }}
+          ISSUE_BODY: ${{ steps.context.outputs.issue_body }}
+        shell: bash
+        run: |
+          node .github/scripts/triage-issue.js --mode questions > triage-response.md
+          gh issue comment ${{ steps.context.outputs.issue_number }} --body-file triage-response.md
+          gh issue edit ${{ steps.context.outputs.issue_number }} --add-label "triage/needs-info"
+
+      - name: Evaluate issue comment (summary)
+        if: github.event_name == 'issue_comment' && steps.context.outputs.comment_author != steps.context.outputs.issue_author
+        id: evaluate
+        env:
+          KILO_API_TOKEN: ${{ secrets.KILO_API_TOKEN }}
+          ISSUE_TITLE: ${{ steps.context.outputs.issue_title }}
+          ISSUE_BODY: ${{ steps.context.outputs.issue_body }}
+        shell: bash
+        run: |
+          node .github/scripts/triage-issue.js --mode evaluate > triage-evaluation.md
+          if grep -q "SUFFICIENT: yes" triage-evaluation.md; then
+            echo "sufficient=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "sufficient=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post dev summary
+        if: steps.evaluate.outputs.sufficient == 'true'
+        env:
+          KILO_API_TOKEN: ${{ secrets.KILO_API_TOKEN }}
+          ISSUE_TITLE: ${{ steps.context.outputs.issue_title }}
+          ISSUE_BODY: ${{ steps.context.outputs.issue_body }}
+        shell: bash
+        run: |
+          node .github/scripts/triage-issue.js --mode summary > dev-summary.md
+          gh issue comment ${{ steps.context.outputs.issue_number }} --body-file dev-summary.md
+          gh issue edit ${{ steps.context.outputs.issue_number }} --add-label "triage/ready" --remove-label "triage/needs-info"

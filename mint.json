@@ -5,8 +5,8 @@
     "dark": "/assets/logo.svg",
     "light": "/assets/logo.svg",
     "href": "/",
-    "width": 120,
-    "height": 40
+    "width": 200,
+    "height": 60
   },
   "favicon": "/assets/logo.svg",
   "colors": {
