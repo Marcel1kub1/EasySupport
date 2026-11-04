@@ -171,7 +171,7 @@ jobs:
           if [[ "${{ steps.evaluate.outputs.sufficient }}" == "true" ]]; then
             node .github/scripts/triage-issue.js --mode summary > dev-summary.md
             gh issue comment "$ISSUE_NUMBER" --body-file dev-summary.md
-            gh issue edit "$ISSUE_NUMBER" --add-label "triage/ready" --remove-label "triage/needs-info"
+            gh issue edit "$ISSUE_NUMBER" --add-label "triage/ready" --remove-label "triage/needs-info" || true
             echo "summary_posted=true" >> "$GITHUB_OUTPUT"
             echo "action=dev_summary" >> "$GITHUB_OUTPUT"
           else
@@ -179,7 +179,7 @@ jobs:
             sed -n '/^SUFFICIENT: no/,$p' triage-evaluation.md | grep '^- ' > needed-questions.md || true
             if [[ -s needed-questions.md ]]; then
               gh issue comment "$ISSUE_NUMBER" --body-file needed-questions.md
-              gh issue edit "$ISSUE_NUMBER" --add-label "triage/needs-info" --remove-label "triage/ready"
+              gh issue edit "$ISSUE_NUMBER" --add-label "triage/needs-info" --remove-label "triage/ready" || true
               echo "questions_posted=true" >> "$GITHUB_OUTPUT"
               echo "action=questions_asked" >> "$GITHUB_OUTPUT"
             else
