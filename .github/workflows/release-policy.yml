@@ -104,6 +104,8 @@ jobs:
 
       - name: Extract issue context
         id: context
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "issues" ]]; then
@@ -129,6 +131,7 @@ jobs:
         id: evaluate
         env:
           KILO_API_KEY: ${{ secrets.KILO_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
           ISSUE_TITLE: ${{ steps.context.outputs.issue_title }}
           ISSUE_BODY: ${{ steps.context.outputs.issue_body }}
         shell: bash
@@ -144,6 +147,7 @@ jobs:
         id: summary
         env:
           KILO_API_KEY: ${{ secrets.KILO_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
           ISSUE_TITLE: ${{ steps.context.outputs.issue_title }}
           ISSUE_BODY: ${{ steps.context.outputs.issue_body }}
           ISSUE_NUMBER: ${{ steps.context.outputs.issue_number }}
