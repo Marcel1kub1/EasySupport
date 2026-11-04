@@ -144,7 +144,8 @@ jobs:
           KILO_API_KEY: ${{ secrets.KILO_API_KEY }}
           ISSUE_TITLE: ${{ steps.context.outputs.issue_title }}
           ISSUE_BODY: ${{ steps.context.outputs.issue_body }}
-        shell: bash |
+        shell: bash
+        run: |
           if gh issue view ${{ steps.context.outputs.issue_number }} --json labels 2>/dev/null | grep -q 'triage/ready'; then
             echo "Issue already triaged as ready; skipping evaluation."
             echo "sufficient=false" >> "$GITHUB_OUTPUT"
