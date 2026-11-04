@@ -139,14 +139,17 @@ jobs:
           gh issue edit ${{ steps.context.outputs.issue_number }} --add-label "triage/needs-info"
 
       - name: Evaluate issue comment (summary)
-        if: github.event_name == 'issue_comment' && steps.context.outputs.comment_author != steps.context.outputs.issue_author
         id: evaluate
         env:
           KILO_API_KEY: ${{ secrets.KILO_API_KEY }}
           ISSUE_TITLE: ${{ steps.context.outputs.issue_title }}
           ISSUE_BODY: ${{ steps.context.outputs.issue_body }}
-        shell: bash
-        run: |
+        shell: bash |
+          if gh issue view ${{ steps.context.outputs.issue_number }} --json labels 2>/dev/null | grep -q 'triage/ready'; then
+            echo "Issue already triaged as ready; skipping evaluation."
+            echo "sufficient=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           node .github/scripts/triage-issue.js --mode evaluate > triage-evaluation.md
           if grep -q "SUFFICIENT: yes" triage-evaluation.md; then
             echo "sufficient=true" >> "$GITHUB_OUTPUT"
