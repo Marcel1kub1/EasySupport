@@ -12,9 +12,9 @@ function git(args) {
 }
 
 async function callKilo(prompt) {
-  const token = process.env.KILO_API_TOKEN;
+  const token = process.env.KILO_API_KEY;
   if (!token) {
-    throw new Error('KILO_API_TOKEN environment variable is not set.');
+    throw new Error('KILO_API_KEY environment variable is not set.');
   }
 
   const response = await fetch(endpoint, {
@@ -31,13 +31,24 @@ async function callKilo(prompt) {
     }),
   });
 
+  const text = await response.text();
   if (!response.ok) {
-    const text = await response.text();
     throw new Error(`Kilo Gateway error ${response.status}: ${text}`);
   }
 
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content || '';
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Kilo Gateway returned non-JSON (${response.status}): ${text.slice(0, 500)}`);
+  }
+
+  const content = data.choices?.[0]?.message?.content || '';
+  if (!content) {
+    throw new Error(`Kilo Gateway returned empty content (status ${response.status}, body: ${text.slice(0, 500)})`);
+  }
+
+  return content;
 }
 
 function parseArguments(argv) {

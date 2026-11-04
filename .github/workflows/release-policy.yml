@@ -71,7 +71,7 @@ jobs:
       - name: Generate AI changelog via Kilo
         id: changelog
         env:
-          KILO_API_TOKEN: ${{ secrets.KILO_API_TOKEN }}
+          KILO_API_KEY: ${{ secrets.KILO_API_KEY }}
           COMMIT_FROM: ${{ steps.prev_tag.outputs.previous }}
           COMMIT_TO: "HEAD"
         shell: bash
@@ -140,7 +140,7 @@ jobs:
         if: github.event_name == 'issues'
         id: questions
         env:
-          KILO_API_TOKEN: ${{ secrets.KILO_API_TOKEN }}
+          KILO_API_KEY: ${{ secrets.KILO_API_KEY }}
           ISSUE_TITLE: ${{ steps.context.outputs.issue_title }}
           ISSUE_BODY: ${{ steps.context.outputs.issue_body }}
         shell: bash
@@ -153,7 +153,7 @@ jobs:
         if: github.event_name == 'issue_comment' && steps.context.outputs.comment_author != steps.context.outputs.issue_author
         id: evaluate
         env:
-          KILO_API_TOKEN: ${{ secrets.KILO_API_TOKEN }}
+          KILO_API_KEY: ${{ secrets.KILO_API_KEY }}
           ISSUE_TITLE: ${{ steps.context.outputs.issue_title }}
           ISSUE_BODY: ${{ steps.context.outputs.issue_body }}
         shell: bash
@@ -168,7 +168,7 @@ jobs:
       - name: Post dev summary
         if: steps.evaluate.outputs.sufficient == 'true'
         env:
-          KILO_API_TOKEN: ${{ secrets.KILO_API_TOKEN }}
+          KILO_API_KEY: ${{ secrets.KILO_API_KEY }}
           ISSUE_TITLE: ${{ steps.context.outputs.issue_title }}
           ISSUE_BODY: ${{ steps.context.outputs.issue_body }}
         shell: bash
