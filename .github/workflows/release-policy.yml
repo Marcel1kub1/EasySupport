@@ -183,8 +183,16 @@ jobs:
               echo "questions_posted=true" >> "$GITHUB_OUTPUT"
               echo "action=questions_asked" >> "$GITHUB_OUTPUT"
             else
-              echo "No specific questions returned; issue needs more info."
-              echo "questions_posted=false" >> "$GITHUB_OUTPUT"
-              echo "action=needs_info" >> "$GITHUB_OUTPUT"
+              # Fallback: generate fresh questions via Kilo questions mode
+              node .github/scripts/triage-issue.js --mode questions > needed-questions.md
+              if [[ -s needed-questions.md ]]; then
+                gh issue comment "$ISSUE_NUMBER" --body-file needed-questions.md
+                gh issue edit "$ISSUE_NUMBER" --add-label "triage/needs-info" --remove-label "triage/ready" || true
+                echo "questions_posted=true" >> "$GITHUB_OUTPUT"
+                echo "action=questions_asked" >> "$GITHUB_OUTPUT"
+              else
+                echo "::error::Kilo returned neither questions nor sufficiency=yes. Check triage-evaluation.md."
+                exit 1
+              fi
             fi
           fi
