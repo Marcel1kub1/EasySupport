@@ -69,6 +69,7 @@ async function main() {
   const options = parseArguments(process.argv.slice(2));
   const issueTitle = process.env.ISSUE_TITLE || '';
   const issueBody = process.env.ISSUE_BODY || '';
+  const comments = process.env.ISSUE_COMMENTS || '';
 
   if (options.mode === 'questions') {
     const prompt = `A user opened this issue on the EasySupport GitHub repository (a self-hosted Discord ticketing bot):
@@ -76,21 +77,27 @@ async function main() {
 Title: ${issueTitle}
 Body: ${issueBody}
 
-As a project maintainer, reply with clarifying questions to gather all information needed to understand, reproduce, and act on this issue. Ask only the most essential questions (maximum 5). Be friendly and helpful. Write your response as a GitHub comment in Markdown.`;
+Conversation history:
+${comments}
+
+As a project maintainer, reply with clarifying questions to gather all information needed to understand, reproduce, and act on this issue. Ask only the most essential questions (maximum 5) that have NOT already been answered in the conversation history. Be friendly and helpful. Write your response as a GitHub comment in Markdown.`;
 
     const response = await callKilo(prompt);
     process.stdout.write(response);
   } else if (options.mode === 'evaluate') {
-    const prompt = `Review this GitHub issue and determine if the user has provided enough information for a developer to act on it:
+    const prompt = `Review this GitHub issue and its conversation history to determine if the user has provided enough information for a developer to act on it:
 
 Title: ${issueTitle}
 Body: ${issueBody}
+
+Conversation history:
+${comments}
 
 Reply with exactly this format at the top of your response:
 - SUFFICIENT: yes   (if the issue has enough detail to act on)
 - SUFFICIENT: no    (if more information is needed from the user)
 
-If SUFFICIENT: no, then after that line, list the specific questions that still need to be asked of the user (maximum 5 questions, one per line, prefixed with "- ").
+If SUFFICIENT: no, then after that line, list the specific questions that still need to be asked of the user (maximum 5 questions, one per line, prefixed with "- "). Only include questions that have NOT already been answered in the conversation history.
 
 Then briefly explain your reasoning.`;
 
@@ -101,6 +108,9 @@ Then briefly explain your reasoning.`;
 
 Title: ${issueTitle}
 Body: ${issueBody}
+
+Conversation history:
+${comments}
 
 Write a Markdown summary with these sections:
 1. **Issue type** (bug report, feature request, question, other)
