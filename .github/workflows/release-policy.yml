@@ -126,7 +126,6 @@ jobs:
           echo "comment_author=$COMMENT_AUTHOR" >> "$GITHUB_OUTPUT"
 
       - name: Triage new issue (questions)
-        if: github.event_name == 'issues'
         id: questions
         env:
           KILO_API_KEY: ${{ secrets.KILO_API_KEY }}
