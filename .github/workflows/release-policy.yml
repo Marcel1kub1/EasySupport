@@ -43,7 +43,8 @@ jobs:
           echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Tag and push
-        shell: bash |
+        shell: bash
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -f "v${{ steps.version.outputs.new_version }}"
@@ -62,7 +63,8 @@ jobs:
           KILO_API_KEY: ${{ secrets.KILO_API_KEY }}
           COMMIT_FROM: ${{ steps.prev_tag.outputs.previous }}
           COMMIT_TO: "HEAD"
-        shell: bash |
+        shell: bash
+        run: |
           node .github/scripts/generate-ai-changelog.js > changelog.md
           if [[ ! -s changelog.md ]]; then
             echo "::error::Kilo generated an empty changelog."
@@ -74,7 +76,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.new_version }}
-        shell: bash |
+        shell: bash
+        run: |
           TAG="v${VERSION}"
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG already exists; deleting and recreating with new changelog."
