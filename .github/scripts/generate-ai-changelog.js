@@ -27,7 +27,7 @@ async function callKilo(prompt) {
       model,
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 4000,
     }),
   });
 
@@ -43,9 +43,17 @@ async function callKilo(prompt) {
     throw new Error(`Kilo Gateway returned non-JSON (${response.status}): ${text.slice(0, 500)}`);
   }
 
-  const content = data.choices?.[0]?.message?.content || '';
+  const choice = data.choices?.[0];
+  const finishReason = choice?.finish_reason ?? '';
+  const content =
+    choice?.message?.content ??
+    choice?.message?.reasoning ??
+    '';
   if (!content) {
     throw new Error(`Kilo Gateway returned empty content (status ${response.status}, body: ${text.slice(0, 500)})`);
+  }
+  if (finishReason && finishReason !== 'stop') {
+    throw new Error(`Kilo Gateway did not complete generation (finish_reason: ${finishReason}); content may be truncated.`);
   }
 
   return content;

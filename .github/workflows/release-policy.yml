@@ -15,7 +15,7 @@ permissions:
 jobs:
   release:
     name: Auto-release on push
-    if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip release]')
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Check out main
@@ -29,43 +29,31 @@ jobs:
         with:
           node-version: '>=20'
 
-      - name: Read current version
+      - name: Determine next version from tags
         id: version
         shell: bash
         run: |
-          CURRENT=$(node -p "require('./package.json').version")
-          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
-
-      - name: Bump patch version
-        id: bump
-        shell: bash
-        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 --match="v*" 2>/dev/null || echo "v2.3.1")
+          CURRENT_VERSION=${LATEST_TAG#v}
           NEW_VERSION=$(node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            const parts = pkg.version.split('.').map(Number);
+            const parts = '${CURRENT_VERSION}'.split('.').map(Number);
             parts[2] += 1;
-            pkg.version = parts.join('.');
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-            process.stdout.write(pkg.version);
+            console.log(parts.join('.'));
           ")
           echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Commit version bump and tag
-        shell: bash
-        run: |
+      - name: Tag and push
+        shell: bash |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json
-          git commit -m "chore(release): bump version to ${{ steps.bump.outputs.new_version }} [skip release]"
-          git tag -f "v${{ steps.bump.outputs.new_version }}"
-          git push origin "v${{ steps.bump.outputs.new_version }}" --force
+          git tag -f "v${{ steps.version.outputs.new_version }}"
+          git push origin "v${{ steps.version.outputs.new_version }}" --force
 
       - name: Get previous tag
         id: prev_tag
         shell: bash
         run: |
-          PREVIOUS=$(git describe --tags --abbrev=0 --match="v*" "${{ steps.bump.outputs.new_version }}^" 2>/dev/null || echo "")
+          PREVIOUS=$(git describe --tags --abbrev=0 --match="v*" "${{ steps.version.outputs.new_version }}^" 2>/dev/null || echo "")
           echo "previous=$PREVIOUS" >> "$GITHUB_OUTPUT"
 
       - name: Generate AI changelog via Kilo
@@ -74,8 +62,7 @@ jobs:
           KILO_API_KEY: ${{ secrets.KILO_API_KEY }}
           COMMIT_FROM: ${{ steps.prev_tag.outputs.previous }}
           COMMIT_TO: "HEAD"
-        shell: bash
-        run: |
+        shell: bash |
           node .github/scripts/generate-ai-changelog.js > changelog.md
           if [[ ! -s changelog.md ]]; then
             echo "::error::Kilo generated an empty changelog."
@@ -86,9 +73,8 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.bump.outputs.new_version }}
-        shell: bash
-        run: |
+          VERSION: ${{ steps.version.outputs.new_version }}
+        shell: bash |
           TAG="v${VERSION}"
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG already exists; deleting and recreating with new changelog."
