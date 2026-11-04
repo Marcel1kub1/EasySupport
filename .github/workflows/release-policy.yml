@@ -58,8 +58,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json
           git commit -m "chore(release): bump version to ${{ steps.bump.outputs.new_version }} [skip release]"
-          git tag "v${{ steps.bump.outputs.new_version }}"
-          git push origin main --tags
+          git tag -f "v${{ steps.bump.outputs.new_version }}"
+          git push origin "v${{ steps.bump.outputs.new_version }}" --force
 
       - name: Get previous tag
         id: prev_tag
@@ -87,17 +87,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.bump.outputs.new_version }}
-        shell: bash
-        run: |
+        shell: bash |
           TAG="v${VERSION}"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG already exists."
-          else
-            gh release create "$TAG" \
-              --verify-tag \
-              --title "EasySupport ${VERSION}" \
-              --notes-file changelog.md
+            echo "Release $TAG already exists; deleting and recreating with new changelog."
+            gh release delete "$TAG" --yes --cleanup-tag
           fi
+          git push origin "$TAG" --force
+          gh release create "$TAG" \
+            --verify-tag \
+            --title "EasySupport ${VERSION}" \
+            --notes-file changelog.md
 
   triage:
     name: Triage GitHub issues
