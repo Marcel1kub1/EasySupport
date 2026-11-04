@@ -131,6 +131,7 @@ jobs:
           fi
           echo "issue_number=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
           echo "issue_title=$ISSUE_TITLE" >> "$GITHUB_OUTPUT"
+          echo "issue_body=$ISSUE_BODY" >> "$GITHUB_OUTPUT"
           echo "issue_author=$ISSUE_AUTHOR" >> "$GITHUB_OUTPUT"
           echo "comment_author=$COMMENT_AUTHOR" >> "$GITHUB_OUTPUT"
 
