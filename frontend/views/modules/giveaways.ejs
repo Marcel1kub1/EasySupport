@@ -1,0 +1,68 @@
+<section class="module-settings">
+  <header class="page-heading">
+    <div>
+      <p class="section-kicker">Giveaways</p>
+      <h1>Giveaway settings</h1>
+      <p>Configure timed draws, multiple winners, and rerolls.</p>
+    </div>
+    <a href="/dashboard/<%= guildId %>" class="button button--quiet">← Back to guild</a>
+  </header>
+
+  <form method="post" action="/admin/modules/<%= guildId %>/giveaways" class="settings-form">
+    <%- include('../partials/csrf-field') %>
+    <div class="settings-grid">
+      <% 
+      const fields = [
+        { key: 'giveaway_channel', label: 'Giveaway Channel', type: 'channel', desc: 'Default channel for new giveaways' },
+        { key: 'giveaway_role', label: 'Giveaway Role', type: 'role', desc: 'Role allowed to create giveaways' },
+        { key: 'min_giveaway_duration', label: 'Min Duration', type: 'number', desc: 'Minimum giveaway duration', unit: 'min' },
+        { key: 'max_giveaway_duration', label: 'Max Duration', type: 'number', desc: 'Maximum giveaway duration', unit: 'min' },
+        { key: 'giveaway_emoji', label: 'Giveaway Emoji', type: 'text', desc: 'Emoji used for giveaway reactions' },
+        { key: 'winner_count_default', label: 'Default Winner Count', type: 'number', desc: 'Default number of winners' },
+        { key: 'giveaway_log_channel', label: 'Log Channel', type: 'channel', desc: 'Channel for giveaway end logs' },
+      ];
+      fields.forEach((s) => { %>
+        <div class="setting-field">
+          <label class="setting-label" for="<%= s.key %>"><%= s.label %></label>
+          <p class="setting-desc"><%= s.desc %></p>
+          <% if (s.type === 'toggle') { %>
+            <div class="toggle">
+              <input type="checkbox" id="<%= s.key %>" name="<%= s.key %>" value="true" <%= settings[s.key] === 'true' || settings[s.key] === true ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </div>
+          <% } else if (s.type === 'number') { %>
+            <div class="input-group">
+              <input type="number" id="<%= s.key %>" name="<%= s.key %>" value="<%= settings[s.key] || '' %>" min="0">
+              <span class="input-suffix"><%= s.unit || '' %></span>
+            </div>
+          <% } else if (s.type === 'role') { %>
+            <select id="<%= s.key %>" name="<%= s.key %>" data-role-picker="single">
+              <option value="">Select a role</option>
+              <% roles.forEach((role) => { %>
+                <option value="<%= role.id %>" <%= settings[s.key] === role.id ? 'selected' : '' %>><%= role.name %></option>
+              <% }) %>
+              <% if (settings[s.key] && !roles.some((role) => role.id === settings[s.key])) { %>
+                <option value="<%= settings[s.key] %>" selected>Saved role is unavailable</option>
+              <% } %>
+            </select>
+          <% } else if (s.type === 'channel') { %>
+            <select id="<%= s.key %>" name="<%= s.key %>">
+              <option value="">Select a channel</option>
+              <% channels.forEach((channel) => { %>
+                <option value="<%= channel.id %>" <%= settings[s.key] === channel.id ? 'selected' : '' %>>#<%= channel.name %></option>
+              <% }) %>
+              <% if (settings[s.key] && !channels.some((channel) => channel.id === settings[s.key])) { %>
+                <option value="<%= settings[s.key] %>" selected>Saved channel is unavailable</option>
+              <% } %>
+            </select>
+          <% } else { %>
+            <input type="text" id="<%= s.key %>" name="<%= s.key %>" value="<%= settings[s.key] || '' %>">
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+    <div class="form-actions">
+      <%- include('../partials/save-button', { settingName: 'giveaway' }) %>
+    </div>
+  </form>
+</section>

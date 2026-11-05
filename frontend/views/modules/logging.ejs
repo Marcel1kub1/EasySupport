@@ -1,0 +1,61 @@
+<section class="module-settings">
+  <header class="page-heading">
+    <div>
+      <p class="section-kicker">Logging</p>
+      <h1>Logging settings</h1>
+      <p>Configure which events are logged and where they are sent.</p>
+    </div>
+    <a href="/dashboard/<%= guildId %>" class="button button--quiet">← Back to guild</a>
+  </header>
+
+  <form method="post" action="/admin/modules/<%= guildId %>/logging" class="settings-form">
+    <%- include('../partials/csrf-field') %>
+    <div class="settings-grid">
+      <% 
+      const fields = [
+        { key: 'log_channel', label: 'Log Channel', type: 'channel', desc: 'Default channel for all logs' },
+        { key: 'log_message_delete', label: 'Message Delete', type: 'toggle', desc: 'Log deleted messages' },
+        { key: 'log_message_edit', label: 'Message Edit', type: 'toggle', desc: 'Log edited messages' },
+        { key: 'log_member_join', label: 'Member Join', type: 'toggle', desc: 'Log when members join' },
+        { key: 'log_member_leave', label: 'Member Leave', type: 'toggle', desc: 'Log when members leave' },
+        { key: 'log_member_ban', label: 'Member Ban', type: 'toggle', desc: 'Log member bans' },
+        { key: 'log_member_unban', label: 'Member Unban', type: 'toggle', desc: 'Log member unbans' },
+        { key: 'log_role_create', label: 'Role Create', type: 'toggle', desc: 'Log role creation' },
+        { key: 'log_role_delete', label: 'Role Delete', type: 'toggle', desc: 'Log role deletion' },
+        { key: 'log_channel_create', label: 'Channel Create', type: 'toggle', desc: 'Log channel creation' },
+        { key: 'log_channel_delete', label: 'Channel Delete', type: 'toggle', desc: 'Log channel deletion' },
+        { key: 'log_voice_join', label: 'Voice Join', type: 'toggle', desc: 'Log voice channel joins' },
+        { key: 'log_voice_leave', label: 'Voice Leave', type: 'toggle', desc: 'Log voice channel leaves' },
+        { key: 'log_nickname_change', label: 'Nickname Change', type: 'toggle', desc: 'Log nickname changes' },
+        { key: 'log_avatar_change', label: 'Avatar Change', type: 'toggle', desc: 'Log avatar changes' },
+      ];
+      fields.forEach((s) => { %>
+        <div class="setting-field">
+          <label class="setting-label" for="<%= s.key %>"><%= s.label %></label>
+          <p class="setting-desc"><%= s.desc %></p>
+          <% if (s.type === 'toggle') { %>
+            <div class="toggle">
+              <input type="checkbox" id="<%= s.key %>" name="<%= s.key %>" value="true" <%= settings[s.key] === 'true' || settings[s.key] === true ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </div>
+          <% } else if (s.type === 'channel') { %>
+            <select id="<%= s.key %>" name="<%= s.key %>">
+              <option value="">Select a channel</option>
+              <% channels.forEach((channel) => { %>
+                <option value="<%= channel.id %>" <%= settings[s.key] === channel.id ? 'selected' : '' %>>#<%= channel.name %></option>
+              <% }) %>
+              <% if (settings[s.key] && !channels.some((channel) => channel.id === settings[s.key])) { %>
+                <option value="<%= settings[s.key] %>" selected>Saved channel is unavailable</option>
+              <% } %>
+            </select>
+          <% } else { %>
+            <input type="text" id="<%= s.key %>" name="<%= s.key %>" value="<%= settings[s.key] || '' %>">
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+    <div class="form-actions">
+      <%- include('../partials/save-button', { settingName: 'logging' }) %>
+    </div>
+  </form>
+</section>

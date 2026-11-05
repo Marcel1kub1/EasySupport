@@ -1,0 +1,59 @@
+<section class="module-settings">
+  <header class="page-heading">
+    <div>
+      <p class="section-kicker">Vouches</p>
+      <h1>Vouches settings</h1>
+      <p>Configure user reputation, vouch counts, and leaderboard.</p>
+    </div>
+    <a href="/dashboard/<%= guildId %>" class="button button--quiet">← Back to guild</a>
+  </header>
+
+  <form method="post" action="/admin/modules/<%= guildId %>/vouches" class="settings-form">
+    <%- include('../partials/csrf-field') %>
+    <div class="settings-grid">
+      <% 
+      const fields = [
+        { key: 'vouches_channel', label: 'Vouches Channel', type: 'channel', desc: 'Channel where vouches are posted' },
+        { key: 'vouches_enabled', label: 'Vouches Enabled', type: 'toggle', desc: 'Allow users to give/receive vouches' },
+        { key: 'vouch_cooldown', label: 'Vouch Cooldown', type: 'number', desc: 'Hours between vouches for the same user', unit: 'hr' },
+        { key: 'max_vouches_per_user', label: 'Max Vouches Per User', type: 'number', desc: 'Maximum vouches a user can receive' },
+        { key: 'vouch_leaderboard', label: 'Vouch Leaderboard', type: 'toggle', desc: 'Enable the vouch leaderboard command' },
+        { key: 'anonymous_vouches', label: 'Anonymous Vouches', type: 'toggle', desc: 'Hide who gave each vouch' },
+        { key: 'vouch_rewards', label: 'Vouch Rewards', type: 'text', desc: 'Vouch count:Role ID pairs for rewards' },
+      ];
+      fields.forEach((s) => { %>
+        <div class="setting-field">
+          <label class="setting-label" for="<%= s.key %>"><%= s.label %></label>
+          <p class="setting-desc"><%= s.desc %></p>
+          <% if (s.type === 'toggle') { %>
+            <div class="toggle">
+              <input type="checkbox" id="<%= s.key %>" name="<%= s.key %>" value="true" <%= settings[s.key] === 'true' || settings[s.key] === true ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </div>
+          <% } else if (s.type === 'number') { %>
+            <div class="input-group">
+              <input type="number" id="<%= s.key %>" name="<%= s.key %>" value="<%= settings[s.key] || '' %>" min="0">
+              <span class="input-suffix"><%= s.unit || '' %></span>
+            </div>
+          <% } else if (s.type === 'channel') { %>
+            <select id="<%= s.key %>" name="<%= s.key %>">
+              <option value="">Select a channel</option>
+              <% channels.forEach((channel) => { %>
+                <option value="<%= channel.id %>" <%= settings[s.key] === channel.id ? 'selected' : '' %>>#<%= channel.name %></option>
+              <% }) %>
+              <% if (settings[s.key] && !channels.some((channel) => channel.id === settings[s.key])) { %>
+                <option value="<%= settings[s.key] %>" selected>Saved channel is unavailable</option>
+              <% } %>
+            </select>
+          <% } else { %>
+            <input type="text" id="<%= s.key %>" name="<%= s.key %>" value="<%= settings[s.key] || '' %>">
+            <span class="field-hint">Comma-separated values</span>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+    <div class="form-actions">
+      <%- include('../partials/save-button', { settingName: 'vouch' }) %>
+    </div>
+  </form>
+</section>

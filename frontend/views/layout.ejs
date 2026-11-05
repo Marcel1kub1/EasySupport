@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#141419">
+  <meta name="description" content="Configure EasySupport modules, roles, and staff workflows for your Discord guild.">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
+  <link rel="preload" href="/assets/fonts/cabinet-grotesk-bold.woff2" as="font" type="font/woff2" crossorigin>
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/site.css?v=<%= siteCssVersion %>">
+</head>
+<body class="<%= active === 'home' ? 'public-page' : '' %>">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <% if (active === 'dashboard' || active?.startsWith('module') || active === 'roles' || active === 'updates') { %>
+    <div class="app-shell" data-guild-id="<%= guildId || '' %>">
+      <aside id="dashboard-sidebar" class="app-sidebar" aria-label="Guild dashboard">
+        <a class="app-brand" href="<%= guildId ? `/dashboard/${guildId}` : '/dashboard' %>">
+          <img src="/assets/logo.svg" width="36" height="36" alt="">
+          <span>EasySupport</span>
+        </a>
+
+        <% if (user) { %>
+          <div class="sidebar-account">
+            <% if (user.avatar) { %>
+              <img class="sidebar-account__avatar" src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png?size=128" alt="">
+            <% } else { %>
+              <span class="sidebar-account__avatar sidebar-account__avatar--initial" aria-hidden="true"><%= (user.globalName ?? user.username).slice(0, 1) %></span>
+            <% } %>
+            <div class="sidebar-account__copy">
+              <span class="sidebar-account__label">Signed in as</span>
+              <strong><%= user.globalName ?? user.username %></strong>
+            </div>
+            <a class="sidebar-account__logout" href="/logout" aria-label="Sign out">Sign out</a>
+          </div>
+        <% } %>
+
+        <% if (guildId && guilds && guilds.length > 1) { %>
+          <label class="guild-switcher">
+            <span>Active guild</span>
+            <select data-guild-switch aria-label="Switch guild">
+              <% guilds.forEach((guild) => { %>
+                <option value="<%= guild.id %>" <%= guild.id === guildId ? 'selected' : '' %>><%= guild.name %></option>
+              <% }) %>
+            </select>
+          </label>
+        <% } %>
+
+        <nav class="sidebar-nav" aria-label="Guild settings">
+          <p class="sidebar-nav__label">Workspace</p>
+          <a class="sidebar-link <%= active === 'dashboard' ? 'is-active' : '' %>" href="<%= guildId ? `/dashboard/${guildId}` : '/dashboard' %>">
+            <span class="sidebar-link__mark" aria-hidden="true">OV</span>
+            <span>Overview</span>
+          </a>
+
+          <% if (guildId && botInGuild) { %>
+            <p class="sidebar-nav__label sidebar-nav__label--spaced">Modules</p>
+            <% modules.forEach((module) => { %>
+              <a class="sidebar-link <%= active === `module-${module.key}` ? 'is-active' : '' %>" href="/admin/modules/<%= guildId %>/<%= module.key %>">
+                <span class="sidebar-link__mark" aria-hidden="true"><%= module.short %></span>
+                <span><%= module.title %></span>
+              </a>
+            <% }) %>
+
+            <p class="sidebar-nav__label sidebar-nav__label--spaced">Access & updates</p>
+            <a class="sidebar-link <%= active === 'roles' ? 'is-active' : '' %>" href="/admin/<%= guildId %>/roles">
+              <span class="sidebar-link__mark" aria-hidden="true">SR</span>
+              <span>Staff permissions</span>
+            </a>
+            <a class="sidebar-link <%= active === 'updates' ? 'is-active' : '' %>" href="/dashboard/<%= guildId %>/updates">
+              <span class="sidebar-link__mark" aria-hidden="true">UP</span>
+              <span>What’s new</span>
+              <% if (latestRelease) { %><span class="sidebar-link__badge" data-release-indicator data-guild-id="<%= guildId %>" data-release-id="<%= latestRelease.version %>">New</span><% } %>
+            </a>
+          <% } %>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <a class="sidebar-link sidebar-link--quiet" href="/" target="_blank" rel="noopener noreferrer">
+            <span class="sidebar-link__mark" aria-hidden="true">↗</span>
+            <span>View public site</span>
+          </a>
+          <p>Self-hosted support tools for Discord.</p>
+        </div>
+      </aside>
+
+      <div class="app-main">
+        <div class="dashboard-atmosphere" aria-hidden="true">
+          <span class="dashboard-atmosphere__orb dashboard-atmosphere__orb--one"></span>
+          <span class="dashboard-atmosphere__orb dashboard-atmosphere__orb--two"></span>
+        </div>
+        <header class="app-topbar">
+          <button class="mobile-menu-toggle" type="button" data-mobile-menu-toggle aria-controls="dashboard-sidebar" aria-expanded="false">
+            <span class="sr-only">Open dashboard navigation</span>
+            <span class="mobile-menu-toggle__icon" aria-hidden="true"><i></i><i></i><i></i></span>
+          </button>
+          <div class="app-topbar__context">
+            <span class="app-topbar__guild"><%= guildName || 'Guild dashboard' %></span>
+            <span class="app-topbar__divider" aria-hidden="true">/</span>
+            <span class="app-topbar__page"><%= title.replace('EasySupport — ', '') %></span>
+          </div>
+          <div class="app-topbar__actions">
+            <% if (guildId && botInGuild) { %>
+              <a class="topbar-link" href="/dashboard/<%= guildId %>/updates">Release notes<% if (latestRelease) { %><span class="topbar-link__dot" data-release-indicator data-guild-id="<%= guildId %>" data-release-id="<%= latestRelease.version %>" aria-label="Updates available"></span><% } %></a>
+            <% } %>
+            <a class="topbar-link" href="<%= repoUrl %>" target="_blank" rel="noopener noreferrer">Source <span aria-hidden="true">↗</span></a>
+          </div>
+        </header>
+
+        <main id="main-content" class="workspace">
+          <% if (message) { %><div class="flash flash--success" role="status"><%= message %></div><% } %>
+          <% if (error) { %><div class="flash flash--error" role="alert"><%= error %></div><% } %>
+          <%- body %>
+        </main>
+      </div>
+      <button class="mobile-menu-backdrop" type="button" data-mobile-menu-close aria-label="Close dashboard navigation"></button>
+      <div class="server-loading" data-server-loading role="status" aria-live="polite" aria-label="Loading server" aria-hidden="true" hidden>
+        <div class="server-loading__card">
+          <div class="server-loading__loader">
+            <span>Loading</span>
+            <span class="server-loading__words" aria-hidden="true">
+              <span>buttons</span>
+              <span>forms</span>
+              <span>switches</span>
+              <span>cards</span>
+              <span>buttons</span>
+            </span>
+          </div>
+          <p>Opening your server workspace</p>
+        </div>
+      </div>
+    </div>
+  <% } else { %>
+    <header class="public-header">
+      <nav class="public-nav" aria-label="Main navigation">
+        <a class="public-brand" href="/" aria-label="EasySupport home">
+          <img src="/assets/logo.svg" width="34" height="34" alt="">
+          <span>EasySupport</span>
+        </a>
+        <div class="public-nav__links">
+          <a href="/" <%= active === 'home' ? 'aria-current="page"' : '' %>>Product</a>
+          <a href="/docs" <%= active === 'docs' ? 'aria-current="page"' : '' %>>Docs</a>
+          <a href="<%= signedIn ? '/dashboard' : '/login' %>" class="button button--small button--primary"><%= signedIn ? 'Open dashboard' : 'Connect Discord' %><span aria-hidden="true">↗</span></a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main-content" class="public-main<%= active === 'home' ? ' public-main--home' : '' %>">
+      <% if (message) { %><div class="flash flash--success" role="status"><%= message %></div><% } %>
+      <% if (error) { %><div class="flash flash--error" role="alert"><%= error %></div><% } %>
+      <%- body %>
+    </main>
+
+    <footer class="public-footer">
+      <a class="public-footer__brand" href="/">
+        <img src="/assets/logo.svg" width="28" height="28" alt="">
+        <span>EasySupport</span>
+      </a>
+      <p>Self-hosted support, thoughtfully managed.</p>
+      <div class="public-footer__links">
+        <a href="/impressum"><%= impressumLinkText ?? 'Impressum' %></a>
+        <a href="/privacy"><%= privacyLinkText ?? 'Datenschutz' %></a>
+        <a href="/terms"><%= termsLinkText ?? 'AGB' %></a>
+        <a href="<%= repoUrl %>" target="_blank" rel="noopener noreferrer">View source <span aria-hidden="true">↗</span></a>
+      </div>
+    </footer>
+  <% } %>
+
+    <script src="/vendor/gsap/gsap.min.js" defer></script>
+  <script src="/vendor/gsap/ScrollTrigger.min.js" defer></script>
+  <script src="/site.js" defer></script>
+
+  <% if (active !== 'dashboard' && !active?.startsWith('module') && active !== 'roles' && active !== 'updates') { %>
+    <% if (!cookieConsent) { %>
+      <div class="cookie-banner" role="dialog" aria-modal="true" aria-label="Cookie settings">
+        <div class="cookie-banner__content">
+          <div class="cookie-banner__text">
+            <p class="cookie-banner__heading">We use cookies</p>
+            <p class="cookie-banner__description">EasySupport uses cookies to keep your session secure and remember your preferences. You can choose which categories to allow.</p>
+          </div>
+          <div class="cookie-banner__actions">
+            <button class="button button--quiet cookie-accept-all" type="button">Accept all</button>
+            <button class="button button--quiet cookie-accept-essential" type="button">Essential only</button>
+            <a class="cookie-banner__privacy" href="/privacy">Data privacy</a>
+          </div>
+        </div>
+      </div>
+    <% } %>
+  <% } %>
+</body>
+</html>

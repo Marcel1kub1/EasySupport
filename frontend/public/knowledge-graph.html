@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EasySupport — Knowledge Graph</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f0f; color: #e5e5e5; overflow: hidden; }
+    #graph { width: 100vw; height: 100vh; position: relative; }
+    .links line { stroke: #333333; stroke-opacity: 0.4; stroke-width: 1.5px; }
+    .links line:hover { stroke-opacity: 0.8; stroke-width: 3px; }
+    .nodes circle { stroke: #ffffff; stroke-width: 2px; cursor: pointer; }
+    .nodes circle:hover { stroke: #7c3aed; stroke-width: 3px; }
+    .node-label { font-size: 11px; font-weight: 600; pointer-events: none; text-anchor: middle; fill: #e5e5e5; }
+    .node-label:hover { fill: #7c3aed; }
+    .legend { position: absolute; top: 20px; left: 20px; background: rgba(15, 15, 15, 0.9); padding: 12px 16px; border-radius: 8px; border: 1px solid #333; font-size: 12px; z-index: 100; }
+    .legend h2 { margin: 0 0 8px 0; font-size: 16px; color: #7c3aed; }
+    .legend-item { display: flex; align-items: center; margin: 4px 0; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+    .controls { position: absolute; bottom: 20px; right: 20px; background: rgba(15, 15, 15, 0.9); padding: 10px 14px; border-radius: 8px; border: 1px solid #333; z-index: 100; }
+    .controls button { background: #7c3aed; color: #ffffff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 6px; }
+    .controls button:hover { background: #a855f7; }
+    .controls button:last-child { margin-right: 0; background: #333333; }
+    .controls button:last-child:hover { background: #444444; }
+    .info { position: absolute; bottom: 20px; left: 20px; background: rgba(15, 15, 15, 0.9); padding: 12px 16px; border-radius: 8px; border: 1px solid #333; font-size: 12px; z-index: 100; max-width: 300px; }
+    .info h3 { margin: 0 0 6px 0; color: #7c3aed; font-size: 14px; }
+    .info p { margin: 2px 0; opacity: 0.8; }
+    .group-command { fill: #7c3aed; }
+    .group-event { fill: #a855f7; }
+    .group-category { fill: #3b82f6; }
+    .group-status { fill: #10b981; }
+    .group-database-table { fill: #f59e0b; }
+    .group-route { fill: #ef4444; }
+    .group-endpoint { fill: #ec4899; }
+    .group-bot { fill: #8b5cf6; }
+    .group-system { fill: #64748b; }
+    .group-backend { fill: #06b6d4; }
+    .group-frontend { fill: #84cc16; }
+  </style>
+</head>
+<body>
+  <div class="legend">
+    <h2>EasySupport Knowledge Graph</h2>
+    <div class="legend-item"><div class="legend-dot group-command"></div>Commands</div>
+    <div class="legend-item"><div class="legend-dot group-event"></div>Events</div>
+    <div class="legend-item"><div class="legend-dot group-category"></div>Categories</div>
+    <div class="legend-item"><div class="legend-dot group-status"></div>Statuses</div>
+    <div class="legend-item"><div class="legend-dot group-database-table"></div>DB Tables</div>
+    <div class="legend-item"><div class="legend-dot group-route"></div>Routes</div>
+    <div class="legend-item"><div class="legend-dot group-endpoint"></div>Endpoints</div>
+    <div class="legend-item"><div class="legend-dot group-system"></div>System</div>
+    <div class="legend-item"><div class="legend-dot group-backend"></div>Backend</div>
+    <div class="legend-item"><div class="legend-dot group-frontend"></div>Frontend</div>
+  </div>
+  <div class="controls">
+    <button onclick="restart()">Restart layout</button>
+    <button onclick="togglePause()">Pause/Resume</button>
+  </div>
+  <div class="info">
+    <h3>Graph Stats</h3>
+    <p>Nodes: <span id="nodeCount">0</span></p>
+    <p>Edges: <span id="edgeCount">0</span></p>
+    <p>Single-server architecture</h3>
+    <p>Backend + Bot + Frontend on one process</p>
+  </div>
+  <div id="graph"></div>
+  <script>
+    const graphData = {
+  "nodes": [
+    {
+      "id": "cmd:anti_nuke",
+      "label": "anti_nuke",
+      "group": "command"
+    },
+    {
+      "id": "cmd:automod",
+      "label": "automod",
+      "group": "command"
+    },
+    {
+      "id": "cmd:economy",
+      "label": "economy",
+      "group": "command"
+    },
+    {
+      "id": "cmd:giveaways",
+      "label": "giveaways",
+      "group": "command"
+    },
+    {
+      "id": "cmd:highrankdm",
+      "label": "highrankdm",
+      "group": "command"
+    },
+    {
+      "id": "cmd:leveling",
+      "label": "leveling",
+      "group": "command"
+    },
+    {
+      "id": "db:leveling_users",
+      "label": "leveling_users",
+      "group": "database-table"
+    },
+    {
+      "id": "cmd:logging",
+      "label": "logging",
+      "group": "command"
+    },
+    {
+      "id": "cmd:moderation",
+      "label": "moderation",
+      "group": "command"
+    },
+    {
+      "id": "cmd:panel",
+      "label": "panel",
+      "group": "command"
+    },
+    {
+      "id": "cmd:setup",
+      "label": "setup",
+      "group": "command"
+    },
+    {
+      "id": "db:dropdowns",
+      "label": "dropdowns",
+      "group": "database-table"
+    },
+    {
+      "id": "db:the",
+      "label": "the",
+      "group": "database-table"
+    },
+    {
+      "id": "cmd:ticketing-commands.test",
+      "label": "ticketing-commands.test",
+      "group": "command"
+    },
+    {
+      "id": "cmd:vouches",
+      "label": "vouches",
+      "group": "command"
+    },
+    {
+      "id": "cmd:welcome_goodbye_boost",
+      "label": "welcome_goodbye_boost",
+      "group": "command"
+    },
+    {
+      "id": "evt:Credits",
+      "label": "Credits",
+      "group": "event"
+    },
+    {
+      "id": "evt:interactionCreate",
+      "label": "interactionCreate",
+      "group": "event"
+    },
+    {
+      "id": "db:src",
+      "label": "src",
+      "group": "database-table"
+    },
+    {
+      "id": "evt:messageCreate",
+      "label": "messageCreate",
+      "group": "event"
+    },
+    {
+      "id": "db:guilds",
+      "label": "guilds",
+      "group": "database-table"
+    },
+    {
+      "id": "db:tickets",
+      "label": "tickets",
+      "group": "database-table"
+    },
+    {
+      "id": "db:ticket_messages",
+      "label": "ticket_messages",
+      "group": "database-table"
+    },
+    {
+      "id": "db:blacklist",
+      "label": "blacklist",
+      "group": "database-table"
+    },
+    {
+      "id": "db:guild_settings",
+      "label": "guild_settings",
+      "group": "database-table"
+    },
+    {
+      "id": "db:role_permissions",
+      "label": "role_permissions",
+      "group": "database-table"
+    },
+    {
+      "id": "db:moderation_warnings",
+      "label": "moderation_warnings",
+      "group": "database-table"
+    },
+    {
+      "id": "db:moderation_mutes",
+      "label": "moderation_mutes",
+      "group": "database-table"
+    },
+    {
+      "id": "db:moderation_bans",
+      "label": "moderation_bans",
+      "group": "database-table"
+    },
+    {
+      "id": "db:anti_nuke_config",
+      "label": "anti_nuke_config",
+      "group": "database-table"
+    },
+    {
+      "id": "db:anti_nuke_logs",
+      "label": "anti_nuke_logs",
+      "group": "database-table"
+    },
+    {
+      "id": "db:automod_config",
+      "label": "automod_config",
+      "group": "database-table"
+    },
+    {
+      "id": "db:automod_violations",
+      "label": "automod_violations",
+      "group": "database-table"
+    },
+    {
+      "id": "db:economy_users",
+      "label": "economy_users",
+      "group": "database-table"
+    },
+    {
+      "id": "db:giveaways",
+      "label": "giveaways",
+      "group": "database-table"
+    },
+    {
+      "id": "db:vouches",
+      "label": "vouches",
+      "group": "database-table"
+    },
+    {
+      "id": "db:welcome_goodbye_boost_config",
+      "label": "welcome_goodbye_boost_config",
+      "group": "database-table"
+    },
+    {
+      "id": "db:logging_config",
+      "label": "logging_config",
+      "group": "database-table"
+    },
+    {
+      "id": "route:admin",
+      "label": "admin",
+      "group": "route"
+    },
+    {
+      "id": "ep:GET:/admin/modules/:guildId/:module",
+      "label": "GET /admin/modules/:guildId/:module",
+      "group": "endpoint"
+    },
+    {
+      "id": "ep:POST:/admin/modules/:guildId/:module",
+      "label": "POST /admin/modules/:guildId/:module",
+      "group": "endpoint"
+    },
+    {
+      "id": "ep:GET:/admin/:guildId/roles",
+      "label": "GET /admin/:guildId/roles",
+      "group": "endpoint"
+    },
+    {
+      "id": "ep:GET:/admin/:guildId/roles/:roleId",
+      "label": "GET /admin/:guildId/roles/:roleId",
+      "group": "endpoint"
+    },
+    {
+      "id": "ep:POST:/admin/:guildId/roles/:roleId/toggle",
+      "label": "POST /admin/:guildId/roles/:roleId/toggle",
+      "group": "endpoint"
+    },
+    {
+      "id": "route:auth",
+      "label": "auth",
+      "group": "route"
+    },
+    {
+      "id": "ep:GET:/login",
+      "label": "GET /login",
+      "group": "endpoint"
+    },
+    {
+      "id": "ep:GET:/auth/callback",
+      "label": "GET /auth/callback",
+      "group": "endpoint"
+    },
+    {
+      "id": "ep:GET:/logout",
+      "label": "GET /logout",
+      "group": "endpoint"
+    },
+    {
+      "id": "route:dashboard",
+      "label": "dashboard",
+      "group": "route"
+    },
+    {
+      "id": "ep:GET:/dashboard",
+      "label": "GET /dashboard",
+      "group": "endpoint"
+    },
+    {
+      "id": "ep:GET:/dashboard/:guildId/updates",
+      "label": "GET /dashboard/:guildId/updates",
+      "group": "endpoint"
+    },
+    {
+      "id": "ep:GET:/dashboard/:guildId",
+      "label": "GET /dashboard/:guildId",
+      "group": "endpoint"
+    },
+    {
+      "id": "route:health",
+      "label": "health",
+      "group": "route"
+    },
+    {
+      "id": "ep:GET:/healthz",
+      "label": "GET /healthz",
+      "group": "endpoint"
+    },
+    {
+      "id": "ep:GET:/api/status/health",
+      "label": "GET /api/status/health",
+      "group": "endpoint"
+    },
+    {
+      "id": "route:public",
+      "label": "public",
+      "group": "route"
+    },
+    {
+      "id": "ep:GET:/",
+      "label": "GET /",
+      "group": "endpoint"
+    },
+    {
+      "id": "ep:GET:/docs",
+      "label": "GET /docs",
+      "group": "endpoint"
+    },
+    {
+      "id": "bot:discord-client",
+      "label": "Discord Client",
+      "group": "bot"
+    },
+    {
+      "id": "shared:db",
+      "label": "Database (MySQL)",
+      "group": "system"
+    },
+    {
+      "id": "shared:categories",
+      "label": "Categories & Statuses",
+      "group": "system"
+    },
+    {
+      "id": "backend:api",
+      "label": "Express API",
+      "group": "backend"
+    },
+    {
+      "id": "frontend:views",
+      "label": "EJS Templates",
+      "group": "frontend"
+    },
+    {
+      "id": "frontend:public",
+      "label": "Static Assets",
+      "group": "frontend"
+    },
+    {
+      "id": "server:entry",
+      "label": "server.js (entry)",
+      "group": "system"
+    }
+  ],
+  "edges": [
+    {
+      "source": "cmd:anti_nuke",
+      "target": "bot:discord-client",
+      "relationship": "triggers"
+    },
+    {
+      "source": "cmd:automod",
+      "target": "bot:discord-client",
+      "relationship": "triggers"
+    },
+    {
+      "source": "cmd:economy",
+      "target": "bot:discord-client",
+      "relationship": "triggers"
+    },
+    {
+      "source": "cmd:giveaways",
+      "target": "bot:discord-client",
+      "relationship": "triggers"
+    },
+    {
+      "source": "cmd:highrankdm",
+      "target": "bot:discord-client",
+      "relationship": "triggers"
+    },
+    {
+      "source": "cmd:leveling",
+      "target": "bot:discord-client",
+      "relationship": "triggers"
+    },
+    {
+      "source": "cmd:leveling",
+      "target": "db:leveling_users",
+      "relationship": "uses"
+    },
+    {
+      "source": "cmd:logging",
+      "target": "bot:discord-client",
+      "relationship": "triggers"
+    },
+    {
+      "source": "cmd:moderation",
+      "target": "bot:discord-client",
+      "relationship": "triggers"
+    },
+    {
+      "source": "cmd:panel",
+      "target": "bot:discord-client",
+      "relationship": "triggers"
+    },
+    {
+      "source": "cmd:setup",
+      "target": "bot:discord-client",
+      "relationship": "triggers"
+    },
+    {
+      "source": "cmd:setup",
+      "target": "db:dropdowns",
+      "relationship": "uses"
+    },
+    {
+      "source": "cmd:setup",
+      "target": "db:the",
+      "relationship": "uses"
+    },
+    {
+      "source": "cmd:ticketing-commands.test",
+      "target": "bot:discord-client",
+      "relationship": "triggers"
+    },
+    {
+      "source": "cmd:vouches",
+      "target": "bot:discord-client",
+      "relationship": "triggers"
+    },
+    {
+      "source": "cmd:welcome_goodbye_boost",
+      "target": "bot:discord-client",
+      "relationship": "triggers"
+    },
+    {
+      "source": "evt:Credits",
+      "target": "bot:discord-client",
+      "relationship": "listens-to"
+    },
+    {
+      "source": "evt:interactionCreate",
+      "target": "bot:discord-client",
+      "relationship": "listens-to"
+    },
+    {
+      "source": "evt:interactionCreate",
+      "target": "db:src",
+      "relationship": "uses"
+    },
+    {
+      "source": "evt:interactionCreate",
+      "target": "db:the",
+      "relationship": "uses"
+    },
+    {
+      "source": "evt:messageCreate",
+      "target": "bot:discord-client",
+      "relationship": "listens-to"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:guilds",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:tickets",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:ticket_messages",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:blacklist",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:guild_settings",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:role_permissions",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:moderation_warnings",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:moderation_mutes",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:moderation_bans",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:anti_nuke_config",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:anti_nuke_logs",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:automod_config",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:automod_violations",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:leveling_users",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:economy_users",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:giveaways",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:vouches",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:welcome_goodbye_boost_config",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:logging_config",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:guild_settings",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:role_permissions",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:moderation_warnings",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:moderation_mutes",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:moderation_bans",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:anti_nuke_config",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:anti_nuke_logs",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:automod_config",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:automod_violations",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:leveling_users",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:economy_users",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:giveaways",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:vouches",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:welcome_goodbye_boost_config",
+      "relationship": "contains"
+    },
+    {
+      "source": "shared:db",
+      "target": "db:logging_config",
+      "relationship": "contains"
+    },
+    {
+      "source": "backend:api",
+      "target": "route:admin",
+      "relationship": "serves"
+    },
+    {
+      "source": "route:admin",
+      "target": "ep:GET:/admin/modules/:guildId/:module",
+      "relationship": "exposes"
+    },
+    {
+      "source": "route:admin",
+      "target": "ep:POST:/admin/modules/:guildId/:module",
+      "relationship": "exposes"
+    },
+    {
+      "source": "route:admin",
+      "target": "ep:GET:/admin/:guildId/roles",
+      "relationship": "exposes"
+    },
+    {
+      "source": "route:admin",
+      "target": "ep:GET:/admin/:guildId/roles/:roleId",
+      "relationship": "exposes"
+    },
+    {
+      "source": "route:admin",
+      "target": "ep:POST:/admin/:guildId/roles/:roleId/toggle",
+      "relationship": "exposes"
+    },
+    {
+      "source": "backend:api",
+      "target": "route:auth",
+      "relationship": "serves"
+    },
+    {
+      "source": "route:auth",
+      "target": "ep:GET:/login",
+      "relationship": "exposes"
+    },
+    {
+      "source": "route:auth",
+      "target": "ep:GET:/auth/callback",
+      "relationship": "exposes"
+    },
+    {
+      "source": "route:auth",
+      "target": "ep:GET:/logout",
+      "relationship": "exposes"
+    },
+    {
+      "source": "backend:api",
+      "target": "route:dashboard",
+      "relationship": "serves"
+    },
+    {
+      "source": "route:dashboard",
+      "target": "ep:GET:/dashboard",
+      "relationship": "exposes"
+    },
+    {
+      "source": "route:dashboard",
+      "target": "ep:GET:/dashboard/:guildId/updates",
+      "relationship": "exposes"
+    },
+    {
+      "source": "route:dashboard",
+      "target": "ep:GET:/dashboard/:guildId",
+      "relationship": "exposes"
+    },
+    {
+      "source": "backend:api",
+      "target": "route:health",
+      "relationship": "serves"
+    },
+    {
+      "source": "route:health",
+      "target": "ep:GET:/healthz",
+      "relationship": "exposes"
+    },
+    {
+      "source": "route:health",
+      "target": "ep:GET:/api/status/health",
+      "relationship": "exposes"
+    },
+    {
+      "source": "backend:api",
+      "target": "route:public",
+      "relationship": "serves"
+    },
+    {
+      "source": "route:public",
+      "target": "ep:GET:/",
+      "relationship": "exposes"
+    },
+    {
+      "source": "route:public",
+      "target": "ep:GET:/docs",
+      "relationship": "exposes"
+    },
+    {
+      "source": "server:entry",
+      "target": "backend:api",
+      "relationship": "mounts"
+    },
+    {
+      "source": "server:entry",
+      "target": "bot:discord-client",
+      "relationship": "starts"
+    },
+    {
+      "source": "server:entry",
+      "target": "shared:db",
+      "relationship": "connects"
+    },
+    {
+      "source": "backend:api",
+      "target": "frontend:views",
+      "relationship": "renders"
+    },
+    {
+      "source": "backend:api",
+      "target": "shared:db",
+      "relationship": "queries"
+    },
+    {
+      "source": "bot:discord-client",
+      "target": "shared:db",
+      "relationship": "uses"
+    },
+    {
+      "source": "frontend:views",
+      "target": "frontend:public",
+      "relationship": "loads"
+    }
+  ]
+};
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    const svg = d3.select('#graph')
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height);
+
+    const g = svg.append('g').attr('class', 'everything');
+
+    const link = g.append('g')
+      .attr('class', 'links')
+      .selectAll('line');
+
+    const node = g.append('g')
+      .attr('class', 'nodes')
+      .selectAll('g');
+
+    const simulation = d3.forceSimulation(graphData.nodes)
+      .force('link', d3.forceLink(graphData.edges).id(d => d.id).distance(120))
+      .force('charge', d3.forceManyBody().strength(-400))
+      .force('center', d3.forceCenter(width / 2, height / 2))
+      .force('collide', d3.forceCollide().radius(70));
+
+    document.getElementById('nodeCount').textContent = graphData.nodes.length;
+    document.getElementById('edgeCount').textContent = graphData.edges.length;
+
+    let isPaused = false;
+
+    function render() {
+      link = link.data(graphData.edges, function(d) { return d.source.id + '-' + d.target.id + '-' + d.relationship; });
+      link.enter()
+        .append('line')
+        .attr('stroke', '#333333')
+        .attr('stroke-opacity', 0.4)
+        .attr('stroke-width', 1.5)
+        .merge(link)
+        .attr('x1', function(d) { return d.source.x; })
+        .attr('y1', function(d) { return d.source.y; })
+        .attr('x2', function(d) { return d.target.x; })
+        .attr('y2', function(d) { return d.target.y; });
+      link.exit().remove();
+
+      node = node.data(graphData.nodes, function(d) { return d.id; });
+      const nodeEnter = node.enter()
+        .append('g')
+        .attr('class', 'node');
+
+      nodeEnter.append('circle')
+        .attr('r', 20)
+        .attr('class', function(d) { return d.group; })
+        .attr('fill', function(d) {
+          const colors = {
+            'command': '#7c3aed',
+            'event': '#a855f7',
+            'category': '#3b82f6',
+            'status': '#10b981',
+            'database-table': '#f59e0b',
+            'route': '#ef4444',
+            'endpoint': '#ec4899',
+            'bot': '#8b5cf6',
+            'system': '#64748b',
+            'backend': '#06b6d4',
+            'frontend': '#84cc16',
+          };
+          return colors[d.group] || '#64748b';
+        });
+
+      nodeEnter.append('text')
+        .attr('class', 'node-label')
+        .attr('dy', '-1.2em')
+        .text(function(d) { return d.label; });
+
+      nodeEnter.append('title')
+        .text(function(d) { return d.label + '\n' + d.group; });
+
+      node = nodeEnter.merge(node);
+
+      node.attr('transform', function(d) { return 'translate(' + d.x + ,' + d.y + ')'; });
+
+      simulation.on('tick', function() {
+        link
+          .attr('x1', function(d) { return d.source.x; })
+          .attr('y1', function(d) { return d.source.y; })
+          .attr('x2', function(d) { return d.target.x; })
+          .attr('y2', function(d) { return d.target.y; });
+
+        node.attr('transform', function(d) { return 'translate(' + d.x + ,' + d.y + ')'; });
+      });
+    }
+
+    function restart() {
+      simulation.alpha(1).restart();
+    }
+
+    function togglePause() {
+      isPaused = !isPaused;
+      if (isPaused) simulation.stop();
+      else simulation.restart();
+    }
+
+    render();
+  </script>
+</body>
+</html>

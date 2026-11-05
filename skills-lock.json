@@ -73,6 +73,13 @@
       "skillPath": "skills/minimalist-skill/SKILL.md",
       "computedHash": "b201c0763796192405cfed7933b55e3dab6d530ca7f06a5e8095063d476635d7"
     },
+    "mintlify": {
+      "source": "mintlify.com",
+      "sourceUrl": "https://mintlify.com/docs",
+      "sourceType": "well-known",
+      "computedHash": "87622db935f9aa21710aff22b7e7d5ca8c0810e7ce4fcff3af5f4d28714b716b",
+      "wellKnownDigest": "sha256:d7de9ea1caf3f169593851387153d150a25347427baa8d3160c3f131b64e5380"
+    },
     "redesign-existing-projects": {
       "source": "Leonxlnx/taste-skill",
       "sourceType": "github",

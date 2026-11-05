@@ -4,10 +4,11 @@
   "private": true,
   "type": "module",
   "description": "Self-hosted Discord ticketing bot template (discord.js v14) with MySQL storage and public website",
-  "main": "src/index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node server.js",
     "deploy": "node deploy-commands.js",
+    "kg:generate": "node scripts/generate-knowledge-graph.js",
     "release:notes": "node scripts/generate-release-notes.js",
     "docs:dev": "npx mintlify dev",
     "docs:build": "npx mintlify build",
