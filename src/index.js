@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Client, Events, GatewayIntentBits, Partials } from 'discord.js';
 import { config } from './config.js';
 import { loadModules } from './loader.js';
-import { createWebApp } from './web/';
+import { createWebApp } from './web/index.js';
 import { deployCommands } from '../deploy-commands.js';
 import { connect, initialize, migrate, pool } from './database/';
 
