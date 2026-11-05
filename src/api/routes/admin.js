@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ChannelType } from 'discord.js';
-import { bulkUpdateGuildSettings, getAllRolePermissions, getRolePermissions, setRolePermission } from '../../../database/db.js';
+import { bulkUpdateGuildSettings, getAllRolePermissions, getRolePermissions, setRolePermission } from '../../database/db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..', '..', '..');

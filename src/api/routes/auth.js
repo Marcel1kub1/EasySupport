@@ -1,4 +1,4 @@
-import { config } from '../../../config.js';
+import { config } from '../../config.js';
 
 export function setupAuthRoutes(app, deps) {
   const { clientId, clientSecret, oauthRedirectUri, oauthScope } = config;
