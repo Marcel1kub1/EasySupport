@@ -9,7 +9,7 @@ import {
   getLoggingConfig,
   setLoggingConfig,
   getRolePermission,
-} from '../database/';
+} from '../database/index.js';
 
 const MODULE = 'logging';
 

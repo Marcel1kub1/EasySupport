@@ -9,7 +9,7 @@ import {
   getAutomodConfig,
   setAutomodConfig,
   getRolePermission,
-} from '../database/';
+} from '../database/index.js';
 
 const MODULE = 'automod';
 

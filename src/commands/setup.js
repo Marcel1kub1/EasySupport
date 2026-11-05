@@ -15,7 +15,7 @@ import {
   saveGuildSettings,
   setModuleEnabled,
   isModuleEnabled,
-} from '../database/';
+} from '../database/index.js';
 
 const MODULES = ['ticket', 'highrankdm', 'moderation', 'anti_nuke', 'automod', 'leveling', 'economy', 'giveaways', 'vouches', 'welcome_goodbye_boost', 'logging'];
 

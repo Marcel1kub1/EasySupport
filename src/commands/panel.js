@@ -7,8 +7,8 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
-import { getGuild } from '../database/';
-import { CATEGORIES, resolveStaffRole } from '../database/';
+import { getGuild } from '../database/index.js';
+import { CATEGORIES, resolveStaffRole } from '../database/index.js';
 import { panelArt } from '../art.js';
 
 const MAX_BUTTONS_PER_ROW = 5;

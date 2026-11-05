@@ -3,8 +3,8 @@ import {
   logMessage,
   getSetting,
   addXp,
-} from '../database/';
-import { getStatusMeta } from '../database/';
+} from '../database/index.js';
+import { getStatusMeta } from '../database/index.js';
 
 const ANTINUKE_ACTIONS = new Map();
 

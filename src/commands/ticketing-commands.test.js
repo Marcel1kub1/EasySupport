@@ -1,7 +1,7 @@
 import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import setup from './setup.js';
-import { pool } from '../database/';
+import { pool } from '../database/index.js';
 
 after(async () => {
   await pool.end();

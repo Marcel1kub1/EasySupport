@@ -26,8 +26,8 @@ import {
   rateTicket,
   setPanelMessageId,
   updateTicketStatus,
-} from '../database/';
-import { CATEGORIES, DEFAULT_STATUS, TICKET_STATUSES, getStatusMeta, resolveStaffRole } from '../database/';
+} from '../database/index.js';
+import { CATEGORIES, DEFAULT_STATUS, TICKET_STATUSES, getStatusMeta, resolveStaffRole } from '../database/index.js';
 import { categoryArt } from '../art.js';
 import { saveTranscripts } from '../transcripts.js';
 import { hasTicketAccessRole } from '../tickets/access.js';

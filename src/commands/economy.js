@@ -10,7 +10,7 @@ import {
   addBalance,
   setEconomyUser,
   getRolePermission,
-} from '../database/';
+} from '../database/index.js';
 
 const MODULE = 'economy';
 

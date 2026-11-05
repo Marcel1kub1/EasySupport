@@ -9,7 +9,7 @@ import {
   createVouch,
   getVouches,
   getRolePermission,
-} from '../database/';
+} from '../database/index.js';
 
 const MODULE = 'vouches';
 

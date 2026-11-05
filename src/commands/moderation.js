@@ -11,7 +11,7 @@ import {
   createMute,
   createBan,
   getRolePermission,
-} from '../database/';
+} from '../database/index.js';
 
 const MODULE = 'moderation';
 

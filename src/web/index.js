@@ -4,11 +4,11 @@ import session from 'express-session';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { config } from '../../config.js';
+import { config } from '../config.js';
 import { setupApiRoutes } from '../api/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(__dirname, '..', '..', '..');
+const projectRoot = path.resolve(__dirname, '..', '..');
 const viewsDir = path.join(projectRoot, 'src', 'web', 'views');
 const publicDir = path.join(projectRoot, 'src', 'web', 'public');
 

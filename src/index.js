@@ -6,7 +6,7 @@ import { config } from './config.js';
 import { loadModules } from './loader.js';
 import { createWebApp } from './web/index.js';
 import { deployCommands } from '../deploy-commands.js';
-import { connect, initialize, migrate, pool } from './database/';
+import { connect, initialize, migrate, pool } from './database/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -69,7 +69,7 @@ async function boot() {
   }
 
   // Start the public site and guild dashboard alongside the bot.
-  const app = createWebApp(client);
+  const app = createWebApp(client, pool);
   const server = app.listen(config.port, () => {
     console.log(`[web] Listening on port ${config.port}`);
   });

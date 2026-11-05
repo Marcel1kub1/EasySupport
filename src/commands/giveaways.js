@@ -10,7 +10,7 @@ import {
   getGiveaways,
   endGiveaway,
   getRolePermission,
-} from '../database/';
+} from '../database/index.js';
 
 const MODULE = 'giveaways';
 

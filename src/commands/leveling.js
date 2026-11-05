@@ -9,7 +9,7 @@ import {
   getLevelingUser,
   addXp,
   getRolePermission,
-} from '../database/';
+} from '../database/index.js';
 
 const MODULE = 'leveling';
 

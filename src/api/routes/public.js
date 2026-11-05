@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { config } from '../../../config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(__dirname, '..', '..', '..', '..');
+const projectRoot = path.resolve(__dirname, '..', '..', '..');
 const viewsDir = path.join(projectRoot, 'src', 'web', 'views');
 
 export function setupPublicRoutes(app, deps) {

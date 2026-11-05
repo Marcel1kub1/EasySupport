@@ -9,7 +9,7 @@ import {
   getAntiNukeConfig,
   setAntiNukeConfig,
   getRolePermission,
-} from '../database/';
+} from '../database/index.js';
 
 const MODULE = 'anti_nuke';
 

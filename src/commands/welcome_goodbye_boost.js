@@ -9,7 +9,7 @@ import {
   getWelcomeGoodbyeBoostConfig,
   setWelcomeGoodbyeBoostConfig,
   getRolePermission,
-} from '../database/';
+} from '../database/index.js';
 
 const MODULE = 'welcome_goodbye_boost';
 
