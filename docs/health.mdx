@@ -1,0 +1,61 @@
+# Health endpoints
+
+EasySupport exposes public, read-only health endpoints that EasyVStatus polls. They do not require an API token.
+
+## GET /api/status/health
+
+Reports Discord readiness and performs a live `SELECT 1` against the bot's MySQL pool. Returns component state and generic details, never database credentials or host information.
+
+```json
+{
+  "checkedAt": "2026-11-05T07:00:00.000Z",
+  "services": {
+    "bot": {
+      "status": "operational",
+      "detail": "The Discord client is connected and ready."
+    },
+    "database": {
+      "status": "operational",
+      "detail": "The EasySupport database health query succeeded.",
+      "latencyMs": 4
+    }
+  },
+  "cluster": {
+    "version": 1,
+    "mode": "single-node",
+    "privacy": "Browser latency checks are not stored.",
+    "status": "operational",
+    "detail": "All monitored services are responding."
+  }
+}
+```
+
+## GET /healthz
+
+Independently confirms that the website gateway responds.
+
+```json
+{
+  "status": "ok",
+  "service": "website-gateway"
+}
+```
+
+## Cluster observability
+
+The health response includes a versioned, single-node `cluster` summary. The cluster is an observability label for this deployment; it does not provision servers, orchestrate bot instances, or proxy Discord traffic.
+
+Customize the label with environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `CLUSTER_ID` | `primary` | Cluster identifier |
+| `CLUSTER_NAME` | `Primary node` | Human-readable cluster name |
+| `CLUSTER_REGION` | `Single-server deployment` | Deployment region |
+| `CLUSTER_ENDPOINT` | `/healthz` | Health check endpoint path |
+
+Status presentation belongs to EasyVStatus at `https://easyvstatus.wisp.uno`; the EasySupport `/status` route redirects there. EasySupport's website does not render cluster, latency, or connection-testing controls.
+
+<Callout type="note">
+  **Read-only endpoints** — The health endpoints return component state and generic details, never database credentials or host information.
+</Callout>

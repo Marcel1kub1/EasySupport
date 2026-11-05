@@ -1,0 +1,33 @@
+# Quickstart
+
+Run the setup that walks you through creating the Discord bot, configuring the environment, installing, deploying, and configuring your first guild.
+
+<CardGrid>
+  <Card title="1. Create and invite the bot" icon="discord">
+    Set up your Discord application, add a bot, enable privileged intents, and generate an invite link.
+  </Card>
+  <Card title="2. Configure environment" icon="settings">
+    Copy `.env.example` to `.env` and fill in your Discord and MySQL credentials.
+  </Card>
+  <Card title="3. Install, register, and start" icon="rocket">
+    Install dependencies, deploy slash commands, and start the bot.
+  </Card>
+  <Card title="4. Configure a guild" icon="users">
+    Run `/setup` and `/panel` to bind roles and publish your ticket panel.
+  </Card>
+</CardGrid>
+
+## Prerequisites
+
+- **Node.js 22.5 or newer**
+- **A MySQL database**
+- **A Discord application and bot token** from the [Discord Developer Portal](https://discord.com/developers/applications)
+- The bot's Discord role needs **Manage Channels** and **Manage Roles**, along with messaging, attachment, embed, and history permissions
+
+<Callout type="warning">
+  **Keep secrets safe** — Never publish bot or database credentials. Keep `.env` out of version control and set a unique `SESSION_SECRET` for production.
+</Callout>
+
+Panel art is rasterized with `@resvg/resvg-js`. Category artwork is cached under `data/art/`; transcripts are written under `transcripts/`.
+
+**Next step:** [Create and invite the bot →](/setup/bot)

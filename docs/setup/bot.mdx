@@ -1,0 +1,38 @@
+# Create and invite the bot
+
+Set up your Discord application, add a bot, enable privileged intents, and generate an invite link.
+
+## Step 1 — Create a Discord application
+
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and create a new application.
+2. Add a bot to your application.
+3. Copy the bot token — you'll need it for your `.env` file.
+
+## Step 2 — Enable privileged gateway intents
+
+Under **Bot → Privileged Gateway Intents**, enable:
+
+- **Server Members Intent**
+- **Message Content Intent**
+
+Both are required for the bot to work.
+
+<Callout type="note">
+  **Privileged intents** — Enable **Server Members Intent** and **Message Content Intent** under **Bot → Privileged Gateway Intents** in the Discord Developer Portal; both are required for the bot to function.
+</Callout>
+
+## Step 3 — Generate an invite link
+
+1. Under **OAuth2 → URL Generator**, select the `bot` and `applications.commands` scopes.
+2. Grant the permissions needed by the bot's enabled features (at minimum: Manage Channels, Manage Roles, Send Messages, Manage Messages, Read Message History, Attach Files, Embed Links).
+3. Copy the generated URL and invite the bot to your guild.
+
+## Step 4 — Configure OAuth2 for the dashboard
+
+For the web dashboard, configure the Discord OAuth2 client and its callback URL to match the `OAUTH_REDIRECT_URI` value in your environment.
+
+<Callout type="note">
+  For a public deployment, set the OAuth callback to your deployed website's `/auth/callback` route and add the same URL in the Discord Developer Portal.
+</Callout>
+
+**Next step:** [Configure environment →](/setup/env)

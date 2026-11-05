@@ -10,11 +10,11 @@
   },
   "favicon": "/assets/logo.svg",
   "colors": {
-    "primary": "#7c3aed",
-    "light": "#0f0f0f",
-    "dark": "#0f0f0f",
+    "primary": "#6366f1",
+    "light": "#ffffff",
+    "dark": "#0f172a",
     "anchors": {
-      "from": "#7c3aed",
+      "from": "#6366f1",
       "to": "#a855f7"
     }
   },
@@ -51,18 +51,39 @@
       "group": "Introduction",
       "pages": [
         "intro",
-        "getting-started",
+        "quickstart"
+      ]
+    },
+    {
+      "group": "Setup",
+      "pages": [
+        "setup/bot",
+        "setup/env",
+        "setup/install",
+        "setup/guild"
+      ]
+    },
+    {
+      "group": "Dashboard",
+      "pages": [
         "dashboard"
       ]
     },
     {
-      "group": "Guides",
+      "group": "Modules",
       "pages": [
         "modules",
-        "categories-statuses",
+        "tickets"
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages": [
+        "architecture",
         "development",
-        "release-notes",
-        "architecture"
+        "health",
+        "oauth",
+        "release-notes"
       ]
     }
   ],

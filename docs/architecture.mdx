@@ -9,7 +9,7 @@ This document covers the technical architecture of EasySupport: stack, module re
 | Runtime | Node.js 22.5 LTS+ | Native `fetch`, stable ESM, built-in SQLite. |
 | Library | discord.js v14 | Buttons, modals, slash commands, REST. |
 | Intents | `Guilds`, `GuildMembers`, `GuildMessages`, `MessageContent` | Content intent is privileged — enable it in the Developer Portal. |
-| Storage | `node:sqlite` (built-in, no compile step) / PostgreSQL + `pg` (production) | Swap behind the same repository functions in `src/db.js`. |
+| Storage | MySQL via `mysql2/promise` | Schema + all persistence in `src/database/db.js`. |
 | Config | `dotenv` | Secrets never in source; `.env` is git-ignored. |
 | Process | `systemd`, Docker, or PM2 | Single process; scale by adding shards only past ~2,500 guilds. |
 
@@ -19,8 +19,8 @@ This document covers the technical architecture of EasySupport: stack, module re
 |---|---|
 | `src/index.js` | Client bootstrap, event/command auto-loading, login. |
 | `src/config.js` | Validated environment config. |
-| `src/db.js` | Schema + all persistence (tickets, messages, guild settings, blacklist). |
-| `src/categories.js` | Central config: panel buttons, intake questions and the full ticket-status registry. |
+| `src/database/db.js` | Schema + all persistence (tickets, messages, guild settings, blacklist). |
+| `src/database/categories.js` | Central config: panel buttons, intake questions and the full ticket-status registry. |
 | `src/events/interactionCreate.js` | All interactive flows: open, claim, close, rate. |
 | `src/events/messageCreate.js` | Automated interaction logging. |
 | `src/transcripts.js` | Plain-text + HTML transcript generation to disk. |
@@ -51,7 +51,7 @@ The interaction log is append-only, so transcripts are reproducible from the dat
        │
        ▼
 ┌───────────────┐
-│ DEFAULT_STATUS │   ← configured in src/categories.js
+│ DEFAULT_STATUS │   ← configured in src/database/categories.js
 └───────────────┘
        │
 staff click any status button on the ticket panel —
@@ -89,9 +89,9 @@ Optional per-category Discord modal (up to 5 questions) shown before the channel
 ### Staff role integration
 
 - `/setup` binds a staff role, a log channel and a ticket category to the guild.
-- Every status button is staff-gated by default (`ManageMessages` **or** the configured staff role); individual statuses can opt out with `staffOnly: false`.
+- Every status button is staff-gated by default (`ManageMessages` **or** the configured staff role); server administrators retain bypass.
 - Status changes are atomic (`UPDATE ... WHERE status != ?`), so two staff clicking at once cannot both win; the control-panel status field updates live.
-- Per-category staff roles: every category in `src/categories.js` can pin its own `staffRoleId`.
+- Per-category staff roles: every category in `src/database/categories.js` can pin its own `staffRoleId`.
 - Per-status staff roles: statuses can ping too — e.g. an `escalated` status that grants the high-rank role channel access and pings it.
 
 ### Automated interaction logging
@@ -111,4 +111,3 @@ Every message in a ticket channel is stored in `ticket_messages` with author, ti
 - Scheduled auto-close for inactivity, working-hours aware routing.
 - Staff statistics command (response time, claims, ratings) from the log table.
 - Add/remove member buttons inside tickets, priority selector.
-- PostgreSQL swap: replace the `better-sqlite3` statements in `src/db.js`.

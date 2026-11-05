@@ -13,12 +13,27 @@ src/
 ├── index.js                 client bootstrap and command/event loading
 ├── config.js                environment validation
 ├── art.js                   ticket panel and category artwork
-├── categories.js            ticket categories, questions, and statuses
-├── db.js                    MySQL schema and repository functions
+├── loader.js                command and event module loader
+├── statusHealth.js          health snapshot builder
 ├── transcripts.js           TXT and HTML transcript generation
-├── web.js                   website, health API, and guild dashboard
-├── views/                   EJS templates
-├── public/                  website and dashboard assets
+├── database/
+│   ├── index.js             database + categories re-exports
+│   ├── db.js                MySQL schema and repository functions
+│   └── categories.js        ticket categories, questions, and statuses
+├── api/
+│   ├── index.js             route composition
+│   ├── services/
+│   │   └── releaseFeed.js   GitHub releases feed
+│   └── routes/
+│       ├── admin.js         admin guild settings and role permissions
+│       ├── auth.js          Discord OAuth2 login/callback/logout
+│       ├── dashboard.js     guild dashboard views
+│       ├── health.js        health endpoints
+│       └── public.js        public pages (home, docs, terms, privacy, impressum)
+├── web/
+│   ├── index.js             Express app factory
+│   ├── views/               EJS templates
+│   └── public/              website and dashboard assets
 ├── commands/                slash commands
 └── events/                  Discord event handlers
 
@@ -29,7 +44,7 @@ assets/
 
 ## Extending ticket categories and statuses
 
-Ticket categories and statuses are defined in [`src/categories.js`](./src/categories.js). Dashboard settings are stored per guild in MySQL; edit the category definitions when adding code-level ticket workflows.
+Ticket categories and statuses are defined in [`src/database/categories.js`](./src/database/categories.js). Dashboard settings are stored per guild in MySQL; edit the category definitions when adding code-level ticket workflows.
 
 ### Add a category
 

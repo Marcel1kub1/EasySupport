@@ -1,0 +1,36 @@
+# OAuth setup
+
+For the web dashboard, configure the Discord OAuth2 client and its callback URL so users can sign in with Discord and manage their guilds.
+
+## Required environment variables
+
+| Variable | Example | Description |
+|---|---|---|
+| `CLIENT_ID` | `123456789012345678` | Your Discord application ID |
+| `CLIENT_SECRET` | `abcdef123456...` | Your Discord application secret |
+| `OAUTH_REDIRECT_URI` | `http://localhost:3000/auth/callback` | Must match the Discord Developer Portal |
+| `OAUTH_SCOPE` | `identify guilds` | Scopes to request from the user |
+
+## Configure in Discord Developer Portal
+
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and open your application.
+2. Navigate to **OAuth2 → General**.
+3. Add your redirect URI (e.g. `http://localhost:3000/auth/callback`) to the **Redirects** list.
+4. Save changes.
+
+## OAuth flow
+
+1. User clicks **Connect Discord** on the EasySupport homepage or dashboard.
+2. EasySupport redirects the user to Discord's authorization page.
+3. The user authorizes EasySupport to access their identity and guilds.
+4. Discord redirects back to your `OAUTH_REDIRECT_URI` with an authorization code.
+5. EasySupport exchanges the code for a bearer token and fetches the user's profile and guilds.
+6. The user is signed in and redirected to the dashboard.
+
+<Callout type="note">
+  For a public deployment, set the OAuth callback to your deployed website's `/auth/callback` route and add the same URL in the Discord Developer Portal.
+</Callout>
+
+<Callout type="warning">
+  The web server trusts one reverse proxy for forwarded client IPs, as required by hosted deployments using `X-Forwarded-For`.
+</Callout>

@@ -1,4 +1,4 @@
-# Categories & statuses
+# Tickets: categories & statuses
 
 Ticket categories and statuses are defined in [`src/categories.js`](./src/categories.js). This is the central configuration file for panel buttons, intake questions, and the full ticket-status registry.
 
@@ -70,3 +70,15 @@ Every **terminal** status (default `closed`) runs this protocol:
 ## Per-category staff roles
 
 Every category in `src/categories.js` can pin its own `staffRoleId`. A ticket of that category grants that role channel access and pings it exactly once when the ticket opens — so different teams (billing, moderation, appeals) are only notified for their own topics. The panel embed lists the handling role for each button. Invalid role IDs are skipped with a console warning instead of breaking channel creation.
+
+<Steps>
+  <Step title="Add a category">
+    Edit `src/categories.js`, add a `CATEGORIES` entry, then re-post `/panel`.
+  </Step>
+  <Step title="Add a status">
+    Edit `src/categories.js`, add a `TICKET_STATUSES` entry, then re-post `/panel`.
+  </Step>
+  <Step title="Set per-category staff role">
+    Add `staffRole` to a category entry so that role is pinged when tickets of that category open.
+  </Step>
+</Steps>

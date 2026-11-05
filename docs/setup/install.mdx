@@ -1,0 +1,27 @@
+# Install, register, and start
+
+Install dependencies, deploy slash commands, and start the bot.
+
+## Step 1 — Install dependencies
+
+```bash
+npm install
+```
+
+## Step 2 — Deploy slash commands
+
+```bash
+npm run deploy
+```
+
+The deploy command synchronizes slash commands from `src/commands/` with Discord. It also removes commands that are no longer present in the current build.
+
+## Step 3 — Start the bot
+
+```bash
+npm start
+```
+
+The bot connects to Discord and starts the web dashboard on the configured port.
+
+**Next step:** [Configure a guild →](/setup/guild)

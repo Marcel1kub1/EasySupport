@@ -33,3 +33,19 @@ Modules are toggled per guild in the dashboard. Each module registers its own sl
 | Vouches | Member vouches, cooldowns, leaderboards |
 | Welcome / goodbye / boost | Configurable join/leave/boost messages and rewards |
 | Logging | Message, member, moderation, role, channel, voice event logs |
+
+<Steps>
+  <Step title="Toggle a module">
+    Open the web dashboard, select your guild, and enable or disable any module.
+  </Step>
+  <Step title="Configure staff access">
+    Bind a staff role in `/setup` so staff can use module commands.
+  </Step>
+  <Step title="Publish the panel">
+    Run `/panel` so members can open tickets in your configured category.
+  </Step>
+</Steps>
+
+<Callout type="note">
+  Module settings are stored per guild in MySQL. Edit category definitions in `src/categories.js` when adding code-level ticket workflows.
+</Callout>
