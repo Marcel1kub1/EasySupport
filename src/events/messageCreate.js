@@ -3,8 +3,8 @@ import {
   logMessage,
   getSetting,
   addXp,
-} from '../db.js';
-import { getStatusMeta } from '../categories.js';
+} from '../database/';
+import { getStatusMeta } from '../database/';
 
 const ANTINUKE_ACTIONS = new Map();
 
@@ -174,3 +174,4 @@ setInterval(() => {
     }
   }
 }, 60_000);
+

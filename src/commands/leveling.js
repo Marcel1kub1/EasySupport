@@ -9,7 +9,7 @@ import {
   getLevelingUser,
   addXp,
   getRolePermission,
-} from '../db.js';
+} from '../database/';
 
 const MODULE = 'leveling';
 
@@ -67,7 +67,7 @@ async function handleRank(interaction, target) {
 }
 
 async function handleLeaderboard(interaction) {
-  const { query } = await import('../db.js');
+  const { query } = await import('../database/');
   const rows = await query(
     'SELECT user_id, xp, level FROM leveling_users WHERE guild_id = ? ORDER BY level DESC, xp DESC LIMIT 10',
     [interaction.guildId],
@@ -116,3 +116,4 @@ async function checkRolePermission(guildId, member, commandName) {
   }
   return true;
 }
+

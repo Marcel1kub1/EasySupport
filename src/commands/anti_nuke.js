@@ -9,7 +9,7 @@ import {
   getAntiNukeConfig,
   setAntiNukeConfig,
   getRolePermission,
-} from '../db.js';
+} from '../database/';
 
 const MODULE = 'anti_nuke';
 
@@ -83,3 +83,4 @@ async function checkRolePermission(guildId, member, commandName) {
   }
   return true;
 }
+

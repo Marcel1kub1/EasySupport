@@ -10,7 +10,7 @@ import {
   addBalance,
   setEconomyUser,
   getRolePermission,
-} from '../db.js';
+} from '../database/';
 
 const MODULE = 'economy';
 
@@ -123,3 +123,4 @@ async function checkRolePermission(guildId, member, commandName) {
   }
   return true;
 }
+

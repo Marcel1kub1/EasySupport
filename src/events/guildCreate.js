@@ -3,7 +3,7 @@ import {
   getGuild,
   setRolePermission,
   bulkUpdateGuildSettings,
-} from '../db.js';
+} from '../database/';
 
 const DEFAULT_ROLE_PERMISSIONS = {
   // Commands that admins/moderators should be able to use by default
@@ -170,3 +170,4 @@ export default {
     }
   },
 };
+

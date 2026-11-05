@@ -9,7 +9,7 @@ import {
   getAutomodConfig,
   setAutomodConfig,
   getRolePermission,
-} from '../db.js';
+} from '../database/';
 
 const MODULE = 'automod';
 
@@ -87,3 +87,4 @@ async function checkRolePermission(guildId, member, commandName) {
   }
   return true;
 }
+

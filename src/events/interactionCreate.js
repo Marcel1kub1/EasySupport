@@ -26,8 +26,8 @@ import {
   rateTicket,
   setPanelMessageId,
   updateTicketStatus,
-} from '../db.js';
-import { CATEGORIES, DEFAULT_STATUS, TICKET_STATUSES, getStatusMeta, resolveStaffRole } from '../categories.js';
+} from '../database/';
+import { CATEGORIES, DEFAULT_STATUS, TICKET_STATUSES, getStatusMeta, resolveStaffRole } from '../database/';
 import { categoryArt } from '../art.js';
 import { saveTranscripts } from '../transcripts.js';
 import { hasTicketAccessRole } from '../tickets/access.js';
@@ -660,3 +660,4 @@ async function sendLog(guildId, client, embed) {
     await channel.send({ embeds: [embed] }).catch(() => {});
   }
 }
+

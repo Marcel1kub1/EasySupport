@@ -9,7 +9,7 @@ import {
   createVouch,
   getVouches,
   getRolePermission,
-} from '../db.js';
+} from '../database/';
 
 const MODULE = 'vouches';
 
@@ -80,3 +80,4 @@ async function checkRolePermission(guildId, member, commandName) {
   }
   return true;
 }
+

@@ -7,8 +7,8 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
-import { getGuild } from '../db.js';
-import { CATEGORIES, resolveStaffRole } from '../categories.js';
+import { getGuild } from '../database/';
+import { CATEGORIES, resolveStaffRole } from '../database/';
 import { panelArt } from '../art.js';
 
 const MAX_BUTTONS_PER_ROW = 5;
@@ -83,3 +83,4 @@ export default {
     await interaction.reply({ content: `Panel posted in <#${target.id}>.`, flags: MessageFlags.Ephemeral });
   },
 };
+

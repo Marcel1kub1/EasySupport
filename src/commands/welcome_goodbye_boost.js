@@ -9,7 +9,7 @@ import {
   getWelcomeGoodbyeBoostConfig,
   setWelcomeGoodbyeBoostConfig,
   getRolePermission,
-} from '../db.js';
+} from '../database/';
 
 const MODULE = 'welcome_goodbye_boost';
 
@@ -91,3 +91,4 @@ async function checkRolePermission(guildId, member, commandName) {
   }
   return true;
 }
+

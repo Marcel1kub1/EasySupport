@@ -7,7 +7,7 @@ import {
 import {
   getGuild,
   isModuleEnabled,
-} from '../db.js';
+} from '../database/';
 
 export default {
   data: new SlashCommandBuilder()
@@ -91,3 +91,4 @@ export default {
     });
   },
 };
+

@@ -9,7 +9,7 @@ import {
   getLoggingConfig,
   setLoggingConfig,
   getRolePermission,
-} from '../db.js';
+} from '../database/';
 
 const MODULE = 'logging';
 
@@ -79,3 +79,4 @@ async function checkRolePermission(guildId, member, commandName) {
   }
   return true;
 }
+

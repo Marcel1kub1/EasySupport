@@ -11,7 +11,7 @@ import {
   createMute,
   createBan,
   getRolePermission,
-} from '../db.js';
+} from '../database/';
 
 const MODULE = 'moderation';
 
@@ -176,3 +176,4 @@ function parseDuration(str) {
   const mult = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 }[unit];
   return value * mult;
 }
+

@@ -10,7 +10,7 @@ import {
   getGiveaways,
   endGiveaway,
   getRolePermission,
-} from '../db.js';
+} from '../database/';
 
 const MODULE = 'giveaways';
 
@@ -111,3 +111,4 @@ async function checkRolePermission(guildId, member, commandName) {
   }
   return true;
 }
+

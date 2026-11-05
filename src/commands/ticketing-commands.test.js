@@ -1,7 +1,7 @@
 import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import setup from './setup.js';
-import { pool } from '../db.js';
+import { pool } from '../database/';
 
 after(async () => {
   await pool.end();
@@ -53,3 +53,4 @@ test('setup shows configure form', async () => {
   assert.ok(panel.components.length <= 5);
   assert.ok(panel.components.every((row) => row.components.length <= 5));
 });
+

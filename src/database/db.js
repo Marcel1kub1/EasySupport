@@ -2,7 +2,7 @@
 // The public API is intentionally identical so callers only need to `await` the
 // now-async repository functions.
 import { createPool } from 'mysql2/promise';
-import { config } from './config.js';
+import { config } from '../config.js';
 import { TICKET_STATUSES } from './categories.js';
 
 export const pool = createPool({
