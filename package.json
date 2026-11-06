@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Self-hosted Discord ticketing bot template (discord.js v14) with MySQL storage and public website",
-  "main": "server.js",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node src/index.js",
     "deploy": "node deploy-commands.js",
     "kg:generate": "node scripts/generate-knowledge-graph.js",
     "release:notes": "node scripts/generate-release-notes.js",

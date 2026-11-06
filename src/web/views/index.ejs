@@ -75,12 +75,18 @@
     </div>
   </section>
 
-  <section class="landing-close" data-reveal>
+<section class="landing-close" data-reveal>
     <div>
       <p class="eyebrow">Your guild, your setup</p>
       <h2>Support tools, on your terms.</h2>
       <p>Self-host EasySupport and shape the workflows around your community.</p>
     </div>
     <a class="button button--light" href="<%= signedIn ? '/dashboard' : '/login' %>">Start with your guild <span aria-hidden="true">↗</span></a>
+    <nav class="landing-legal" aria-label="Legal links">
+      <a class="button button--quiet button--small" href="/cancel">Cancellation</a>
+      <a class="button button--quiet button--small" href="/impressum">Impressum</a>
+      <a class="button button--quiet button--small" href="/privacy">Data privacy</a>
+      <a class="button button--quiet button--small" href="/terms">Terms of service</a>
+    </nav>
   </section>
 </section>

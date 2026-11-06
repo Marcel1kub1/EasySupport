@@ -1,6 +1,5 @@
-import { config } from '../../config.js';
-
-export function setupAuthRoutes(app, deps) {
+export function setupRoutes(app, deps) {
+  const { config } = deps;
   const { clientId, clientSecret, oauthRedirectUri, oauthScope } = config;
 
   app.get('/login', (_req, res) => {

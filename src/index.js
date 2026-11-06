@@ -69,7 +69,7 @@ async function boot() {
   }
 
   // Start the public site and guild dashboard alongside the bot.
-  const app = createWebApp(client, pool);
+  const app = await createWebApp(client, pool);
   const server = app.listen(config.port, () => {
     console.log(`[web] Listening on port ${config.port}`);
   });
