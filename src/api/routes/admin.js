@@ -151,7 +151,7 @@ function getModuleSettings(module) {
   return MODULE_SETTINGS[module] ?? null;
 }
 
-export function setupAdminRoutes(app, deps) {
+export function setupRoutes(app, deps) {
   const { requireAuth, requireGuildAuth, getUserGuilds, requireCsrf, client, pool, config } = deps;
 
   app.get('/admin/modules/:guildId/:module', requireAuth, requireGuildAuth, async (_req, res) => {
@@ -316,4 +316,4 @@ export function setupAdminRoutes(app, deps) {
   });
 }
 
-export default { setupAdminRoutes };
+export default { setupRoutes };

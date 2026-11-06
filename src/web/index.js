@@ -51,7 +51,7 @@ function requireCsrf(req, res, next) {
   next();
 }
 
-export function createWebApp(client, pool) {
+export async function createWebApp(client, pool) {
   const app = express();
 
   app.set('trust proxy', 1);
@@ -124,7 +124,7 @@ export function createWebApp(client, pool) {
   };
 
   app.use('/admin', adminRateLimiter);
-  setupApiRoutes(app, deps);
+  await setupApiRoutes(app, deps);
 
   app.use((req, res) => {
     res.status(404);

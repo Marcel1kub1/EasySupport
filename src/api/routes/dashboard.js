@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ChannelType } from 'discord.js';
-import { getReleaseFeed } from '../../services/releaseFeed.js';
+import { getReleaseFeed } from '../services/releaseFeed.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..', '..', '..');
@@ -148,7 +148,6 @@ const MODULE_SETTINGS = {
     { key: 'log_member_join', label: 'Member Join', type: 'toggle' },
     { key: 'log_member_leave', label: 'Member Leave', type: 'toggle' },
     { key: 'log_member_ban', label: 'Member Ban', type: 'toggle' },
-    { key: 'log_member_unban', label: 'Member Unban', type: 'toggle' },
     { key: 'log_role_create', label: 'Role Create', type: 'toggle' },
     { key: 'log_role_delete', label: 'Role Delete', type: 'toggle' },
     { key: 'log_channel_create', label: 'Channel Create', type: 'toggle' },
@@ -164,7 +163,7 @@ function getModuleSettings(module) {
   return MODULE_SETTINGS[module] ?? null;
 }
 
-export function setupDashboardRoutes(app, deps) {
+export function setupRoutes(app, deps) {
   const { requireAuth, requireGuildAuth, getUserGuilds, client, pool, config } = deps;
 
   app.get('/dashboard', requireAuth, async (_req, res) => {
@@ -196,7 +195,7 @@ export function setupDashboardRoutes(app, deps) {
     const releases = await getReleaseFeed();
 
     return res.render(path.join(viewsDir, 'updates.ejs'), {
-      title: 'EasySupport — What’s new',
+      title: 'EasySupport — What\'s new',
       active: 'updates',
       guildId,
       guildName: guild.name,
@@ -247,5 +246,3 @@ export function setupDashboardRoutes(app, deps) {
     });
   });
 }
-
-export default { setupDashboardRoutes };

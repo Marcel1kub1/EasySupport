@@ -1,6 +1,6 @@
 import { createStatusHealthSnapshot } from '../../statusHealth.js';
 
-export function setupHealthRoutes(app, deps) {
+export function setupRoutes(app, deps) {
   const { client, pool } = deps;
 
   app.get('/healthz', (_req, res) => {

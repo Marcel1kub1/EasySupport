@@ -6,8 +6,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..', '..', '..');
 const viewsDir = path.join(projectRoot, 'src', 'web', 'views');
 
-export function setupPublicRoutes(app, deps) {
-  const { repoUrl } = deps;
+export function setupRoutes(app, deps) {
+  const { repoUrl, config: configDep } = deps;
+  const cfg = configDep ?? config;
 
   app.get('/', async (_req, res) => {
     const body = await import('ejs').then((e) => e.renderFile(path.join(viewsDir, 'index.ejs'), {
@@ -37,5 +38,5 @@ export function setupPublicRoutes(app, deps) {
     return res.send(html);
   });
 
-  app.get('/status', (_req, res) => res.redirect(config.statusUrl));
+  app.get('/status', (_req, res) => res.redirect(cfg.statusUrl));
 }
