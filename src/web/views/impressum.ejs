@@ -8,8 +8,8 @@
     <section>
       <h2>Dienstanbieter</h2>
       <address>
-        EasySupport<br>
-        Musterstraße 123<br>
+        <%= cfg.impressumProviderName || 'EasySupport' %><br>
+        <%= cfg.impressumProviderAddress || 'Musterstraße 123' %><br>
         12345 Musterstadt<br>
         Deutschland
       </address>
@@ -17,22 +17,34 @@
 
     <section>
       <h2>Kontakt</h2>
-      <p>E-Mail: <a href="mailto:support@easysupport.example">support@easysupport.example</a></p>
-      <p>Discord: <a href="https://discord.gg/easysupport" target="_blank" rel="noopener noreferrer">EasySupport Community</a></p>
+      <% if (cfg.impressumProviderEmail) { %>
+        <p>E-Mail: <a href="mailto:<%= cfg.impressumProviderEmail %>"><%= cfg.impressumProviderEmail %></a></p>
+      <% } %>
+      <% if (cfg.impressumProviderPhone) { %>
+        <p>Telefon: <%= cfg.impressumProviderPhone %></p>
+      <% } %>
     </section>
 
     <section>
       <h2>Verantwortlich für den Inhalt</h2>
-      <p>Max Mustermann<br>
-      Musterstraße 123<br>
+      <p><%= cfg.impressumProviderName || 'EasySupport' %><br>
+      <%= cfg.impressumProviderAddress || 'Musterstraße 123' %><br>
       12345 Musterstadt</p>
     </section>
+
+    <% if (cfg.impressumTradeRegister || cfg.impressumVatId) { %>
+    <section>
+      <h2>Handelsregister / USt-IdNr.</h2>
+      <% if (cfg.impressumTradeRegister) { %><p>Handelsregister: <%= cfg.impressumTradeRegister %></p><% } %>
+      <% if (cfg.impressumVatId) { %><p>Umsatzsteuer-Identifikationsnummer: <%= cfg.impressumVatId %></p><% } %>
+    </section>
+    <% } %>
 
     <section>
       <h2>Haftungsausschluss</h2>
       <h3>Haftung für Inhalte</h3>
       <p>Die Inhalte dieser Seiten wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen.</p>
-      
+
       <h3>Haftung für Links</h3>
       <p>Unser Angebot enthält Links zu externen Webseiten Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen.</p>
     </section>

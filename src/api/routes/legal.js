@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { config } from '../../config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..', '..', '..');
@@ -7,6 +8,7 @@ const viewsDir = path.join(projectRoot, 'src', 'web', 'views');
 
 export function setupRoutes(app, deps) {
   const { repoUrl } = deps;
+  const cfg = deps.config ?? config;
   const layoutBase = { repoUrl, csrfToken: '', siteCssVersion: '0', message: '', error: '', signedIn: false };
 
   function renderLegalPage(viewName, title) {
@@ -16,6 +18,7 @@ export function setupRoutes(app, deps) {
         active: viewName.replace('.ejs', ''),
         signedIn: false,
         repoUrl,
+        cfg,
       }));
       const html = await import('ejs').then((e) => e.renderFile(path.join(viewsDir, 'layout.ejs'), {
         ...layoutBase,
