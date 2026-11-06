@@ -7,6 +7,7 @@ import { loadModules } from './loader.js';
 import { createWebApp } from './web/index.js';
 import { deployCommands } from '../deploy-commands.js';
 import { connect, initialize, migrate, pool } from './database/index.js';
+import { startRetentionCleanup } from './retention.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -62,6 +63,9 @@ async function boot() {
     } catch (error) {
       console.error('[deploy] Command sync failed (non-fatal):', error.message ?? error);
     }
+
+    // Automatic data retention cleanup: runs immediately, then daily.
+    startRetentionCleanup();
 
   } catch (error) {
     console.error('[db] Failed to connect to MySQL:', error);

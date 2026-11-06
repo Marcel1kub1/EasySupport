@@ -14,6 +14,12 @@ function required(name) {
   return value;
 }
 
+function optional(name) {
+  const value = process.env[name];
+  if (!value || value.toLowerCase() === 'not needed') return null;
+  return value;
+}
+
 export const config = {
   token: required('DISCORD_TOKEN'),
   clientId: required('CLIENT_ID'),
@@ -34,17 +40,20 @@ export const config = {
   oauthRedirectUri: required('OAUTH_REDIRECT_URI'),
   oauthScope: process.env.OAUTH_SCOPE ?? 'identify guilds',
   statusUrl: process.env.STATUS_URL ?? 'https://easyvstatus.wisp.uno',
+  dataRetentionDays: Number(process.env.DATA_RETENTION_DAYS ?? '90'),
   // Impressum (legal notice) content, configurable via environment variable
   // HTML is supported. Required by European Law (Impressumspflicht).
   impressumContent: process.env.IMPRESSUM_CONTENT ?? '<strong>EasySupport</strong><br>Self-hosted Discord support ticket bot<br>Contact: imprint@example.com',
-  impressumLinkText: process.env.IMPRESSUM_LINK_TEXT ?? 'Impressum',
-  privacyLinkText: process.env.PRIVACY_LINK_TEXT ?? 'Datenschutz',
-  termsLinkText: process.env.TERMS_LINK_TEXT ?? 'AGB',
+  impressumLinkText: process.env.IMPRESSUM_LINK_TEXT ?? 'Legal notice',
+  privacyLinkText: process.env.PRIVACY_LINK_TEXT ?? 'Privacy policy',
+  termsLinkText: process.env.TERMS_LINK_TEXT ?? 'Terms of service',
   // Impressum provider details (individual fields)
-  impressumProviderName: process.env.IMPRESSUM_PROVIDER_NAME ?? 'EasySupport',
-  impressumProviderAddress: process.env.IMPRESSUM_PROVIDER_ADDRESS ?? '',
-  impressumProviderEmail: process.env.IMPRESSUM_PROVIDER_EMAIL ?? 'imprint@example.com',
-  impressumProviderPhone: process.env.IMPRESSUM_PROVIDER_PHONE ?? '',
-  impressumTradeRegister: process.env.IMPRESSUM_TRADE_REGISTER ?? '',
-  impressumVatId: process.env.IMPRESSUM_VAT_ID ?? '',
+  impressumProviderName: optional('IMPRESSUM_PROVIDER_NAME') ?? 'EasySupport',
+  impressumProviderAddress: optional('IMPRESSUM_PROVIDER_ADDRESS'),
+  impressumProviderCity: optional('IMPRESSUM_PROVIDER_CITY'),
+  impressumProviderCountry: optional('IMPRESSUM_PROVIDER_COUNTRY'),
+  impressumProviderEmail: optional('IMPRESSUM_PROVIDER_EMAIL') ?? 'imprint@example.com',
+  impressumProviderPhone: optional('IMPRESSUM_PROVIDER_PHONE'),
+  impressumTradeRegister: optional('IMPRESSUM_TRADE_REGISTER'),
+  impressumVatId: optional('IMPRESSUM_VAT_ID'),
 };

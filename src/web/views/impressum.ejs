@@ -1,67 +1,67 @@
 <section class="legal-page" data-reveal>
   <header class="legal-page__header">
-    <h1>Impressum</h1>
-    <p class="legal-page__meta">Angaben gemäß § 5 TMG</p>
+    <h1>Legal notice</h1>
+    <p class="legal-page__meta">Information under § 5 TMG (German Telemedia Act)</p>
   </header>
 
   <article class="legal-page__content">
     <section>
-      <h2>Dienstanbieter</h2>
+      <h2>Service provider</h2>
       <address>
         <%= cfg.impressumProviderName || 'EasySupport' %><br>
-        <%= cfg.impressumProviderAddress || 'Musterstraße 123' %><br>
-        12345 Musterstadt<br>
-        Deutschland
+        <%= cfg.impressumProviderAddress || '123 Example Street' %><br>
+        <%= cfg.impressumProviderCity || '12345 Example City' %><br>
+        <%= cfg.impressumProviderCountry || 'Germany' %>
       </address>
     </section>
 
     <section>
-      <h2>Kontakt</h2>
+      <h2>Contact</h2>
       <% if (cfg.impressumProviderEmail) { %>
-        <p>E-Mail: <a href="mailto:<%= cfg.impressumProviderEmail %>"><%= cfg.impressumProviderEmail %></a></p>
+        <p>Email: <a href="mailto:<%= cfg.impressumProviderEmail %>"><%= cfg.impressumProviderEmail %></a></p>
       <% } %>
       <% if (cfg.impressumProviderPhone) { %>
-        <p>Telefon: <%= cfg.impressumProviderPhone %></p>
+        <p>Phone: <%= cfg.impressumProviderPhone %></p>
       <% } %>
     </section>
 
     <section>
-      <h2>Verantwortlich für den Inhalt</h2>
+      <h2>Person responsible for content</h2>
       <p><%= cfg.impressumProviderName || 'EasySupport' %><br>
-      <%= cfg.impressumProviderAddress || 'Musterstraße 123' %><br>
-      12345 Musterstadt</p>
+      <%= cfg.impressumProviderAddress || '123 Example Street' %><br>
+      <%= cfg.impressumProviderCity || '12345 Example City' %></p>
     </section>
 
     <% if (cfg.impressumTradeRegister || cfg.impressumVatId) { %>
     <section>
-      <h2>Handelsregister / USt-IdNr.</h2>
-      <% if (cfg.impressumTradeRegister) { %><p>Handelsregister: <%= cfg.impressumTradeRegister %></p><% } %>
-      <% if (cfg.impressumVatId) { %><p>Umsatzsteuer-Identifikationsnummer: <%= cfg.impressumVatId %></p><% } %>
+      <h2>Trade register / VAT ID</h2>
+      <% if (cfg.impressumTradeRegister) { %><p>Trade register: <%= cfg.impressumTradeRegister %></p><% } %>
+      <% if (cfg.impressumVatId) { %><p>Value added tax identification number: <%= cfg.impressumVatId %></p><% } %>
     </section>
     <% } %>
 
     <section>
-      <h2>Haftungsausschluss</h2>
-      <h3>Haftung für Inhalte</h3>
-      <p>Die Inhalte dieser Seiten wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen.</p>
+      <h2>Disclaimer</h2>
+      <h3>Liability for content</h3>
+      <p>The content of these pages has been created with the greatest care. However, we cannot guarantee the correctness, completeness, or timeliness of the content.</p>
 
-      <h3>Haftung für Links</h3>
-      <p>Unser Angebot enthält Links zu externen Webseiten Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen.</p>
+      <h3>Liability for links</h3>
+      <p>Our offer contains links to external third-party websites over whose content we have no control. Therefore, we cannot accept any liability for this external content.</p>
     </section>
 
     <section>
-      <h2>Urheberrecht</h2>
-      <p>Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht.</p>
+      <h2>Copyright</h2>
+      <p>The content and works on these pages created by the site operators are protected by copyright law.</p>
     </section>
 
     <section>
-      <h2>Datenschutz</h2>
-      <p>Die Nutzung unserer Webseite ist in der Regel ohne Angabe personenbezogener Daten möglich. Soweit auf unseren Seiten personenbezogene Daten erhoben werden, erfolgt dies, soweit möglich, stets auf freiwilliger Basis.</p>
+      <h2>Data privacy</h2>
+      <p>The use of our website is generally possible without providing personal data. Where personal data is collected on our pages, this is done, as far as possible, on a voluntary basis.</p>
     </section>
   </article>
 
   <footer class="legal-page__footer">
-    <p>Stand: <time datetime="2026-01-01">Januar 2026</time></p>
-    <p><a href="/">← Zurück zur Startseite</a></p>
+    <p>Last updated: <time datetime="2026-01-01">January 2026</time></p>
+    <p><a href="/">← Back to home</a></p>
   </footer>
 </section>

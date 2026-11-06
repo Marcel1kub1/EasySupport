@@ -1,76 +1,76 @@
 <section class="legal-page" data-reveal>
   <header class="legal-page__header">
-    <h1>Datenschutzerklärung</h1>
-    <p class="legal-page__meta">Informationen gemäß Art. 13 DSGVO</p>
+    <h1>Privacy policy</h1>
+    <p class="legal-page__meta">Information under Art. 13 GDPR</p>
   </header>
 
   <article class="legal-page__content">
     <section>
-      <h2>1. Verantwortlicher</h2>
-      <p>EasySupport<br>
-      Musterstraße 123<br>
-      12345 Musterstadt<br>
-      E-Mail: support@easysupport.example</p>
+      <h2>1. Data controller</h2>
+      <p><%= cfg.impressumProviderName || 'EasySupport' %><br>
+      <%= cfg.impressumProviderAddress || '123 Example Street' %><br>
+      <%= cfg.impressumProviderCity || '12345 Example City' %><br>
+      Email: <%= cfg.impressumProviderEmail || 'privacy@example.com' %></p>
     </section>
 
     <section>
-      <h2>2. Erhebung und Speicherung personenbezogener Daten</h2>
-      <p>Bei der Nutzung unseres Discord-Bots und der Webseite werden folgende Daten verarbeitet:</p>
+      <h2>2. Collection and storage of personal data</h2>
+      <p>When using our Discord bot and website, the following data is processed:</p>
       <ul>
-        <li><strong>Discord-Benutzerdaten:</strong> Benutzer-ID, Benutzername, Avatar, Discriminator (zur Authentifizierung über Discord OAuth2)</li>
-        <li><strong>Server- und Kanalinformationen:</strong> Guild-IDs, Kanal-IDs, Rollen-IDs (für Ticket-Management und Modul-Konfiguration)</li>
-        <li><strong>Ticket-Daten:</strong> Nachrichten, Anhänge, Metadaten (für Transkripte und Moderation)</li>
-        <li><strong>Technische Daten:</strong> IP-Adresse (kurzfristig für Sicherheit), User-Agent, Zeitstempel</li>
+        <li><strong>Discord user data:</strong> User ID, username, avatar, discriminator (for authentication via Discord OAuth2)</li>
+        <li><strong>Server and channel information:</strong> Guild IDs, channel IDs, role IDs (for ticket management and module configuration)</li>
+        <li><strong>Ticket data:</strong> Messages, attachments, metadata (for transcripts and moderation)</li>
+        <li><strong>Technical data:</strong> IP address (temporarily for security), user agent, timestamps</li>
       </ul>
     </section>
 
     <section>
-      <h2>3. Zweck der Datenverarbeitung</h2>
+      <h2>3. Purpose of data processing</h2>
       <ul>
-        <li>Bereitstellung des Ticket-Systems und der Moderationstools</li>
-        <li>Authentifizierung und Autorisierung über Discord OAuth2</li>
-        <li>Erstellung von Transkripten und Protokollen</li>
-        <li>Sicherheit und Missbrauchsprävention (Anti-Spam, Anti-Raid)</li>
-        <li>Statistiken und Verbesserung des Dienstes</li>
+        <li>Providing the ticket system and moderation tools</li>
+        <li>Authentication and authorization via Discord OAuth2</li>
+        <li>Creation of transcripts and logs</li>
+        <li>Security and abuse prevention (anti-spam, anti-raid)</li>
+        <li>Statistics and service improvement</li>
       </ul>
     </section>
 
     <section>
-      <h2>4. Rechtsgrundlagen</h2>
+      <h2>4. Legal bases</h2>
       <ul>
-        <li>Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung)</li>
-        <li>Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an Sicherheit und Betrieb)</li>
-        <li>Art. 6 Abs. 1 lit. a DSGVO (Einwilligung für optionale Daten)</li>
+        <li>Art. 6(1)(b) GDPR (contract performance)</li>
+        <li>Art. 6(1)(f) GDPR (legitimate interest in security and operation)</li>
+        <li>Art. 6(1)(a) GDPR (consent for optional data)</li>
       </ul>
     </section>
 
     <section>
-      <h2>5. Datenweitergabe</h2>
-      <p>Eine Weitergabe an Dritte erfolgt nur:</p>
+      <h2>5. Data sharing</h2>
+      <p>Data is shared with third parties only:</p>
       <ul>
-        <li>An Discord Inc. im Rahmen der OAuth2-Authentifizierung und Bot-API</li>
-        <li>Bei gesetzlicher Verpflichtung oder zur Geltendmachung von Rechten</li>
+        <li>With Discord Inc. as part of OAuth2 authentication and the bot API</li>
+        <li>When legally required or to enforce rights</li>
       </ul>
     </section>
 
     <section>
-      <h2>6. Speicherdauer</h2>
-      <p>Daten werden gelöscht, sobald sie für den Zweck ihrer Erhebung nicht mehr erforderlich sind. Ticket-Transkripte werden standardmäßig 90 Tage nach Schließung archiviert und dann gelöscht.</p>
+      <h2>6. Data retention</h2>
+      <p>Data is deleted once it is no longer required for the purpose of its collection. Ticket transcripts are archived after closure and then deleted according to the configured retention period (<%= cfg.dataRetentionDays || 90 %> days).</p>
     </section>
 
     <section>
-      <h2>7. Ihre Rechte</h2>
-      <p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Kontaktieren Sie uns unter support@easysupport.example.</p>
+      <h2>7. Your rights</h2>
+      <p>You have the right to access, rectify, erase, restrict processing, data portability, and object. Contact us at <%= cfg.impressumProviderEmail || 'privacy@example.com' %>.</p>
     </section>
 
     <section>
-      <h2>8. Beschwerderecht</h2>
-      <p>Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren.</p>
+      <h2>8. Right to complain</h2>
+      <p>You have the right to complain to a data protection supervisory authority.</p>
     </section>
   </article>
 
   <footer class="legal-page__footer">
-    <p>Stand: <time datetime="2026-01-01">Januar 2026</time></p>
-    <p><a href="/">← Zurück zur Startseite</a></p>
+    <p>Last updated: <time datetime="2026-01-01">January 2026</time></p>
+    <p><a href="/">← Back to home</a></p>
   </footer>
 </section>
