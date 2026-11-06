@@ -22,6 +22,7 @@ const modules = [
 export function setupRoutes(app, deps) {
   const { repoUrl, config: configDep } = deps;
   const cfg = configDep ?? config;
+  const siteCssVersion = '0';
 
   app.get('/', async (_req, res) => {
     const body = await import('ejs').then((e) => e.renderFile(path.join(viewsDir, 'index.ejs'), {
@@ -32,7 +33,7 @@ export function setupRoutes(app, deps) {
       modules,
     }));
     const html = await import('ejs').then((e) => e.renderFile(path.join(viewsDir, 'layout.ejs'), {
-      ...{ title: 'EasySupport — Home', active: 'home', signedIn: Boolean(_req.session?.discordUser), repoUrl, csrfToken: res.locals.csrfToken ?? '' },
+      ...{ title: 'EasySupport — Home', active: 'home', signedIn: Boolean(_req.session?.discordUser), repoUrl, csrfToken: res.locals.csrfToken ?? '', siteCssVersion },
       body,
     }));
     return res.send(html);
@@ -47,7 +48,7 @@ export function setupRoutes(app, deps) {
       modules,
     }));
     const html = await import('ejs').then((e) => e.renderFile(path.join(viewsDir, 'layout.ejs'), {
-      ...{ title: 'EasySupport — Documentation', active: 'docs', signedIn: Boolean(_req.session?.discordUser), repoUrl, csrfToken: res.locals.csrfToken ?? '' },
+      ...{ title: 'EasySupport — Documentation', active: 'docs', signedIn: Boolean(_req.session?.discordUser), repoUrl, csrfToken: res.locals.csrfToken ?? '', siteCssVersion },
       body,
     }));
     return res.send(html);
