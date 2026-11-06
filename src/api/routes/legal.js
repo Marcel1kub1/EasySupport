@@ -7,8 +7,9 @@ const viewsDir = path.join(projectRoot, 'src', 'web', 'views');
 
 export function setupRoutes(app, deps) {
   const { repoUrl } = deps;
+  const layoutBase = { repoUrl, csrfToken: '', siteCssVersion: '0', message: '', error: '' };
 
-  function renderLegalPage(res, viewName, title) {
+  function renderLegalPage(viewName, title) {
     return async (_req, res) => {
       const body = await import('ejs').then((e) => e.renderFile(path.join(viewsDir, viewName), {
         title: `EasySupport — ${title}`,
@@ -17,17 +18,19 @@ export function setupRoutes(app, deps) {
         repoUrl,
       }));
       const html = await import('ejs').then((e) => e.renderFile(path.join(viewsDir, 'layout.ejs'), {
-        ...{ title: `EasySupport — ${title}`, active: viewName.replace('.ejs', ''), signedIn: false, repoUrl, csrfToken: '' },
+        ...layoutBase,
+        title: `EasySupport — ${title}`,
+        active: viewName.replace('.ejs', ''),
         body,
       }));
       return res.send(html);
     };
   }
 
-  app.get('/impressum', renderLegalPage(app, 'impressum.ejs', 'Impressum'));
-  app.get('/privacy', renderLegalPage(app, 'privacy.ejs', 'Data privacy'));
-  app.get('/terms', renderLegalPage(app, 'terms.ejs', 'Terms of service'));
-  app.get('/cancel', renderLegalPage(app, 'cancellation.ejs', 'Cancellation policy'));
+  app.get('/impressum', renderLegalPage('impressum.ejs', 'Impressum'));
+  app.get('/privacy', renderLegalPage('privacy.ejs', 'Data privacy'));
+  app.get('/terms', renderLegalPage('terms.ejs', 'Terms of service'));
+  app.get('/cancel', renderLegalPage('cancellation.ejs', 'Cancellation policy'));
 }
 
 export default { setupRoutes };

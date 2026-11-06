@@ -23,37 +23,31 @@ export function setupRoutes(app, deps) {
   const { repoUrl, config: configDep } = deps;
   const cfg = configDep ?? config;
   const siteCssVersion = '0';
+  const layoutBase = { repoUrl, csrfToken: '', siteCssVersion, message: '', error: '' };
 
-  app.get('/', async (_req, res) => {
-    const body = await import('ejs').then((e) => e.renderFile(path.join(viewsDir, 'index.ejs'), {
-      title: 'EasySupport — Home',
-      active: 'home',
-      signedIn: Boolean(_req.session?.discordUser),
-      repoUrl,
-      modules,
-    }));
-    const html = await import('ejs').then((e) => e.renderFile(path.join(viewsDir, 'layout.ejs'), {
-      ...{ title: 'EasySupport — Home', active: 'home', signedIn: Boolean(_req.session?.discordUser), repoUrl, csrfToken: res.locals.csrfToken ?? '', siteCssVersion },
-      body,
-    }));
-    return res.send(html);
-  });
+  function renderWithLayout(res, viewName, title, active, extra = {}) {
+    return async (_req, res) => {
+      const body = await import('ejs').then((e) => e.renderFile(path.join(viewsDir, viewName), {
+        title: `EasySupport — ${title}`,
+        active,
+        signedIn: false,
+        repoUrl,
+        modules,
+        ...extra,
+      }));
+      const html = await import('ejs').then((e) => e.renderFile(path.join(viewsDir, 'layout.ejs'), {
+        ...layoutBase,
+        title: `EasySupport — ${title}`,
+        active,
+        body,
+        ...extra,
+      }));
+      return res.send(html);
+    };
+  }
 
-  app.get('/docs', async (_req, res) => {
-    const body = await import('ejs').then((e) => e.renderFile(path.join(viewsDir, 'docs.ejs'), {
-      title: 'EasySupport — Documentation',
-      active: 'docs',
-      signedIn: Boolean(_req.session?.discordUser),
-      repoUrl,
-      modules,
-    }));
-    const html = await import('ejs').then((e) => e.renderFile(path.join(viewsDir, 'layout.ejs'), {
-      ...{ title: 'EasySupport — Documentation', active: 'docs', signedIn: Boolean(_req.session?.discordUser), repoUrl, csrfToken: res.locals.csrfToken ?? '', siteCssVersion },
-      body,
-    }));
-    return res.send(html);
-  });
-
+  app.get('/', renderWithLayout(app, 'index.ejs', 'Home', 'home'));
+  app.get('/docs', renderWithLayout(app, 'docs.ejs', 'Documentation', 'docs'));
   app.get('/status', (_req, res) => res.redirect(cfg.statusUrl));
 }
 
