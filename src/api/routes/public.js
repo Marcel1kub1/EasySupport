@@ -40,3 +40,5 @@ export function setupRoutes(app, deps) {
 
   app.get('/status', (_req, res) => res.redirect(cfg.statusUrl));
 }
+
+export default { setupRoutes };

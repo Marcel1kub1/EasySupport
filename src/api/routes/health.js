@@ -18,3 +18,5 @@ export function setupRoutes(app, deps) {
     return res.set('Cache-Control', 'no-store').status(200).json(health);
   });
 }
+
+export default { setupRoutes };

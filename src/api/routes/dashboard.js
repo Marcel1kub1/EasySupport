@@ -246,3 +246,5 @@ export function setupRoutes(app, deps) {
     });
   });
 }
+
+export default { setupRoutes };
