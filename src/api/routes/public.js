@@ -23,7 +23,7 @@ export function setupRoutes(app, deps) {
   const { repoUrl, config: configDep } = deps;
   const cfg = configDep ?? config;
   const siteCssVersion = '0';
-  const layoutBase = { repoUrl, csrfToken: '', siteCssVersion, message: '', error: '' };
+  const layoutBase = { repoUrl, csrfToken: '', siteCssVersion, message: '', error: '', signedIn: false };
 
   function renderWithLayout(res, viewName, title, active, extra = {}) {
     return async (_req, res) => {

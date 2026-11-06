@@ -7,7 +7,7 @@ const viewsDir = path.join(projectRoot, 'src', 'web', 'views');
 
 export function setupRoutes(app, deps) {
   const { repoUrl } = deps;
-  const layoutBase = { repoUrl, csrfToken: '', siteCssVersion: '0', message: '', error: '' };
+  const layoutBase = { repoUrl, csrfToken: '', siteCssVersion: '0', message: '', error: '', signedIn: false };
 
   function renderLegalPage(viewName, title) {
     return async (_req, res) => {
